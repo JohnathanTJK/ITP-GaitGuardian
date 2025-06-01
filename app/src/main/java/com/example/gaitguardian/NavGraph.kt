@@ -7,8 +7,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.example.gaitguardian.screens.StartScreen
+import com.example.gaitguardian.screens.clinician.ClinicianDetailedPatientViewScreen
 import com.example.gaitguardian.screens.clinician.ClinicianHomeScreen
+import com.example.gaitguardian.screens.patient.FtfsAssessmentScreen
+import com.example.gaitguardian.screens.patient.GaitAssessmentScreen
 import com.example.gaitguardian.screens.patient.PatientHomeScreen
+import com.example.gaitguardian.screens.patient.TugAssessmentScreen
 
 @Composable
 fun NavGraph(
@@ -33,6 +37,9 @@ fun NavGraph(
             composable("clinician_home_screen") {
                 ClinicianHomeScreen(navController)
             }
+            composable("clinician_detailed_patient_view_screen") {
+                ClinicianDetailedPatientViewScreen(navController)
+            }
         }
 
         // Patient-Specific Screens here
@@ -41,6 +48,15 @@ fun NavGraph(
         {
             composable("patient_home_screen") {
                 PatientHomeScreen(navController)
+            }
+            composable("gait_assessment_screen") {
+                GaitAssessmentScreen(navController)
+            }
+            composable("tug_assessment_screen") {
+                TugAssessmentScreen(navController)
+            }
+            composable("ftfs_assessment_screen") {
+                FtfsAssessmentScreen(navController)
             }
         }
     }

@@ -1,4 +1,4 @@
-package com.example.gaitguardian.screens.clinician
+package com.example.gaitguardian.screens.patient
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 
 @Composable
-fun ClinicianHomeScreen(navController: NavController, modifier: Modifier = Modifier) {
+fun GaitAssessmentScreen(navController: NavController, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -22,15 +22,20 @@ fun ClinicianHomeScreen(navController: NavController, modifier: Modifier = Modif
         verticalArrangement = Arrangement.spacedBy(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Clincian Home Screen")
+        Text("Gait Assessment Screen")
 
         Button(
-            onClick = { navController.navigate("clinician_detailed_patient_view_screen") },
+            onClick = { navController.navigate("tug_assessment_screen") },
             modifier = modifier.fillMaxWidth()
         ) {
-            Text("Go Back")
+            Text("Timed Up and Go")
         }
-
+        Button(
+            onClick = { navController.navigate("ftfs_assessment_screen")},
+            modifier = modifier.fillMaxWidth()
+        ) {
+            Text("Five Times Sit to Stand")
+        }
         Button(
             onClick = { navController.popBackStack() },
             modifier = modifier.fillMaxWidth()
