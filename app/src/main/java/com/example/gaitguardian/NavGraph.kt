@@ -13,6 +13,10 @@ import com.example.gaitguardian.screens.patient.FtfsAssessmentScreen
 import com.example.gaitguardian.screens.patient.GaitAssessmentScreen
 import com.example.gaitguardian.screens.patient.PatientHomeScreen
 import com.example.gaitguardian.screens.patient.TugAssessmentScreen
+import com.example.gaitguardian.screens.patient.AssessmentInfoScreen
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+
 
 @Composable
 fun NavGraph(
@@ -49,6 +53,16 @@ fun NavGraph(
             composable("patient_home_screen") {
                 PatientHomeScreen(navController)
             }
+            composable(
+                route = "assessment_info_screen/{assessmentTitle}",
+                arguments = listOf(navArgument("assessmentTitle") { type = NavType.StringType })
+            ) { backStackEntry ->
+                AssessmentInfoScreen(
+                    navController = navController,
+                    modifier = Modifier,
+                    assessmentTitle = backStackEntry.arguments?.getString("assessmentTitle") ?: "Assessment"
+                )
+            }
             composable("gait_assessment_screen") {
                 GaitAssessmentScreen(navController)
             }
@@ -58,6 +72,7 @@ fun NavGraph(
             composable("ftfs_assessment_screen") {
                 FtfsAssessmentScreen(navController)
             }
+
         }
     }
 }
