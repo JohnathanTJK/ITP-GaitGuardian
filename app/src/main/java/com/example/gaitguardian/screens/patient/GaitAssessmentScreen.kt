@@ -1,18 +1,20 @@
 package com.example.gaitguardian.screens.patient
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 
+
+// GaitAssessmentScreen
 @Composable
 fun GaitAssessmentScreen(navController: NavController, modifier: Modifier = Modifier) {
     Column(
@@ -25,13 +27,13 @@ fun GaitAssessmentScreen(navController: NavController, modifier: Modifier = Modi
         Text("Gait Assessment Screen")
 
         Button(
-            onClick = { navController.navigate("tug_assessment_screen") },
+            onClick = { navController.navigate("assessment_info_screen/Timed%20Up%20and%20Go") },
             modifier = modifier.fillMaxWidth()
         ) {
             Text("Timed Up and Go")
         }
         Button(
-            onClick = { navController.navigate("ftfs_assessment_screen")},
+            onClick = { navController.navigate("assessment_info_screen/Five%20Times%20Sit%20to%20Stand") },
             modifier = modifier.fillMaxWidth()
         ) {
             Text("Five Times Sit to Stand")
@@ -44,3 +46,4 @@ fun GaitAssessmentScreen(navController: NavController, modifier: Modifier = Modi
         }
     }
 }
+
