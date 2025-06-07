@@ -16,6 +16,7 @@ import com.example.gaitguardian.screens.patient.TugAssessmentScreen
 import com.example.gaitguardian.screens.patient.AssessmentInfoScreen
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.example.gaitguardian.screens.patient.VideoCaptureScreen
 
 
 @Composable
@@ -60,7 +61,8 @@ fun NavGraph(
                 AssessmentInfoScreen(
                     navController = navController,
                     modifier = Modifier,
-                    assessmentTitle = backStackEntry.arguments?.getString("assessmentTitle") ?: "Assessment"
+                    assessmentTitle = backStackEntry.arguments?.getString("assessmentTitle")
+                        ?: "Assessment"
                 )
             }
             composable("gait_assessment_screen") {
@@ -72,7 +74,12 @@ fun NavGraph(
             composable("ftfs_assessment_screen") {
                 FtfsAssessmentScreen(navController)
             }
+            composable("video_capture_screen") {
+                VideoCaptureScreen(navController)
 
+            }
         }
+
+
     }
 }
