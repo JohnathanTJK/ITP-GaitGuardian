@@ -83,7 +83,7 @@ fun ClinicianHomeScreen(navController: NavController, modifier: Modifier = Modif
             Text("Patient's Assessment Records", fontSize = 18.sp, fontWeight = FontWeight.Medium)
             HorizontalDivider(thickness = 0.5.dp, color = Color(0xFF718096))
             // LazyColumn displaying the list of TUG videos done by the patient
-            TUGVideoList(tugVideos = tugVideos)
+            TUGVideoList(navController, tugVideos = tugVideos)
         }
     }
 }
@@ -156,6 +156,7 @@ fun VideoOverviewStats(
 
 @Composable
 fun TUGVideoItem(
+    navController: NavController,
     testId: Int,
     dateTime: String,
     medication: String,
@@ -212,7 +213,9 @@ fun TUGVideoItem(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Button(
-                onClick = {}, //TODO: Update route when done
+                onClick = {
+                    navController.navigate("clinician_detailed_patient_view_screen")
+                }, //TODO: Update route when done
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
@@ -226,13 +229,14 @@ fun TUGVideoItem(
 }
 
 @Composable
-fun TUGVideoList(tugVideos: List<TUGVideo>) {
+fun TUGVideoList(navController: NavController, tugVideos: List<TUGVideo>) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(tugVideos) { video ->
             TUGVideoItem(
+                navController,
                 testId = video.testId,
                 dateTime = video.dateTime,
                 medication = video.medication,
