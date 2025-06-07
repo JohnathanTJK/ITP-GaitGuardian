@@ -1,7 +1,6 @@
 package com.example.gaitguardian.screens.patient
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -54,32 +53,19 @@ fun AssessmentInfoScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Button(
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                MedicationStatusButton(
+                    text = "ON",
+                    isSelected = medicationStatus == "ON",
                     onClick = { medicationStatus = "ON" },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (medicationStatus == "ON") ButtonActive else Color.White,
-                        contentColor = Color.Black
-                    ),
-                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.weight(1f)
-                ) {
-                    Text("ON")
-                }
-
-                Button(
+                )
+                MedicationStatusButton(
+                    text = "OFF",
+                    isSelected = medicationStatus == "OFF",
                     onClick = { medicationStatus = "OFF" },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (medicationStatus == "OFF") ButtonActive else Color.White,
-                        contentColor = Color.Black
-                    ),
-                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.weight(1f)
-                ) {
-                    Text("OFF")
-                }
+                )
             }
 
             Spacer(Modifier.height(16.dp))
@@ -106,6 +92,25 @@ fun AssessmentInfoScreen(
         ) {
             Text("Continue", color = Color.Black)
         }
+    }
+}
 
+@Composable
+fun MedicationStatusButton(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (isSelected) ButtonActive else Color.White,
+            contentColor = Color.Black
+        ),
+        shape = RoundedCornerShape(16.dp),
+        modifier = modifier
+    ) {
+        Text(text)
     }
 }
