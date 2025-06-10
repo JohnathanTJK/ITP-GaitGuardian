@@ -38,8 +38,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.example.gaitguardian.data.Patient
-import com.example.gaitguardian.data.TUGVideo
+import com.example.gaitguardian.data.roomDatabase.patient.Patient
+import com.example.gaitguardian.data.roomDatabase.tug.TUGVideo
 import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.ui.theme.buttonBackgroundColor
 
@@ -72,7 +72,7 @@ fun ClinicianHomeScreen(navController: NavController, modifier: Modifier = Modif
         // Top Header to indicate Clinician and Patient details
         ClinicianHeader(
             clinicianName = "Dr. Bob Bobby", // Replace with actual clinician name
-            patient = Patient("Benny", 18), // Replace with actual patient details
+            patient = Patient(id = 2,"Benny", 18), // Replace with actual patient details
             pendingReviews = pendingReviews // calculated based on watchStatus
         )
 

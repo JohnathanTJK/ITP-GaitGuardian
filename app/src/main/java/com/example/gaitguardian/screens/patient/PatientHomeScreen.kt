@@ -1,23 +1,64 @@
 package com.example.gaitguardian.screens.patient
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight.Companion.ExtraBold
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.gaitguardian.ui.theme.*
+import com.example.gaitguardian.ui.theme.DefaultColor
+import com.example.gaitguardian.ui.theme.Heading1
+import com.example.gaitguardian.ui.theme.Heading2
+import com.example.gaitguardian.ui.theme.bgColor
+import com.example.gaitguardian.ui.theme.body
+import com.example.gaitguardian.ui.theme.boxPadding
+import com.example.gaitguardian.ui.theme.boxShape
+import com.example.gaitguardian.ui.theme.buttonBackgroundColor
+import com.example.gaitguardian.ui.theme.cardBackgroundColor
+import com.example.gaitguardian.ui.theme.cardPadding
+import com.example.gaitguardian.ui.theme.homeIconSize
+import com.example.gaitguardian.ui.theme.progressBarHeight
+import com.example.gaitguardian.ui.theme.progressGreen
+import com.example.gaitguardian.ui.theme.progressMarkerColor
+import com.example.gaitguardian.ui.theme.progressMarkerOffset
+import com.example.gaitguardian.ui.theme.progressMarkerWidth
+import com.example.gaitguardian.ui.theme.progressRed
+import com.example.gaitguardian.ui.theme.progressYellow
+import com.example.gaitguardian.ui.theme.severityBoxColor
+import com.example.gaitguardian.ui.theme.subheading1
+import com.example.gaitguardian.viewmodels.PatientViewModel
 
 @Composable
-fun PatientHomeScreen(navController: NavController, modifier: Modifier = Modifier) {
+fun PatientHomeScreen(
+    navController: NavController,
+    patientViewModel: PatientViewModel,
+    modifier: Modifier = Modifier
+) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -25,10 +66,25 @@ fun PatientHomeScreen(navController: NavController, modifier: Modifier = Modifie
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Start: Patient ViewModel testing
+        val patientInfo by patientViewModel.patient.collectAsState()
+        if (patientInfo != null) {
+            Text("Patient name: ${patientInfo!!.name}")
+        } else {
+            Text("Loading patient data...")
+        }
+        // End: Patient ViewModel testing
+
         PatientTopBar(navController)
         Spacer(Modifier.height(30.dp))
 
-        GreetingText()
+//        GreetingText()
+        Text(
+            text = "Welcome Back, ${patientInfo!!.name}",
+            fontWeight = ExtraBold,
+            fontSize = Heading1,
+            color = DefaultColor
+        )
         Spacer(Modifier.height(30.dp))
 
         MissedAssessmentCard(navController)
@@ -50,15 +106,15 @@ fun PatientHomeScreen(navController: NavController, modifier: Modifier = Modifie
     }
 }
 
-@Composable
-fun GreetingText() {
-    Text(
-        text = "Welcome Back, Sophia",
-        fontWeight = ExtraBold,
-        fontSize = Heading1,
-        color = DefaultColor
-    )
-}
+//@Composable
+//fun GreetingText() {
+//    Text(
+//        text = "Welcome Back, Sophia",
+//        fontWeight = ExtraBold,
+//        fontSize = Heading1,
+//        color = DefaultColor
+//    )
+//}
 
 @Composable
 fun MissedAssessmentCard(navController: NavController) {

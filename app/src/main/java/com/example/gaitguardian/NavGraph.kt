@@ -17,12 +17,14 @@ import com.example.gaitguardian.screens.patient.AssessmentInfoScreen
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.gaitguardian.screens.patient.VideoCaptureScreen
+import com.example.gaitguardian.viewmodels.PatientViewModel
 
 
 @Composable
 fun NavGraph(
     navController: NavHostController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    patientViewModel: PatientViewModel
 ) {
     NavHost(
         navController = navController,
@@ -32,7 +34,7 @@ fun NavGraph(
         // General Screens here
         composable("start_screen")
         {
-            StartScreen(navController)
+            StartScreen(navController, patientViewModel)
         }
 
         // Clinician-Specific Screens here
@@ -52,7 +54,7 @@ fun NavGraph(
             startDestination = "patient_home_screen",  route = "patient_graph")
         {
             composable("patient_home_screen") {
-                PatientHomeScreen(navController)
+                PatientHomeScreen(navController, patientViewModel)
             }
             composable(
                 route = "assessment_info_screen/{assessmentTitle}",
