@@ -37,7 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.gaitguardian.data.Patient
+import com.example.gaitguardian.data.roomDatabase.patient.Patient
 import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.ui.theme.buttonBackgroundColor
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
@@ -62,7 +62,7 @@ fun ClinicianDetailedPatientViewScreen(
     navController: NavController,
     modifier: Modifier = Modifier
 ) {
-    val patient = Patient("Benny", 18)
+    val patient = Patient(2,"Benny", 18)
 
     var clinicianComments by remember { mutableStateOf("") }
     var isReviewed by remember { mutableStateOf(false) }

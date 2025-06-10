@@ -10,6 +10,10 @@ activityCompose = "1.10.1"
 composeBom = "2024.04.01"
 navigationCompose = "2.9.0"
 vico = "2.1.3"
+roomRuntime = "2.7.1"
+roomCommon = "2.7.1"
+roomKtx = "2.7.1"
+roomCompiler = "2.7.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -31,6 +35,14 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 vico-compose = { group = "com.patrykandpatrick.vico", name = "compose", version.ref = "vico" }
 # For Material 3 theming in Jetpack Compose.
 vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vico" }
+#androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "roomCompiler" }
+#androidx-room-common-jvm = { group = "androidx.room", name = "room-common-jvm", version.ref = "roomCommonJvm" }
+#androidx-room-runtime-android = { group = "androidx.room", name = "room-runtime-android", version.ref = "roomRuntimeAndroid" }
+# Room Database
+androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomRuntime" }
+androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomRuntime" }
+androidx-room-common = { group = "androidx.room", name = "room-common", version.ref = "roomCommon" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "roomKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
