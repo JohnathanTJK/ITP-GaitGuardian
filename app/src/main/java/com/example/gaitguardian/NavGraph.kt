@@ -43,6 +43,7 @@ import com.example.gaitguardian.screens.patient.GaitAssessmentScreen
 import com.example.gaitguardian.screens.patient.PatientHomeScreen
 import com.example.gaitguardian.screens.patient.TugAssessmentScreen
 import com.example.gaitguardian.screens.patient.VideoCaptureScreen
+import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import com.example.gaitguardian.viewmodels.PatientViewModel
 
 
@@ -50,7 +51,8 @@ import com.example.gaitguardian.viewmodels.PatientViewModel
 fun NavGraph(
     navController: NavHostController,
 //    modifier: Modifier = Modifier,
-    patientViewModel: PatientViewModel
+    patientViewModel: PatientViewModel,
+    clinicianViewModel: ClinicianViewModel
 ) {
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -114,7 +116,7 @@ fun NavGraph(
             // General Screens here
             composable("start_screen")
             {
-                StartScreen(navController, patientViewModel)
+                StartScreen(navController, patientViewModel, clinicianViewModel)
             }
             composable("settings_screen")
             {
@@ -126,7 +128,7 @@ fun NavGraph(
             )
             {
                 composable("clinician_home_screen") {
-                    ClinicianHomeScreen(navController)
+                    ClinicianHomeScreen(navController, clinicianViewModel,patientViewModel)
                 }
                 composable("clinician_detailed_patient_view_screen") {
                     ClinicianDetailedPatientViewScreen(navController)

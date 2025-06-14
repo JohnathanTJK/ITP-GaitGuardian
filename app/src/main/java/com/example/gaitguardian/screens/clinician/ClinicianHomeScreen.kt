@@ -25,12 +25,15 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontWeight.Companion.ExtraBold
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
@@ -40,11 +43,15 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.gaitguardian.data.roomDatabase.patient.Patient
 import com.example.gaitguardian.data.roomDatabase.tug.TUGVideo
+import com.example.gaitguardian.ui.theme.DefaultColor
+import com.example.gaitguardian.ui.theme.Heading1
 import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.ui.theme.buttonBackgroundColor
+import com.example.gaitguardian.viewmodels.ClinicianViewModel
+import com.example.gaitguardian.viewmodels.PatientViewModel
 
 @Composable
-fun ClinicianHomeScreen(navController: NavController, modifier: Modifier = Modifier) {
+fun ClinicianHomeScreen(navController: NavController, clinicianViewModel: ClinicianViewModel, patientViewModel: PatientViewModel, modifier: Modifier = Modifier) {
 
     val tugVideos = listOf( //TODO: Replace with actual data
         TUGVideo(1, "Today, 1:30PM", "ON", "High", true),
@@ -60,6 +67,14 @@ fun ClinicianHomeScreen(navController: NavController, modifier: Modifier = Modif
     )
 
     val pendingReviews = tugVideos.count { !it.watchStatus } // Calculate number of videos that are not watched
+    // Start: Patient ViewModel testing
+    val patientInfo by patientViewModel.patient.collectAsState()
+    // End: Patient ViewModel testing
+    // Start: Clinician ViewModel testing
+    val clinicianInfo by clinicianViewModel.clinician.collectAsState()
+
+    Spacer(Modifier.height(30.dp))
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -69,10 +84,22 @@ fun ClinicianHomeScreen(navController: NavController, modifier: Modifier = Modif
         verticalArrangement = Arrangement.spacedBy(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+//        Text(
+//            "Hello, ${patientInfo?.name ?: "User"}",
+//            fontWeight = ExtraBold,
+//            fontSize = Heading1,
+//            color = DefaultColor
+//        )
+//        Text(
+//            "Clinican Name, ${clinicianInfo?.name ?: "User"}",
+//            fontWeight = ExtraBold,
+//            fontSize = Heading1,
+//            color = DefaultColor
+//        )
         // Top Header to indicate Clinician and Patient details
         ClinicianHeader(
-            clinicianName = "Dr. Bob Bobby", // Replace with actual clinician name
-            patient = Patient(id = 2,"Benny", 18), // Replace with actual patient details
+            clinicianName = "Dr. ${clinicianInfo?.name ?: "Clinician"}", // Replace with actual clinician name
+            patient = patientInfo ?: Patient(id = 2, name = "Benny", age = 18),
             pendingReviews = pendingReviews // calculated based on watchStatus
         )
 
@@ -392,10 +419,4 @@ fun ClinicianHeader(
         }
 //    }
     }
-}
-
-@Preview
-@Composable
-fun ClinicianHomeScreenPreview() {
-    ClinicianHomeScreen(navController = rememberNavController())
 }
