@@ -113,6 +113,9 @@ fun VideoCaptureScreen(navController: NavController) {
                                                     Log.d("VideoCapture", "Recording finalized: ${recordEvent.outputResults.outputUri}")
                                                     recording = null
                                                     isRecording = false
+
+                                                    // Navigate to result screen and pass recording time
+                                                    navController.navigate("result_screen/$recordingTime")
                                                 }
 
                                                 else -> {

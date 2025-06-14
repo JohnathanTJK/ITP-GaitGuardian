@@ -43,6 +43,7 @@ import com.example.gaitguardian.screens.patient.AssessmentInfoScreen
 import com.example.gaitguardian.screens.patient.FtfsAssessmentScreen
 import com.example.gaitguardian.screens.patient.GaitAssessmentScreen
 import com.example.gaitguardian.screens.patient.PatientHomeScreen
+import com.example.gaitguardian.screens.patient.ResultScreen
 import com.example.gaitguardian.screens.patient.TugAssessmentScreen
 import com.example.gaitguardian.screens.patient.VideoCaptureScreen
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
@@ -70,6 +71,7 @@ fun NavGraph(
                     popUpTo("start_screen") { inclusive = true }
                 }
             }
+
             "patient" -> {
                 navController.navigate("patient_graph") {
                     popUpTo("start_screen") { inclusive = true }
@@ -82,7 +84,7 @@ fun NavGraph(
         topBar = {
 //            PatientTopBar()
             if (currentDestination != null) {
-                navTopBar(navController, currentDestination)
+                NavTopBar(navController, currentDestination)
             }
         },
         bottomBar = {
@@ -148,7 +150,7 @@ fun NavGraph(
             )
             {
                 composable("clinician_home_screen") {
-                    ClinicianHomeScreen(navController, clinicianViewModel,patientViewModel)
+                    ClinicianHomeScreen(navController, clinicianViewModel, patientViewModel)
                 }
                 composable("clinician_detailed_patient_view_screen") {
                     ClinicianDetailedPatientViewScreen(navController)
@@ -187,15 +189,22 @@ fun NavGraph(
                     VideoCaptureScreen(navController)
 
                 }
+                composable(
+                    route = "result_screen/{time}",
+                    arguments = listOf(navArgument("time") { type = NavType.IntType })
+                ) { backStackEntry ->
+                    val time = backStackEntry.arguments?.getInt("time") ?: 0
+                    ResultScreen(navController = navController, recordingTime = time)
+                }
             }
-
         }
     }
 }
 
+
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-fun navTopBar(navController: NavHostController, currentDestination: String) {
+fun NavTopBar(navController: NavHostController, currentDestination: String) {
     CenterAlignedTopAppBar(
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
             containerColor = Color(0xFFFFF6DD),
