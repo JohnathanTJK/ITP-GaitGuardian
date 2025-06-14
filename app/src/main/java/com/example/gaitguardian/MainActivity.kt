@@ -24,8 +24,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         // Initialize ViewModel with the Factory
-        val patientViewModelFactory = PatientViewModel.PatientViewModelFactory((application as GaitGuardian).patientRepository, (application as GaitGuardian).tugRepository)
-        val patientViewModel = ViewModelProvider(this, patientViewModelFactory).get(PatientViewModel::class.java)
+        val patientViewModelFactory = PatientViewModel.PatientViewModelFactory((application as GaitGuardian).patientRepository, (application as GaitGuardian).tugRepository, (application as GaitGuardian).appPreferencesRepository)
+        val patientViewModel = ViewModelProvider(this, patientViewModelFactory)[PatientViewModel::class.java]
         //TODO: Clinician ViewModel
         setContent {
             GaitGuardianTheme {

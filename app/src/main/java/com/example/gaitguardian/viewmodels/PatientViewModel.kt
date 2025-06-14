@@ -3,6 +3,7 @@ package com.example.gaitguardian.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.gaitguardian.data.roomDatabase.AppPreferencesRepository
 import com.example.gaitguardian.data.roomDatabase.patient.Patient
 import com.example.gaitguardian.data.roomDatabase.patient.PatientRepository
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessmentRepository
@@ -13,7 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class PatientViewModel(private val patientRepository: PatientRepository,private val tugRepository: TUGAssessmentRepository) : ViewModel() {
+class PatientViewModel(private val patientRepository: PatientRepository,private val tugRepository: TUGAssessmentRepository,  private val appPreferencesRepository: AppPreferencesRepository) : ViewModel() {
 
 //    val patient: StateFlow<Patient?> = repository.getPatient
 //        .stateIn(viewModelScope, SharingStarted.Lazily, null)
@@ -43,13 +44,26 @@ class PatientViewModel(private val patientRepository: PatientRepository,private 
 
     //TODO: Add the function to upload the TUG assessment into RoomDb
 
+    // Store Current User
+    fun saveCurrentUserView(currentUser: String) {
+        viewModelScope.launch {
+            appPreferencesRepository.saveCurrentUserView(currentUser)
+        }
+    }
+
+    fun getCurrentUserView(): StateFlow<String> {
+        return appPreferencesRepository.getCurrentUserView()
+            .stateIn(viewModelScope, SharingStarted.Lazily, "")
+    }
+
     // For creating the VM in MainActivity
     class PatientViewModelFactory(private val patientRepository: PatientRepository,
-                                  private val tugRepository: TUGAssessmentRepository) :
+                                  private val tugRepository: TUGAssessmentRepository,
+                                  private val appPreferencesRepository: AppPreferencesRepository) :
         ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(PatientViewModel::class.java)) {
-                @Suppress("UNCHECKED_CAST") return PatientViewModel(patientRepository, tugRepository) as T
+                @Suppress("UNCHECKED_CAST") return PatientViewModel(patientRepository, tugRepository, appPreferencesRepository) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }
