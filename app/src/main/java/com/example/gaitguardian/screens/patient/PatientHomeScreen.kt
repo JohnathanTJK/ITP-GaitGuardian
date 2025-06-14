@@ -68,19 +68,14 @@ fun PatientHomeScreen(
     ) {
         // Start: Patient ViewModel testing
         val patientInfo by patientViewModel.patient.collectAsState()
-        if (patientInfo != null) {
-            Text("Patient name: ${patientInfo!!.name}")
-        } else {
-            Text("Loading patient data...")
-        }
         // End: Patient ViewModel testing
 
-        PatientTopBar(navController)
+//        PatientTopBar()
         Spacer(Modifier.height(30.dp))
 
 //        GreetingText()
         Text(
-            text = "Welcome Back, ${patientInfo!!.name}",
+            "Hello, ${patientInfo?.name ?: "User"}",
             fontWeight = ExtraBold,
             fontSize = Heading1,
             color = DefaultColor
@@ -102,7 +97,7 @@ fun PatientHomeScreen(
         PreviousTimingText()
         Spacer(Modifier.weight(1f))
 
-        HomeIcon(navController)
+//        HomeIcon(navController)
     }
 }
 

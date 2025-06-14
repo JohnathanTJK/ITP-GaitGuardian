@@ -16,10 +16,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-
+// Currently not in use anymore, replaced with topBar in NavGraph's Scaffold :D
 @Composable
-fun PatientTopBar(navController: NavController)  {
-    Row(
+//fun PatientTopBar(navController: NavController)  {
+fun PatientTopBar()  {
+        Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {

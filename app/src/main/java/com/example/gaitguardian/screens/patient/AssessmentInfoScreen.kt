@@ -32,7 +32,9 @@ fun AssessmentInfoScreen(
     ) {
         Column {
             // Top bar
-            PatientTopBar(navController)
+//            PatientTopBar(navController)
+//            PatientTopBar()
+
 
             Spacer(Modifier.height(spacerLarge))
 

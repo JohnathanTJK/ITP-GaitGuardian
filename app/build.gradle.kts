@@ -54,6 +54,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.datastore.core.android)
 //    implementation(libs.androidx.room.compiler)
 //    implementation(libs.androidx.room.common.jvm)
 //    implementation(libs.androidx.room.runtime.android)
@@ -81,4 +82,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.runtime) // Use the latest Room version
     ksp(libs.androidx.room.compiler) // Use KSP for Room code generation
+
+    // Material3 Icons
+    implementation(libs.androidx.material.icons.extended)
 }

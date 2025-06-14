@@ -24,19 +24,19 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         // Initialize ViewModel with the Factory
-        val patientViewModelFactory = PatientViewModel.PatientViewModelFactory((application as GaitGuardian).patientRepository)
+        val patientViewModelFactory = PatientViewModel.PatientViewModelFactory((application as GaitGuardian).patientRepository, (application as GaitGuardian).tugRepository)
         val patientViewModel = ViewModelProvider(this, patientViewModelFactory).get(PatientViewModel::class.java)
         //TODO: Clinician ViewModel
         setContent {
             GaitGuardianTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+//                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     val navController = rememberNavController()
                     NavGraph(
                         navController = navController,
-                        modifier = Modifier.padding(innerPadding),
+//                        modifier = Modifier.padding(innerPadding),
                         patientViewModel = patientViewModel
                     )
-                }
+//                }
             }
         }
     }
