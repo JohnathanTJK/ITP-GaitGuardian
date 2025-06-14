@@ -11,7 +11,9 @@ import com.example.gaitguardian.data.roomDatabase.clinician.ClinicianRepository
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessmentRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class ClinicianViewModel(private val clinicianRepository: ClinicianRepository, private val tugRepository: TUGAssessmentRepository, private val appPreferencesRepository: AppPreferencesRepository) : ViewModel() {
@@ -62,6 +64,23 @@ class ClinicianViewModel(private val clinicianRepository: ClinicianRepository, p
         }
     }
     // Update the TUG Assessment (Notes, Reviewed) etc.
+
+
+    //Datastore Preferences
+    // Store Current User
+    fun saveCurrentUserView(currentUser: String) {
+        viewModelScope.launch {
+            appPreferencesRepository.saveCurrentUserView(currentUser)
+        }
+    }
+
+    val getCurrentUserView: StateFlow<String> = appPreferencesRepository.getCurrentUserView()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
+//    fun getCurrentUserView(): StateFlow<String> {
+//        return appPreferencesRepository.getCurrentUserView()
+//            .stateIn(viewModelScope, SharingStarted.Lazily, "")
+//    }
 
     // For creating the VM in MainActivity
     class ClinicianViewModelFactory(private val clinicianRepository: ClinicianRepository,

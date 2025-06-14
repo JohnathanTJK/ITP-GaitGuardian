@@ -51,10 +51,13 @@ class PatientViewModel(private val patientRepository: PatientRepository,private 
         }
     }
 
-    fun getCurrentUserView(): StateFlow<String> {
-        return appPreferencesRepository.getCurrentUserView()
-            .stateIn(viewModelScope, SharingStarted.Lazily, "")
-    }
+//    fun getCurrentUserView(): StateFlow<String> {
+//        return appPreferencesRepository.getCurrentUserView()
+//            .stateIn(viewModelScope, SharingStarted.Lazily, "")
+//    }
+
+    val currentUserView: StateFlow<String> = appPreferencesRepository.getCurrentUserView()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
     // For creating the VM in MainActivity
     class PatientViewModelFactory(private val patientRepository: PatientRepository,

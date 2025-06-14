@@ -20,6 +20,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -57,6 +59,24 @@ fun NavGraph(
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination?.route
+    val currentUserView by clinicianViewModel.getCurrentUserView.collectAsState(initial = "")
+
+    // Upon app start,
+    // check what is the saved current view and load directly into the graph
+    LaunchedEffect(currentUserView) {
+        when (currentUserView) {
+            "clinician" -> {
+                navController.navigate("clinician_graph") {
+                    popUpTo("start_screen") { inclusive = true }
+                }
+            }
+            "patient" -> {
+                navController.navigate("patient_graph") {
+                    popUpTo("start_screen") { inclusive = true }
+                }
+            }
+        }
+    }
 
     Scaffold(modifier = Modifier.fillMaxSize(),
         topBar = {
