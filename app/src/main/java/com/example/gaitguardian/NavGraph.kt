@@ -16,6 +16,7 @@ import com.example.gaitguardian.screens.patient.TugAssessmentScreen
 import com.example.gaitguardian.screens.patient.AssessmentInfoScreen
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.example.gaitguardian.screens.patient.ResultScreen
 import com.example.gaitguardian.screens.patient.VideoCaptureScreen
 import com.example.gaitguardian.viewmodels.PatientViewModel
 
@@ -80,8 +81,13 @@ fun NavGraph(
                 VideoCaptureScreen(navController)
 
             }
+            composable(
+                route = "result_screen/{time}",
+                arguments = listOf(navArgument("time") { type = NavType.IntType })
+            ) { backStackEntry ->
+                val time = backStackEntry.arguments?.getInt("time") ?: 0
+                ResultScreen(navController = navController, recordingTime = time)
+            }
         }
-
-
     }
 }
