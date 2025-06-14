@@ -6,12 +6,16 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.gaitguardian.data.roomDatabase.patient.Patient
 import com.example.gaitguardian.data.roomDatabase.patient.PatientDao
+import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessment
+import com.example.gaitguardian.data.roomDatabase.tug.TugDao
 
 // TODO: entities = [Patient::class, TUGAssessment::class, TUGVideo::class] etc. if necessary
-@Database(entities = [Patient::class], version = 1)
+//  version number need to update if schema changes
+@Database(entities = [Patient::class, TUGAssessment::class], version = 1)
 abstract class GaitGuardianRoomDatabase : RoomDatabase() {
 
     abstract fun patientDao(): PatientDao
+    abstract fun tugDao(): TugDao
     // abstract fun //TODO: Add other DAOs here
 
     companion object {
@@ -24,7 +28,7 @@ abstract class GaitGuardianRoomDatabase : RoomDatabase() {
                     context.applicationContext,
                     GaitGuardianRoomDatabase::class.java,
                     "GaitGuardian_database"
-                ).fallbackToDestructiveMigration().build()
+                ).fallbackToDestructiveMigration(true).build()
                 INSTANCE = instance
                 instance
             }

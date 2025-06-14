@@ -8,13 +8,17 @@ import androidx.room.PrimaryKey
 data class TUGAssessment(
     @PrimaryKey(autoGenerate = true)
     val testId: Int,
-
+    //TODO: Need to check again if it's okay to link it to patientID,
+    // because technically without ID it should still work by pulling out all the data
+    // if it all belongs to a single patient
     @ColumnInfo(name = "patientId")
     val patientId: Int,
     @ColumnInfo(name = "dateTime")
     val dateTime: String,
     @ColumnInfo(name = "medication")
     val medication: String,
+    @ColumnInfo(name = "gaitFeatures")
+    val gaitFeatures: String,
     @ColumnInfo(name = "severity")
     val severity: String,
     @ColumnInfo(name = "videoDuration")
