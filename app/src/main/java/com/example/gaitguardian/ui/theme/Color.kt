@@ -25,11 +25,10 @@ val progressRed = Color(0xFFE23C3C)
 val progressMarkerColor = Color.White
 
 // Font sizes
-val languageFontSize = 20.sp
 val Heading1  = 25.sp // suitable for emphasis, buttons
 val Heading2 = 20.sp
 val subheading1 = 18.sp
-val body = 15.sp
+val body = 16.sp
 
 // Sizes & padding
 val spacerLarge = 30.dp
@@ -40,6 +39,5 @@ val boxShape = RoundedCornerShape(8.dp)
 val progressBarHeight = 24.dp
 val progressMarkerWidth = 2.dp
 val progressMarkerOffset = 210.dp
-val homeIconSize = 50.dp
-val homeIconPadding = 8.dp
+val homeIconSize = 40.dp
 val ButtonActive = Color(0xFFFFB703)
