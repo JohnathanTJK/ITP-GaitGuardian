@@ -69,11 +69,11 @@ for i, name in enumerate(keypoint_names):
 X = np.array(X)
 y = np.array(y)
 
-print("✅ Dataset ready:")
+print("Dataset ready:")
 print("X shape:", X.shape)
 print("y shape:", y.shape)
 
 # --- Save arrays to disk ---
 np.save("./lstm/X.npy", X)
 np.save("./lstm/y.npy", y)
-print("✅ Saved X.npy and y.npy")
+print("Saved X.npy and y.npy")
