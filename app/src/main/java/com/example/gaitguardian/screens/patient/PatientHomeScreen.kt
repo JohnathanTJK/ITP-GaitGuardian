@@ -48,6 +48,7 @@ import com.example.gaitguardian.viewmodels.PatientViewModel
 import java.time.LocalDate
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import com.example.gaitguardian.screens.patient.LatestAssessmentResultsCard
 
 
 @Composable
@@ -81,7 +82,7 @@ fun PatientHomeScreen(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = patientInfo?.name ?: "Sophia Tan",
+                    text = patientInfo?.name ?: "",
                     fontWeight = ExtraBold,
                     fontSize = Heading1,
                     color = Color.Black
@@ -89,7 +90,7 @@ fun PatientHomeScreen(
             }
 
             MissedAssessmentCard(navController)
-            LatestAssessmentResultsCard()
+
         }
 
         HomeIcon(navController)
@@ -168,62 +169,19 @@ fun MissedAssessmentCard(navController: NavController) {
                     )
                 }
             }
-        }
-    }
-
-}
-@Composable
-fun LatestAssessmentResultsCard(
-    previousTiming: Int = 13, // example previous timing in seconds
-    latestTiming: Int = 15    // example latest timing in seconds
-) {
-    val maxVal = maxOf(previousTiming, latestTiming, 30) // ensure some max for scaling
-
-    Card(
-        colors = CardDefaults.cardColors(containerColor = cardBackgroundColor)
-    ) {
-        Column {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(25.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Latest Assessment Results",
-                    fontSize = subheading1,
-                    color = DefaultColor,
-                    textAlign = TextAlign.Center
-                )
-            }
-
-            // Row for Severity and Medication status boxes
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 12.dp)
-            ) {
-                StatusBox(title = "Severity", value = "2", modifier = Modifier.weight(1f))
-                StatusBox(title = "Medication", value = "ON", modifier = Modifier.weight(1f))
-            }
-
-            //Graphical representation of assessment timings
-            HorizontalDivider(thickness = 1.dp, color = Color.LightGray)
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            HorizontalProgressBar(
-                previousValue = 12f,
-                latestValue = 18f,
-                maxValue = 30f,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-
 
         }
     }
+    LatestAssessmentResultsCard(
+        previousTiming = 15,
+        latestTiming = 20,
+        medicationOn = true,
+        showDivider = false,
+        modifier = Modifier.fillMaxWidth()
+    )
+
 }
+
 
 @Composable
 fun HomeIcon(navController: NavController) {
@@ -246,79 +204,5 @@ fun HomeIcon(navController: NavController) {
 
 }
 
-@Composable
-fun StatusBox(title: String, value: String, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .background(severityBoxColor, boxShape)
-            .padding(12.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally,verticalArrangement = Arrangement.Center) {
-            Text(
-                text = title,
-                fontWeight = ExtraBold,
-                color = DefaultColor,
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = value,
-                fontSize = Heading1,
-                color = DefaultColor,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
-
-@Composable
-fun HorizontalProgressBar(
-    previousValue: Float,
-    latestValue: Float,
-    maxValue: Float = 30f,
-    modifier: Modifier = Modifier
-) {
-    val totalFraction = (previousValue + latestValue) / maxValue
-    val prevFraction = previousValue / maxValue
-    val latestFraction = latestValue / maxValue
-
-    Column(modifier = modifier) {
-        // Progress bar container
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(32.dp)
-                .background(Color.LightGray, RoundedCornerShape(8.dp))
-        ) {
-            // Previous segment
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .fillMaxWidth(prevFraction)
-                    .background(Color.Gray, RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp))
-            )
-            // Latest segment
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .fillMaxWidth(latestFraction)
-                    .background(Color(0xFF4CAF50), RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp))
-                    .align(Alignment.CenterStart)
-                    .offset(x = with(LocalDensity.current) { (prevFraction * (LocalConfiguration.current.screenWidthDp.dp.toPx())).toDp() })
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Labels below bar
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text("Prev: ${previousValue.toInt()}s", color = Color.Gray)
-            Text("Now: ${latestValue.toInt()}s", color = Color(0xFF4CAF50))
-        }
-    }
-}
 
 
