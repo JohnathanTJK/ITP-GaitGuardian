@@ -1,0 +1,184 @@
+package com.example.gaitguardian.screens
+
+import android.util.Log
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.SwitchAccount
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.navigation.NavController
+import com.example.gaitguardian.ui.theme.bgColor
+
+@Composable
+fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) {
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .fillMaxSize()
+            .background(bgColor)
+    ) {
+        var showLanguageDialog by remember { mutableStateOf(false) }
+
+        val availableLanguages = listOf(
+            "en" to "English",
+            "bm" to "Malay",
+            "in" to "Indian",
+            "zh" to "Chinese"
+        )
+
+        val currentLanguage = "en" // To get from DataStore
+
+        var isLoading by remember { mutableStateOf(false) }
+        Surface(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+                .shadow(8.dp, shape = MaterialTheme.shapes.medium),
+            color = Color(0xFFFFC279),
+            shape = MaterialTheme.shapes.medium,
+            shadowElevation = 8.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp)
+            ) {
+                Text(
+                    text = "General",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 5.dp),
+                    color = Color.Black
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = {
+                            navController.navigate("start_screen")
+                        })
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.SwitchAccount,
+                        contentDescription = "title",
+                        tint = Color.Black
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(text = "Switch to Clinician View", fontSize = 18.sp, color = Color.Black)
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showLanguageDialog = true }
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Language,
+                        contentDescription = "Language",
+                        tint = Color.Black
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(text = "Change Language", fontSize = 18.sp, color = Color.Black)
+                }
+
+                if (showLanguageDialog) {
+                    LanguagePickerDialog(
+                        availableLanguages = availableLanguages,
+                        currentLanguageCode = currentLanguage,
+                        onDismissRequest = { showLanguageDialog = false },
+                        onLanguageSelected = { selectedLangCode ->
+                            // TODO: To save into DataStore first,
+                            //  update language after main functionality completed
+                            Log.d("SettingsScreen", "Selected language: $selectedLangCode")
+                        }
+                    )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@Composable
+fun LanguagePickerDialog(
+    availableLanguages: List<Pair<String, String>>, // Pair<languageCode, languageDisplayName>
+    currentLanguageCode: String,
+    onDismissRequest: () -> Unit,
+    onLanguageSelected: (String) -> Unit,
+) {
+    Dialog(onDismissRequest = onDismissRequest) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = Color.White,
+            tonalElevation = 8.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text("Select Language", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                val currentLanguageName = availableLanguages.firstOrNull { it.first == currentLanguageCode }?.second ?: currentLanguageCode
+                Text("Current Language: $currentLanguageName", fontSize = 16.sp)
+                Spacer(Modifier.height(16.dp))
+                availableLanguages.forEach { (code, displayName) ->
+                    Text(
+                        text = displayName,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onLanguageSelected(code)
+                                onDismissRequest()
+                            }
+                            .padding(12.dp),
+                        fontSize = 18.sp
+                    )
+                }
+                Spacer(Modifier.height(16.dp))
+                Button(
+                    onClick = onDismissRequest,
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Text("Cancel")
+                }
+            }
+        }
+    }
+
+}
