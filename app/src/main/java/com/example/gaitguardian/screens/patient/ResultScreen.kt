@@ -30,20 +30,20 @@ fun ResultScreen(
         modifier = modifier
             .fillMaxSize()
             .background(bgColor),
-        verticalArrangement = Arrangement.SpaceBetween  // space out content
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
         Column {
-            PatientTopBar(navController)
             Spacer(modifier = Modifier.height(16.dp))
             LatestAssessmentResultsCard(
                 latestTiming = recordingTime,
                 medicationOn = true,
-                showMedicationToggle = true
+                showMedicationToggle = true,
+                modifier = Modifier.padding(horizontal = 16.dp)
+
             )
         }
 
-        // Home icon pinned at bottom
-        HomeIcon(navController)
+
     }
 }
 

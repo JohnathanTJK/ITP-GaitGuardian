@@ -63,8 +63,6 @@ fun PatientHomeScreen(
             .fillMaxSize()
             .background(bgColor)
     ) {
-        PatientTopBar(navController)
-
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -82,7 +80,7 @@ fun PatientHomeScreen(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = patientInfo?.name ?: "",
+                    text = patientInfo?.name ?: "Sophia Tan",
                     fontWeight = ExtraBold,
                     fontSize = Heading1,
                     color = Color.Black
