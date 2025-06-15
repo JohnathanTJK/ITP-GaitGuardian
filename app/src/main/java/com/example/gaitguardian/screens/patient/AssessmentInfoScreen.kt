@@ -13,15 +13,17 @@ import androidx.compose.ui.text.font.FontWeight.Companion.ExtraBold
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.gaitguardian.ui.theme.*
+import com.example.gaitguardian.viewmodels.PatientViewModel
 
 @Composable
 fun AssessmentInfoScreen(
     navController: NavController,
     assessmentTitle: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    patientViewModel: PatientViewModel
 ) {
-    var medicationStatus by remember { mutableStateOf("") }
-    var comments by remember { mutableStateOf("") }
+    val medicationStatus by patientViewModel.medicationStatus.collectAsState()  // Observe ViewModel state
+    val comments by patientViewModel.assessmentComment.collectAsState()
 
     Column(
         modifier = modifier
@@ -31,26 +33,28 @@ fun AssessmentInfoScreen(
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         Column {
-            // Top bar
-//            PatientTopBar(navController)
-//            PatientTopBar()
-
 
             Spacer(Modifier.height(spacerLarge))
 
             Text(
                 assessmentTitle,
-                style = MaterialTheme.typography.headlineSmall
+                style = MaterialTheme.typography.headlineSmall,
+                color = Color.Black  // Set text color to black
             )
 
             Spacer(Modifier.height(24.dp))
 
-            Text("Tag your medication status", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Tag your medication status",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.Black
+            )
             Spacer(Modifier.height(8.dp))
 
             Text(
                 "Please tag your medication state before starting the test. This helps us understand how your medication affects your mobility.",
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Black
             )
 
             Spacer(Modifier.height(16.dp))
@@ -59,13 +63,13 @@ fun AssessmentInfoScreen(
                 MedicationStatusButton(
                     text = "ON",
                     isSelected = medicationStatus == "ON",
-                    onClick = { medicationStatus = "ON" },
+                    onClick = { patientViewModel.setMedicationStatus("ON") },
                     modifier = Modifier.weight(1f)
                 )
                 MedicationStatusButton(
                     text = "OFF",
                     isSelected = medicationStatus == "OFF",
-                    onClick = { medicationStatus = "OFF" },
+                    onClick = { patientViewModel.setMedicationStatus("OFF") },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -74,11 +78,12 @@ fun AssessmentInfoScreen(
 
             OutlinedTextField(
                 value = comments,
-                onValueChange = { comments = it },
-                placeholder = { Text("Additional comments") },
+                onValueChange = { patientViewModel.setAssessmentComment(it) },
+                placeholder = { Text("Additional comments", color = Color.Black.copy(alpha = 0.5f)) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp)
+                    .height(120.dp),
+                textStyle = LocalTextStyle.current.copy(color = Color.Black)
             )
         }
 
@@ -113,6 +118,6 @@ fun MedicationStatusButton(
         shape = RoundedCornerShape(16.dp),
         modifier = modifier
     ) {
-        Text(text)
+        Text(text, color = Color.Black)
     }
 }

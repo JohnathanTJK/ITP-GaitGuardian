@@ -37,9 +37,7 @@ fun ResultScreen(
             LatestAssessmentResultsCard(
                 latestTiming = recordingTime,
                 medicationOn = true,
-                showMedicationToggle = true,
-                modifier = Modifier.padding(horizontal = 16.dp)
-
+                showMedicationToggle = true
             )
         }
 
@@ -145,8 +143,9 @@ fun LatestAssessmentResultsCard(
                     onClick = { isMedicationOn = !isMedicationOn },
                     colors = ButtonDefaults.buttonColors(containerColor = buttonBackgroundColor),
                     modifier = Modifier
-                        .wrapContentWidth()
-                        .padding(vertical = 8.dp),
+                        .fillMaxWidth()
+                        .height(70.dp)
+                        .padding(vertical = 12.dp),
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
