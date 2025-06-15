@@ -23,6 +23,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -60,21 +63,28 @@ fun NavGraph(
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination?.route
+
     val currentUserView by clinicianViewModel.getCurrentUserView.collectAsState(initial = "")
+    // to track if the initial navigation already happened
+    var hasNavigated by rememberSaveable {mutableStateOf(false)}
 
     // Upon app start,
     // check what is the saved current view and load directly into the graph
     LaunchedEffect(currentUserView) {
-        when (currentUserView) {
-            "clinician" -> {
-                navController.navigate("clinician_graph") {
-                    popUpTo("start_screen") { inclusive = true }
+        if(!hasNavigated){
+            when (currentUserView) {
+                "clinician" -> {
+                    navController.navigate("clinician_graph") {
+                        popUpTo("start_screen") { inclusive = true }
+                    }
+                    hasNavigated = true
                 }
-            }
 
-            "patient" -> {
-                navController.navigate("patient_graph") {
-                    popUpTo("start_screen") { inclusive = true }
+                "patient" -> {
+                    navController.navigate("patient_graph") {
+                        popUpTo("start_screen") { inclusive = true }
+                    }
+                    hasNavigated = true
                 }
             }
         }
@@ -218,7 +228,10 @@ fun NavTopBar(navController: NavHostController, currentDestination: String) {
             )
         },
         navigationIcon = {
-            if (currentDestination != "start_screen") {
+            if (currentDestination != "start_screen" &&
+                currentDestination != "patient_home_screen" &&
+                currentDestination != "clinician_home_screen"
+                ) {
                 IconButton(onClick = { navController.popBackStack() }) {
                     Icon(
                         imageVector = Icons.Default.ArrowBackIosNew,
