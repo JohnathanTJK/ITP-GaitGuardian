@@ -31,7 +31,8 @@ abstract class GaitGuardianRoomDatabase : RoomDatabase() {
                     context.applicationContext,
                     GaitGuardianRoomDatabase::class.java,
                     "GaitGuardian_database"
-                ).fallbackToDestructiveMigration(true).build()
+//                ).fallbackToDestructiveMigration(true).build()
+                ).fallbackToDestructiveMigration().build()
                 INSTANCE = instance
                 instance
             }

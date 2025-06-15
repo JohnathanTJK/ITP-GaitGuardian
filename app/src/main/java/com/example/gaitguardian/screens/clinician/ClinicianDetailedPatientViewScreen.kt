@@ -131,6 +131,20 @@ fun ClinicianDetailedPatientViewScreen(
                     }
 
                     JetpackComposeBasicLineChart()
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Button(
+                            onClick = { navController.navigate("performance_screen") },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = buttonBackgroundColor
+                            )
+                        ) {
+                            Text("View Detailed Graph")
+                        }
+                    }
                 }
             Spacer(modifier = Modifier.height(16.dp))
             TUGsubTasksList()

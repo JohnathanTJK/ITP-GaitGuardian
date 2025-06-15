@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Button
@@ -75,44 +77,84 @@ fun ClinicianHomeScreen(navController: NavController, clinicianViewModel: Clinic
 
     Spacer(Modifier.height(30.dp))
 
-    Column(
+//    Column(
+//        modifier = modifier
+//            .fillMaxSize()
+//            .fillMaxWidth()
+//            .background(bgColor)
+//            .verticalScroll(rememberScrollState())
+//            .padding(16.dp),
+//        verticalArrangement = Arrangement.spacedBy(24.dp),
+//        horizontalAlignment = Alignment.CenterHorizontally
+//    ) {
+////        Text(
+////            "Hello, ${patientInfo?.name ?: "User"}",
+////            fontWeight = ExtraBold,
+////            fontSize = Heading1,
+////            color = DefaultColor
+////        )
+////        Text(
+////            "Clinican Name, ${clinicianInfo?.name ?: "User"}",
+////            fontWeight = ExtraBold,
+////            fontSize = Heading1,
+////            color = DefaultColor
+////        )
+//        // Top Header to indicate Clinician and Patient details
+//        ClinicianHeader(
+//            clinicianName = "Dr. ${clinicianInfo?.name ?: "Clinician"}", // Replace with actual clinician name
+//            patient = patientInfo ?: Patient(id = 2, name = "Benny", age = 18),
+//            pendingReviews = pendingReviews // calculated based on watchStatus
+//        )
+//
+//        // Overview showing total number of test and pending reviews
+//        VideoReviewsSummaryCard(tugVideos.count(), pendingReviews)
+//
+//        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+//            Text("Patient's Assessment Records", fontSize = 18.sp, fontWeight = FontWeight.Medium)
+//            HorizontalDivider(thickness = 0.5.dp, color = Color(0xFF718096))
+//            // LazyColumn displaying the list of TUG videos done by the patient
+//            TUGVideoList(navController, tugVideos = tugVideos)
+//        }
+//    }
+    LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .fillMaxWidth()
             .background(bgColor)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-//        Text(
-//            "Hello, ${patientInfo?.name ?: "User"}",
-//            fontWeight = ExtraBold,
-//            fontSize = Heading1,
-//            color = DefaultColor
-//        )
-//        Text(
-//            "Clinican Name, ${clinicianInfo?.name ?: "User"}",
-//            fontWeight = ExtraBold,
-//            fontSize = Heading1,
-//            color = DefaultColor
-//        )
-        // Top Header to indicate Clinician and Patient details
-        ClinicianHeader(
-            clinicianName = "Dr. ${clinicianInfo?.name ?: "Clinician"}", // Replace with actual clinician name
-            patient = patientInfo ?: Patient(id = 2, name = "Benny", age = 18),
-            pendingReviews = pendingReviews // calculated based on watchStatus
-        )
+        item {
+            ClinicianHeader(
+                clinicianName = "Dr. ${clinicianInfo?.name ?: "Clinician"}",
+                patient = patientInfo ?: Patient(id = 2, name = "Benny", age = 18),
+                pendingReviews = pendingReviews
+            )
+        }
 
-        // Overview showing total number of test and pending reviews
-        VideoReviewsSummaryCard(tugVideos.count(), pendingReviews)
+        item {
+            VideoReviewsSummaryCard(tugVideos.count(), pendingReviews)
+        }
 
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Patient's Assessment Records", fontSize = 18.sp, fontWeight = FontWeight.Medium)
-            HorizontalDivider(thickness = 0.5.dp, color = Color(0xFF718096))
-            // LazyColumn displaying the list of TUG videos done by the patient
-            TUGVideoList(navController, tugVideos = tugVideos)
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Patient's Assessment Records", fontSize = 18.sp, fontWeight = FontWeight.Medium)
+                HorizontalDivider(thickness = 0.5.dp, color = Color(0xFF718096))
+            }
+        }
+
+        items(tugVideos) { video ->
+            TUGVideoItem(
+                navController,
+                testId = video.testId,
+                dateTime = video.dateTime,
+                medication = video.medication,
+                severity = video.severity,
+                watchStatus = if (video.watchStatus) "Watched" else "Pending"
+            )
         }
     }
+
 }
 
 @Composable
