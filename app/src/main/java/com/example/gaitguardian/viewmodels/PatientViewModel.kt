@@ -56,6 +56,22 @@ class PatientViewModel(private val patientRepository: PatientRepository,private 
 //            .stateIn(viewModelScope, SharingStarted.Lazily, "")
 //    }
 
+    // Medication status
+    private val _medicationStatus = MutableStateFlow("OFF")
+    val medicationStatus: StateFlow<String> = _medicationStatus
+
+    fun setMedicationStatus(status: String) {
+        _medicationStatus.value = status
+    }
+
+    // Assessment comment
+    private val _assessmentComment = MutableStateFlow("")
+    val assessmentComment: StateFlow<String> = _assessmentComment
+
+    fun setAssessmentComment(comment: String) {
+        _assessmentComment.value = comment
+    }
+
     val currentUserView: StateFlow<String> = appPreferencesRepository.getCurrentUserView()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
