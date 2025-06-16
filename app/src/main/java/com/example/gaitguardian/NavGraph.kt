@@ -42,6 +42,7 @@ import com.example.gaitguardian.screens.SettingsScreen
 import com.example.gaitguardian.screens.StartScreen
 import com.example.gaitguardian.screens.clinician.ClinicianDetailedPatientViewScreen
 import com.example.gaitguardian.screens.clinician.ClinicianHomeScreen
+import com.example.gaitguardian.screens.clinician.PerformanceScreen
 import com.example.gaitguardian.screens.patient.AssessmentInfoScreen
 import com.example.gaitguardian.screens.patient.FtfsAssessmentScreen
 import com.example.gaitguardian.screens.patient.GaitAssessmentScreen
@@ -165,6 +166,10 @@ fun NavGraph(
                 composable("clinician_detailed_patient_view_screen") {
                     ClinicianDetailedPatientViewScreen(navController)
                 }
+                composable("performance_screen")
+                {
+                    PerformanceScreen()
+                }
             }
 
             // Patient-Specific Screens here
@@ -182,6 +187,7 @@ fun NavGraph(
                     AssessmentInfoScreen(
                         navController = navController,
                         modifier = Modifier,
+                        patientViewModel = patientViewModel,
                         assessmentTitle = backStackEntry.arguments?.getString("assessmentTitle")
                             ?: "Assessment"
                     )
@@ -235,7 +241,8 @@ fun NavTopBar(navController: NavHostController, currentDestination: String) {
                 IconButton(onClick = { navController.popBackStack() }) {
                     Icon(
                         imageVector = Icons.Default.ArrowBackIosNew,
-                        contentDescription = "Back"
+                        contentDescription = "Back",
+                        tint = Color.Black,
                     )
                 }
             }
@@ -248,6 +255,7 @@ fun NavTopBar(navController: NavHostController, currentDestination: String) {
                     imageVector = Icons.Default.Settings,
                     contentDescription = "Settings",
                     modifier = Modifier.size(28.dp),
+                    tint = Color.Black
                 )
             }
         }
