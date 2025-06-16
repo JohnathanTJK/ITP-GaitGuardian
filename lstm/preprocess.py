@@ -37,6 +37,7 @@ for img, kps in zip(imgnames, keypoints):
 # --- Create sequences and labels ---
 X = []
 y = []
+video_ids_lstm = []
 for vid, frames in video_frames.items():
     if vid not in label_map:
         continue
@@ -49,6 +50,7 @@ for vid, frames in video_frames.items():
         sequence = np.vstack([sequence, padding])
     X.append(sequence)
     y.append(label)
+    video_ids_lstm.append(vid)  # save vid order here
     
 keypoint_names = [
     "Nose", "LEye", "REye", "LEar", "REar",
@@ -62,8 +64,12 @@ frame = X[0][0]  # first video, first frame
 
 for i, name in enumerate(keypoint_names):
     x = frame[2*i]
-    y = frame[2*i + 1]
-    print(f"{name}: x={x:.3f}, y={y:.3f}")
+    y_coord = frame[2*i + 1]  # renamed to avoid conflict
+    print(f"{name}: x={x:.3f}, y={y_coord:.3f}")
+
+
+print("Raw y content (first 5):", y[:5])
+print("Raw y type:", type(y))
 
 
 X = np.array(X)
@@ -72,8 +78,16 @@ y = np.array(y)
 print("Dataset ready:")
 print("X shape:", X.shape)
 print("y shape:", y.shape)
+print("First 5 labels:", y[:5])
+
 
 # --- Save arrays to disk ---
 np.save("./lstm/X.npy", X)
 np.save("./lstm/y.npy", y)
 print("Saved X.npy and y.npy")
+
+# Save video IDs for alignment with features CSV
+with open("./lstm/video_ids_lstm.txt", "w") as f:
+    for vid in video_ids_lstm:
+        f.write(vid + "\n")
+print("Saved video_ids_lstm.txt")
