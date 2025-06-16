@@ -153,9 +153,9 @@ fun LanguagePickerDialog(
                 .padding(20.dp)
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
-                Text("Select Language", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                Text("Select Language", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color.Black)
                 val currentLanguageName = availableLanguages.firstOrNull { it.first == currentLanguageCode }?.second ?: currentLanguageCode
-                Text("Current Language: $currentLanguageName", fontSize = 16.sp)
+                Text("Current Language: $currentLanguageName", fontSize = 16.sp, color = Color.Black)
                 Spacer(Modifier.height(16.dp))
                 availableLanguages.forEach { (code, displayName) ->
                     Text(
@@ -167,7 +167,8 @@ fun LanguagePickerDialog(
                                 onDismissRequest()
                             }
                             .padding(12.dp),
-                        fontSize = 18.sp
+                        fontSize = 18.sp,
+                        color = Color.Black
                     )
                 }
                 Spacer(Modifier.height(16.dp))
@@ -175,7 +176,7 @@ fun LanguagePickerDialog(
                     onClick = onDismissRequest,
                     modifier = Modifier.align(Alignment.End)
                 ) {
-                    Text("Cancel")
+                    Text("Cancel", color = Color.Black)
                 }
             }
         }

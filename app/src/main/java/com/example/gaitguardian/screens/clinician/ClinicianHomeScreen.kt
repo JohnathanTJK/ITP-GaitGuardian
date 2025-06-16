@@ -110,7 +110,7 @@ fun ClinicianHomeScreen(navController: NavController, clinicianViewModel: Clinic
 //        VideoReviewsSummaryCard(tugVideos.count(), pendingReviews)
 //
 //        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-//            Text("Patient's Assessment Records", fontSize = 18.sp, fontWeight = FontWeight.Medium)
+//            Text("Patient's Assessment Records", fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color(0xFF2D3748))
 //            HorizontalDivider(thickness = 0.5.dp, color = Color(0xFF718096))
 //            // LazyColumn displaying the list of TUG videos done by the patient
 //            TUGVideoList(navController, tugVideos = tugVideos)
@@ -138,7 +138,7 @@ fun ClinicianHomeScreen(navController: NavController, clinicianViewModel: Clinic
 
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Patient's Assessment Records", fontSize = 18.sp, fontWeight = FontWeight.Medium)
+                Text("Patient's Assessment Records", fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color(0xFF2D3748))
                 HorizontalDivider(thickness = 0.5.dp, color = Color(0xFF718096))
             }
         }
@@ -267,7 +267,8 @@ fun TUGVideoItem(
                         append(medication)
                     }
                 },
-                fontSize = 14.sp
+                fontSize = 14.sp,
+                color = Color.Black
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -278,7 +279,8 @@ fun TUGVideoItem(
                         append(severity)
                     }
                 },
-                fontSize = 14.sp
+                fontSize = 14.sp,
+                color = Color.Black
             )
             Spacer(modifier = Modifier.height(8.dp))
             Button(

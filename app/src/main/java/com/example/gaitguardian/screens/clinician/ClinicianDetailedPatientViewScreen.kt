@@ -112,7 +112,8 @@ fun ClinicianDetailedPatientViewScreen(
             Text(
                 "TUG TEST #5",
                 fontSize = 16.sp,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                color = Color.Black
             )
         }
                 Card(
@@ -126,7 +127,8 @@ fun ClinicianDetailedPatientViewScreen(
                         contentAlignment = Alignment.Center
                     ){
                         Text("Overall Performance Graph", fontWeight = FontWeight.SemiBold,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
+                            color = Color.Black
                         )
                     }
 
@@ -142,7 +144,7 @@ fun ClinicianDetailedPatientViewScreen(
                                 containerColor = buttonBackgroundColor
                             )
                         ) {
-                            Text("View Detailed Graph")
+                            Text("View Detailed Graph", color = Color.Black)
                         }
                     }
                 }
@@ -150,7 +152,7 @@ fun ClinicianDetailedPatientViewScreen(
             TUGsubTasksList()
             Spacer(modifier = Modifier.height(16.dp))
             Column{
-                Text("Clinician Notes:", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Text("Clinician Notes:", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
                 OutlinedTextField(
                     value = clinicianComments,
                     onValueChange = { clinicianComments = it },
@@ -167,15 +169,17 @@ fun ClinicianDetailedPatientViewScreen(
                 )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(top = 16.dp)
+                    horizontalArrangement = Arrangement.SpaceAround,
+                    modifier = Modifier.padding(top = 16.dp).fillMaxWidth()
                 ) {
                     Checkbox(
                         checked = isReviewed,
                         onCheckedChange = { isReviewed = it }
                     )
-                    Text(text = "Mark as Reviewed")
-                    Spacer(modifier = Modifier.weight(1f))
+                    Text(text = "Mark as Reviewed", color = Color.Black)
+//                    Spacer(modifier = Modifier.weight(1f))
                     Button(
+                        shape = RoundedCornerShape(10.dp),
                         onClick = {
                             //TODO: Update Database
                             statusUpdateMsg = "Status Updated Successfully."
@@ -278,7 +282,7 @@ fun TUGsubTasksList(modifier: Modifier = Modifier) {
                         horizontalArrangement = Arrangement.SpaceBetween
                     )
                     {
-                        Text(task)
+                        Text(task, color = Color.Black)
                         Card(
                             modifier = Modifier
                                 .height(24.dp)

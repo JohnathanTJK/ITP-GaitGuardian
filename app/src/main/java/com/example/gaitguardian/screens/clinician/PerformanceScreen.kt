@@ -12,7 +12,9 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.gaitguardian.ui.theme.bgColor
 
 @Composable
 fun PerformanceScreen() {
@@ -41,8 +44,10 @@ fun PerformanceScreen() {
 
     Column(
         modifier = Modifier
+            .background(bgColor)
             .fillMaxSize()
             .padding(16.dp)
+
     ) {
 
         TaskDropdownFilter(
@@ -68,8 +73,10 @@ fun PerformanceChart(
         modifier = modifier.background(Color.LightGray),
         contentAlignment = Alignment.Center
     ) {
-        Text("TEMPORARY PLACEHOLDER")
-        Text("Chart for: $selectedTask")
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("TEMPORARY PLACEHOLDER")
+            Text("Chart for: $selectedTask")
+        }
     }
 }
 
@@ -101,11 +108,20 @@ fun TaskDropdownFilter(
             value = selectedTask,
             onValueChange = {},
             readOnly = true,
-            label = { Text("Filter by Task") },
+            label = { Text("Filter by Task", color = Color.DarkGray) },
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
             },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black,
+                focusedLabelColor = Color.DarkGray,
+                unfocusedLabelColor = Color.DarkGray,
+                focusedBorderColor = Color.Gray,
+                unfocusedBorderColor = Color.LightGray
+            ),
             modifier = Modifier
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
                 .fillMaxWidth()
         )
 
@@ -119,7 +135,7 @@ fun TaskDropdownFilter(
                     onClick = {
                         onTaskSelected(task)
                         expanded = false
-                    }
+                    },
                 )
             }
         }
