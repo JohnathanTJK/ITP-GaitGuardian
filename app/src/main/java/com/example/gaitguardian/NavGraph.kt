@@ -1,5 +1,6 @@
 package com.example.gaitguardian
 
+import ManageVideoPrivacyScreen
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -24,6 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -61,6 +63,8 @@ fun NavGraph(
     patientViewModel: PatientViewModel,
     clinicianViewModel: ClinicianViewModel
 ) {
+    val saveVideos by patientViewModel.saveVideos.collectAsState()
+    var showPrivacyDialog by remember { mutableStateOf(false) }
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination?.route
@@ -151,9 +155,12 @@ fun NavGraph(
             {
                 StartScreen(navController, patientViewModel, clinicianViewModel)
             }
-            composable("settings_screen")
-            {
-                SettingsScreen(navController)
+            composable("settings_screen") {
+                SettingsScreen(
+                    navController = navController,
+                    patientViewModel = patientViewModel,
+                    isClinician = currentUserView == "clinician"
+                )
             }
             // Clinician-Specific Screens here
             navigation(
@@ -203,7 +210,9 @@ fun NavGraph(
                 }
                 composable("video_capture_screen") {
                     VideoCaptureScreen(navController, patientViewModel)
-
+                }
+                composable("video_privacy_screen") {
+                    ManageVideoPrivacyScreen(navController, patientViewModel)
                 }
                 composable(
                     route = "result_screen/{time}",
@@ -261,3 +270,4 @@ fun NavTopBar(navController: NavHostController, currentDestination: String) {
         }
     )
 }
+
