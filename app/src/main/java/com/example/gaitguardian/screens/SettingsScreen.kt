@@ -29,6 +29,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,9 +44,18 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import com.example.gaitguardian.ui.theme.bgColor
+import com.example.gaitguardian.viewmodels.PatientViewModel
 
 @Composable
-fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) {
+fun SettingsScreen(
+    navController: NavController,
+    modifier: Modifier = Modifier,
+    isClinician: Boolean = false, // pass this flag from MainActivity
+    patientViewModel: PatientViewModel
+) {
+
+    val saveVideos by patientViewModel.saveVideos.collectAsState()
+    var showPrivacyDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -101,6 +111,50 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(text = "Switch to Clinician View", fontSize = 18.sp, color = Color.Black)
                 }
+
+                // Only show for patients
+                if (!isClinician) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showPrivacyDialog = true }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.AccountCircle, contentDescription = "Privacy", tint = Color.Black)
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text("Manage Video Privacy", fontSize = 18.sp, color = Color.Black)
+                    }
+                    // Show the dialog if needed
+                    if (showPrivacyDialog) {
+                        VideoPrivacyDialog(
+                            saveVideos = saveVideos,
+                            onConfirm = { newValue ->
+                                patientViewModel.setSaveVideos(newValue)
+                                showPrivacyDialog = false
+                            },
+                            onDismiss = { showPrivacyDialog = false }
+                        )
+                    }
+
+
+                    if (saveVideos) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { navController.navigate("view_videos_screen") }
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = "View Videos", tint = Color.Black)
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Text("View Saved Videos", fontSize = 18.sp, color = Color.Black)
+                        }
+                    }
+                }
+
+
+
 
                 Row(
                     modifier = Modifier
@@ -179,7 +233,41 @@ fun LanguagePickerDialog(
                     Text("Cancel", color = Color.Black)
                 }
             }
+
         }
     }
 
 }
+
+@Composable
+fun VideoPrivacyDialog(
+    saveVideos: Boolean,
+    onConfirm: (Boolean) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = { onConfirm(!saveVideos) }) {
+                Text(if (saveVideos) "Turn OFF Saving" else "Allow Saving")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+        title = { Text("Video Privacy") },
+        text = {
+            Text(
+                if (saveVideos)
+                    "Your videos are currently being saved. Do you want to stop saving them?"
+                else
+                    "Your videos are not saved. Do you want to allow saving recorded videos?"
+            )
+        }
+    )
+}
+
+
+

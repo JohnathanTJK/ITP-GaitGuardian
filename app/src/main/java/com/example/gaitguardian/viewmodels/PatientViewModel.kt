@@ -83,6 +83,16 @@ class PatientViewModel(private val patientRepository: PatientRepository,private 
         }
     }
 
+    // Save whether to save videos or not
+    val saveVideos: StateFlow<Boolean> = appPreferencesRepository.getSaveVideos()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    fun setSaveVideos(shouldSave: Boolean) {
+        viewModelScope.launch {
+            appPreferencesRepository.setSaveVideos(shouldSave)
+        }
+    }
+
     val currentUserView: StateFlow<String> = appPreferencesRepository.getCurrentUserView()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
