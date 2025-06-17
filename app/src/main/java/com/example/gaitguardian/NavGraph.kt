@@ -210,7 +210,7 @@ fun NavGraph(
                     arguments = listOf(navArgument("time") { type = NavType.IntType })
                 ) { backStackEntry ->
                     val time = backStackEntry.arguments?.getInt("time") ?: 0
-                    ResultScreen(navController = navController, recordingTime = time)
+                    ResultScreen(navController = navController, recordingTime = time, patientViewModel = patientViewModel)
                 }
             }
         }

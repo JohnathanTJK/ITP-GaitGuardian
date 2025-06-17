@@ -19,13 +19,17 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.gaitguardian.ui.theme.*
+import com.example.gaitguardian.viewmodels.PatientViewModel
 
 @Composable
 fun ResultScreen(
     navController: NavController,
     recordingTime: Int,
+    patientViewModel: PatientViewModel,
     modifier: Modifier = Modifier
 ) {
+    val medicationStatus by patientViewModel.medicationStatus.collectAsState()
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -36,7 +40,7 @@ fun ResultScreen(
             Spacer(modifier = Modifier.height(16.dp))
             LatestAssessmentResultsCard(
                 latestTiming = recordingTime,
-                medicationOn = true,
+                medicationOn = (medicationStatus == "ON"),
                 showMedicationToggle = true
             )
         }
