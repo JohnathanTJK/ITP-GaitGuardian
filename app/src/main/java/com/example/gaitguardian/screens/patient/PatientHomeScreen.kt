@@ -178,27 +178,7 @@ fun MissedAssessmentCard(navController: NavController) {
         modifier = Modifier.fillMaxWidth()
     )
 
-}
 
-
-@Composable
-fun HomeIcon(navController: NavController) {
-    Button(
-        onClick = { /* navController.navigate("home_screen") or whatever destination */ },
-        colors = ButtonDefaults.buttonColors(containerColor = buttonBackgroundColor),
-        modifier = Modifier
-            .fillMaxWidth(),
-        shape = RoundedCornerShape(0.dp)
-    ) {
-        Icon(
-            imageVector = Icons.Default.Home,
-            contentDescription = "Home",
-            tint = DefaultColor,
-            modifier = Modifier
-                .size(homeIconSize)
-
-        )
-    }
 
 }
 
