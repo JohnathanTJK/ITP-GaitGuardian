@@ -29,7 +29,7 @@ import com.example.gaitguardian.viewmodels.PatientViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 fun VideoCaptureScreen(
     navController: NavController,
@@ -52,7 +52,7 @@ fun VideoCaptureScreen(
     var videoCapture by remember { mutableStateOf<VideoCapture<Recorder>?>(null) }
     var recording by remember { mutableStateOf<Recording?>(null) }
     var isRecording by remember { mutableStateOf(false) }
-    var recordingTime by remember { mutableStateOf(0) }
+    var recordingTime by remember { mutableIntStateOf(0) }
 
     // Timer for recording duration
     LaunchedEffect(isRecording) {
@@ -114,16 +114,18 @@ fun VideoCaptureScreen(
                                                 }
 
                                                 is VideoRecordEvent.Finalize -> {
-                                                    Log.d("VideoCapture", "Recording finalized: ${recordEvent.outputResults.outputUri}")
-                                                    recording = null
                                                     isRecording = false
-
-
-                                                    // Add the recording duration to the ViewModel
-                                                    patientViewModel.addRecording(recordingTime)
-
-                                                    // Navigate to result screen and pass recording time
-                                                    navController.navigate("result_screen/$recordingTime")
+                                                    recording = null
+                                                    if (patientViewModel.saveVideos.value) {
+                                                        patientViewModel.addRecording(recordingTime)
+                                                        navController.navigate("result_screen/$recordingTime")
+                                                    } else {
+                                                        // Delete the video file
+                                                        val videoUri = recordEvent.outputResults.outputUri
+                                                        val file = File(videoUri.path ?: "")
+                                                        if (file.exists()) file.delete()
+                                                        navController.navigate("result_screen/$recordingTime")
+                                                    }
                                                 }
 
                                                 else -> {

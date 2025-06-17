@@ -52,6 +52,7 @@ import com.example.gaitguardian.screens.patient.PatientHomeScreen
 import com.example.gaitguardian.screens.patient.ResultScreen
 import com.example.gaitguardian.screens.patient.TugAssessmentScreen
 import com.example.gaitguardian.screens.patient.VideoCaptureScreen
+import com.example.gaitguardian.screens.patient.ViewVideosScreen
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import com.example.gaitguardian.viewmodels.PatientViewModel
 
@@ -213,6 +214,9 @@ fun NavGraph(
                 }
                 composable("video_privacy_screen") {
                     ManageVideoPrivacyScreen(navController, patientViewModel)
+                }
+                composable("view_videos_screen") {
+                    ViewVideosScreen(navController)
                 }
                 composable(
                     route = "result_screen/{time}",
