@@ -25,12 +25,16 @@ import androidx.navigation.NavController
 import androidx.camera.view.PreviewView
 import java.io.File
 import android.Manifest
+import com.example.gaitguardian.viewmodels.PatientViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun VideoCaptureScreen(navController: NavController) {
+fun VideoCaptureScreen(
+    navController: NavController,
+    patientViewModel: PatientViewModel
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
@@ -113,6 +117,10 @@ fun VideoCaptureScreen(navController: NavController) {
                                                     Log.d("VideoCapture", "Recording finalized: ${recordEvent.outputResults.outputUri}")
                                                     recording = null
                                                     isRecording = false
+
+
+                                                    // Add the recording duration to the ViewModel
+                                                    patientViewModel.addRecording(recordingTime)
 
                                                     // Navigate to result screen and pass recording time
                                                     navController.navigate("result_screen/$recordingTime")

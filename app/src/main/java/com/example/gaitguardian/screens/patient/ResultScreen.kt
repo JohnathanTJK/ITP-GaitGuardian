@@ -29,6 +29,9 @@ fun ResultScreen(
     modifier: Modifier = Modifier
 ) {
     val medicationStatus by patientViewModel.medicationStatus.collectAsState()
+    val previousTiming by patientViewModel.previousDuration.collectAsState()
+    val latestTiming by patientViewModel.latestDuration.collectAsState()
+
 
     Column(
         modifier = modifier
@@ -39,13 +42,12 @@ fun ResultScreen(
         Column {
             Spacer(modifier = Modifier.height(16.dp))
             LatestAssessmentResultsCard(
-                latestTiming = recordingTime,
+                previousTiming = previousTiming,
+                latestTiming = latestTiming,
                 medicationOn = (medicationStatus == "ON"),
                 showMedicationToggle = true
             )
         }
-
-
     }
 }
 

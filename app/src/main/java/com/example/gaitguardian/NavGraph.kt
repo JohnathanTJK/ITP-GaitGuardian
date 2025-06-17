@@ -202,7 +202,7 @@ fun NavGraph(
                     FtfsAssessmentScreen(navController)
                 }
                 composable("video_capture_screen") {
-                    VideoCaptureScreen(navController)
+                    VideoCaptureScreen(navController, patientViewModel)
 
                 }
                 composable(

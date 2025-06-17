@@ -29,6 +29,11 @@ class PatientViewModel(private val patientRepository: PatientRepository,private 
             }
         }
     }
+    val previousDuration: StateFlow<Int> = appPreferencesRepository.getPreviousDuration()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val latestDuration: StateFlow<Int> = appPreferencesRepository.getLatestDuration()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     // function to insert patient into RoomDB,
     fun insertFirstPatient() {
@@ -70,6 +75,12 @@ class PatientViewModel(private val patientRepository: PatientRepository,private 
 
     fun setAssessmentComment(comment: String) {
         _assessmentComment.value = comment
+    }
+
+    fun addRecording(duration: Int) {
+        viewModelScope.launch {
+            appPreferencesRepository.updateDurations(duration)
+        }
     }
 
     val currentUserView: StateFlow<String> = appPreferencesRepository.getCurrentUserView()
