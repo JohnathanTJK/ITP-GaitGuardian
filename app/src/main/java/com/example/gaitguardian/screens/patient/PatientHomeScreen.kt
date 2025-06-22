@@ -57,7 +57,12 @@ fun PatientHomeScreen(
     patientViewModel: PatientViewModel,
     modifier: Modifier = Modifier
 ) {
-    // Whole screen container
+    val patientInfo by patientViewModel.patient.collectAsState()
+    val previousTiming by patientViewModel.previousDuration.collectAsState()
+    val latestTiming by patientViewModel.latestDuration.collectAsState()
+    val medicationStatus by patientViewModel.medicationStatus.collectAsState()
+    val comment by patientViewModel.assessmentComment.collectAsState()
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -70,8 +75,6 @@ fun PatientHomeScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            val patientInfo by patientViewModel.patient.collectAsState()
-
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = "Welcome back,",
@@ -89,11 +92,21 @@ fun PatientHomeScreen(
 
             MissedAssessmentCard(navController)
 
+            // ✅ Display the latest result card below
+            LatestAssessmentResultsCard(
+                previousTiming = previousTiming,
+                latestTiming = latestTiming,
+                medicationOn = (medicationStatus == "ON"),
+                comment = comment,
+                showMedicationToggle = false, // Set false for home screen
+                modifier = Modifier.fillMaxWidth()
+            )
         }
 
-//        HomeIcon(navController)
+        // Optional: HomeIcon(navController)
     }
 }
+
 
 @Composable
 fun MissedAssessmentCard(navController: NavController) {
@@ -170,14 +183,6 @@ fun MissedAssessmentCard(navController: NavController) {
 
         }
     }
-    LatestAssessmentResultsCard(
-        previousTiming = 15,
-        latestTiming = 20,
-        medicationOn = true,
-        showDivider = false,
-        modifier = Modifier.fillMaxWidth()
-    )
-
 
 
 }

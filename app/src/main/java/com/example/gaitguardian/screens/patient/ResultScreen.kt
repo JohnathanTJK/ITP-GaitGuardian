@@ -31,6 +31,7 @@ fun ResultScreen(
     val medicationStatus by patientViewModel.medicationStatus.collectAsState()
     val previousTiming by patientViewModel.previousDuration.collectAsState()
     val latestTiming by patientViewModel.latestDuration.collectAsState()
+    val comment by patientViewModel.assessmentComment.collectAsState()
 
 
     Column(
@@ -45,7 +46,11 @@ fun ResultScreen(
                 previousTiming = previousTiming,
                 latestTiming = latestTiming,
                 medicationOn = (medicationStatus == "ON"),
-                showMedicationToggle = true
+                showMedicationToggle = true,
+                comment = comment,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
             )
         }
     }
@@ -56,9 +61,10 @@ fun LatestAssessmentResultsCard(
     previousTiming: Int = 13,
     latestTiming: Int,
     medicationOn: Boolean,
+    comment: String,
     modifier: Modifier = Modifier,
     showDivider: Boolean = true,
-    showMedicationToggle: Boolean = false  // default to false so home screen stays same
+    showMedicationToggle: Boolean = false
 ) {
     var isMedicationOn by remember { mutableStateOf(medicationOn) }
 
@@ -69,6 +75,8 @@ fun LatestAssessmentResultsCard(
         modifier = modifier
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+
+            // Title
             Text(
                 text = "Assessment Result",
                 fontSize = subheading1,
@@ -78,6 +86,7 @@ fun LatestAssessmentResultsCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // Type and Date row
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -100,6 +109,7 @@ fun LatestAssessmentResultsCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Status row
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier
@@ -109,7 +119,6 @@ fun LatestAssessmentResultsCard(
                 StatusBox(title = "Severity", value = "2", modifier = Modifier.weight(1f))
 
                 if (!showMedicationToggle) {
-                    // Only show Medication StatusBox if toggle is disabled (i.e. in HomeScreen)
                     StatusBox(
                         title = "Medication",
                         value = if (isMedicationOn) "ON" else "OFF",
@@ -120,6 +129,7 @@ fun LatestAssessmentResultsCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Progress Bar
             HorizontalProgressBar(
                 previousValue = previousTiming.toFloat(),
                 latestValue = latestTiming.toFloat(),
@@ -160,6 +170,24 @@ fun LatestAssessmentResultsCard(
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Comments section (like in PatientHomeScreen card design)
+            Text(
+                text = "Comments:",
+                fontSize = subheading1,
+                fontWeight = FontWeight.Bold,
+                color = DefaultColor
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = if (comment.isEmpty()) "No comment provided" else comment,
+                color = Color.Black,
+                fontSize = body
+            )
         }
     }
 }
