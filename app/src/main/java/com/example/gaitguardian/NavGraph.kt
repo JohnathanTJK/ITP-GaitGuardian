@@ -48,6 +48,7 @@ import com.example.gaitguardian.screens.clinician.PerformanceScreen
 import com.example.gaitguardian.screens.patient.AssessmentInfoScreen
 import com.example.gaitguardian.screens.patient.FtfsAssessmentScreen
 import com.example.gaitguardian.screens.patient.GaitAssessmentScreen
+import com.example.gaitguardian.screens.patient.LoadingScreen
 import com.example.gaitguardian.screens.patient.PatientHomeScreen
 import com.example.gaitguardian.screens.patient.ResultScreen
 import com.example.gaitguardian.screens.patient.TugAssessmentScreen
@@ -217,6 +218,10 @@ fun NavGraph(
                 }
                 composable("view_videos_screen") {
                     ViewVideosScreen(navController)
+                }
+                composable("loading_screen/{time}") { backStackEntry ->
+                    val time = backStackEntry.arguments?.getString("time")?.toIntOrNull() ?: 0
+                    LoadingScreen(navController, time)
                 }
                 composable(
                     route = "result_screen/{time}",

@@ -135,12 +135,12 @@ fun VideoCaptureScreen(
                                                     recording = null
                                                     if (patientViewModel.saveVideos.value) {
                                                         patientViewModel.addRecording(recordingTime)
-                                                        navController.navigate("result_screen/$recordingTime")
+                                                        navController.navigate("loading_screen/$recordingTime")
                                                     } else {
                                                         val videoUri = recordEvent.outputResults.outputUri
                                                         val file = File(videoUri.path ?: "")
                                                         if (file.exists()) file.delete()
-                                                        navController.navigate("result_screen/$recordingTime")
+                                                        navController.navigate("loading_screen/$recordingTime")
                                                     }
                                                 }
                                             }
@@ -315,4 +315,3 @@ fun VideoCaptureScreen(
         }
     }
 }
-
