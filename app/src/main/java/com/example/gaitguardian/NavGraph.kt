@@ -42,6 +42,8 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.navArgument
 import com.example.gaitguardian.screens.SettingsScreen
 import com.example.gaitguardian.screens.StartScreen
+import com.example.gaitguardian.screens.camera.NewCameraScreen
+import com.example.gaitguardian.screens.camera.mergedsiti.CameraScreen
 import com.example.gaitguardian.screens.clinician.ClinicianDetailedPatientViewScreen
 import com.example.gaitguardian.screens.clinician.ClinicianHomeScreen
 import com.example.gaitguardian.screens.clinician.PerformanceScreen
@@ -49,6 +51,7 @@ import com.example.gaitguardian.screens.patient.AssessmentInfoScreen
 import com.example.gaitguardian.screens.patient.FtfsAssessmentScreen
 import com.example.gaitguardian.screens.patient.GaitAssessmentScreen
 import com.example.gaitguardian.screens.patient.LoadingScreen
+import com.example.gaitguardian.screens.patient.LateralCoverageScreen
 import com.example.gaitguardian.screens.patient.PatientHomeScreen
 import com.example.gaitguardian.screens.patient.ResultScreen
 import com.example.gaitguardian.screens.patient.TugAssessmentScreen
@@ -100,48 +103,51 @@ fun NavGraph(
     Scaffold(modifier = Modifier.fillMaxSize(),
         topBar = {
 //            PatientTopBar()
-            if (currentDestination != null) {
+            if (currentDestination != null && currentDestination != "camera_screen" && currentDestination != "3m_screen") {
                 NavTopBar(navController, currentDestination)
             }
         },
         bottomBar = {
-            NavigationBar(
+            if (currentDestination != "camera_screen" && currentDestination != "3m_screen")
+            {
+                NavigationBar(
 //                containerColor = Color(0xFFFFC279),
-                containerColor = Color.White,
+                    containerColor = Color.White,
 //                containerColor =Color(0xFFFFD9A1),
-            ) {
-                // List of Bottom Nav Bar Icons
-                val bottomNavItems = listOf(
-                    Triple("Home", "patient_home_screen", Icons.Filled.Home to Icons.Outlined.Home),
-                    Triple(
-                        "Settings",
-                        "settings_screen",
-                        Icons.Filled.Settings to Icons.Outlined.Settings
-                    )
-                )
-                bottomNavItems.forEach { (navLabel, route, icons) ->
-                    val isSelected = currentDestination == route
-                    NavigationBarItem(
-                        selected = isSelected,
-                        onClick = { navController.navigate(route) },
-                        icon = {
-                            Icon(
-                                imageVector = if (isSelected) icons.first else icons.second,
-                                contentDescription = navLabel,
-                                tint = Color(0xFFE18F00)
-                            )
-                        },
-                        label = {
-                            Text(
-                                navLabel,
-                                color = Color(0xFFE18F00),
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                            )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            indicatorColor = Color.Transparent // Removes active indicator
+                ) {
+                    // List of Bottom Nav Bar Icons
+                    val bottomNavItems = listOf(
+                        Triple("Home", "patient_home_screen", Icons.Filled.Home to Icons.Outlined.Home),
+                        Triple(
+                            "Settings",
+                            "settings_screen",
+                            Icons.Filled.Settings to Icons.Outlined.Settings
                         )
                     )
+                    bottomNavItems.forEach { (navLabel, route, icons) ->
+                        val isSelected = currentDestination == route
+                        NavigationBarItem(
+                            selected = isSelected,
+                            onClick = { navController.navigate(route) },
+                            icon = {
+                                Icon(
+                                    imageVector = if (isSelected) icons.first else icons.second,
+                                    contentDescription = navLabel,
+                                    tint = Color(0xFFE18F00)
+                                )
+                            },
+                            label = {
+                                Text(
+                                    navLabel,
+                                    color = Color(0xFFE18F00),
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                indicatorColor = Color.Transparent // Removes active indicator
+                            )
+                        )
+                    }
                 }
             }
         }
@@ -178,6 +184,15 @@ fun NavGraph(
                 composable("performance_screen")
                 {
                     PerformanceScreen()
+                }
+                composable("3m_screen")
+                {
+                    LateralCoverageScreen()
+                }
+                composable("camera_screen")
+                {
+//                    CameraScreen()
+                    NewCameraScreen(navController, patientViewModel)
                 }
             }
 

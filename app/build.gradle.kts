@@ -57,6 +57,10 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.datastore.core.android)
     implementation(libs.androidx.datastore.preferences.core.android)
+    implementation(libs.pose.detection.common)
+    implementation(libs.pose.detection)
+    implementation(libs.core)
+    implementation(libs.pose.detection.accurate)
 //    implementation(libs.androidx.room.compiler)
 //    implementation(libs.androidx.room.common.jvm)
 //    implementation(libs.androidx.room.runtime.android)
@@ -84,6 +88,14 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.runtime) // Use the latest Room version
     ksp(libs.androidx.room.compiler) // Use KSP for Room code generation
+
+    // ARCore
+    implementation("com.google.ar:core:1.36.0")
+//    implementation("com.google.ar:core-ktx:1.36.0")
+//    implementation("io.github.sceneview:arsceneview:2.3.0")
+    implementation ("androidx.camera:camera-camera2:1.3.0")
+    implementation ("com.google.mlkit:object-detection:17.0.0")
+
 
     // Material3 Icons
     implementation(libs.androidx.material.icons.extended)

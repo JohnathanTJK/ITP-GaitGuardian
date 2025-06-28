@@ -89,7 +89,8 @@ fun AssessmentInfoScreen(
 
         Button(
             onClick = {
-                navController.navigate("video_capture_screen")
+//                navController.navigate("video_capture_screen")
+                navController.navigate("camera_screen")
             },
             colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
             shape = RoundedCornerShape(16.dp),

@@ -5,8 +5,8 @@
     <!-- ADD CAMERA PERMISSION HERE -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
-
-
+    <!-- For ARCore-->
+    <uses-feature android:name="android.hardware.camera.ar" android:required="true" />
 
     <application
         android:name=".GaitGuardian"
@@ -28,10 +28,13 @@
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
+            <meta-data android:name="com.google.ar.core" android:value="required" />
+
         </provider>
 
         <activity
             android:name=".MainActivity"
+            android:screenOrientation="portrait"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.GaitGuardian">
