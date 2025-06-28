@@ -30,9 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import kotlinx.coroutines.delay
-import androidx.compose.runtime.getValue
-import com.airbnb.lottie.compose.*
-import com.airbnb.lottie.compose.LottieAnimation
+
 
 
 @Composable
