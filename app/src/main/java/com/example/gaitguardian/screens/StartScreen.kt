@@ -53,5 +53,17 @@ fun StartScreen(navController: NavController, patientViewModel: PatientViewModel
         ) {
             Text("update BobbyId")
         }
+        Button(
+            onClick = {navController.navigate("3m_screen")}
+        )
+        {
+            Text("3m")
+        }
+        Button(
+            onClick = {navController.navigate("camera_screen")}
+        )
+        {
+            Text("camerax")
+        }
     }
 }
