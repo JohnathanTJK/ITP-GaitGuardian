@@ -80,25 +80,6 @@ fun VideoCaptureScreen(
 
 
     Scaffold(
-        topBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .background(Color(0xFFF5F4EE))
-            ) {
-                IconButton(
-                    onClick = { navController.popBackStack() },
-                    modifier = Modifier.align(Alignment.CenterStart).padding(start = 16.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Close",
-                        tint = Color.Black
-                    )
-                }
-            }
-        },
         bottomBar = {
             Row(
                 modifier = Modifier
@@ -226,8 +207,6 @@ fun VideoCaptureScreen(
                             val imageAnalysis = ImageAnalysis.Builder()
                                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                                 .build()
-
-
 
 
                             imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(ctx)) { imageProxy ->
