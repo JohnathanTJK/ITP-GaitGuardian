@@ -234,14 +234,22 @@ private fun JetpackComposeBasicLineChart(
         )
     )
 
+    // Set colour text value for axis
+    val axisValueColor = 0xFF000000.toInt() // Black (ARGB format)
+    val valueComponent = TextComponent(
+        color = axisValueColor, // since they only allow Int
+    )
+
     val xAxis = HorizontalAxis.rememberBottom(
         title = "TUG Test Video Assessment",
-        titleComponent = TextComponent()
+        titleComponent = TextComponent(),
+        label = valueComponent
     )
 
     val yAxis = VerticalAxis.rememberStart(
         title = "Time Taken",
-        titleComponent = TextComponent()
+        titleComponent = TextComponent(),
+        label = valueComponent
     )
 
     CartesianChartHost(

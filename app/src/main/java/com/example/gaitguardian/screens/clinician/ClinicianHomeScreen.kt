@@ -1,6 +1,8 @@
 package com.example.gaitguardian.screens.clinician
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,48 +16,53 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.font.FontWeight.Companion.ExtraBold
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.example.gaitguardian.data.roomDatabase.patient.Patient
 import com.example.gaitguardian.data.roomDatabase.tug.TUGVideo
-import com.example.gaitguardian.ui.theme.DefaultColor
-import com.example.gaitguardian.ui.theme.Heading1
 import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.ui.theme.buttonBackgroundColor
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import com.example.gaitguardian.viewmodels.PatientViewModel
 
 @Composable
-fun ClinicianHomeScreen(navController: NavController, clinicianViewModel: ClinicianViewModel, patientViewModel: PatientViewModel, modifier: Modifier = Modifier) {
+fun ClinicianHomeScreen(
+    navController: NavController,
+    clinicianViewModel: ClinicianViewModel,
+    patientViewModel: PatientViewModel,
+    modifier: Modifier = Modifier
+) {
 
-    val tugVideos = listOf( //TODO: Replace with actual data
+    var tugVideos by remember { mutableStateOf(listOf(
+        //TODO: Replace with actual data
         TUGVideo(1, "Today, 1:30PM", "ON", "High", true),
         TUGVideo(2, "Today, 2:00PM", "OFF", "Low", true),
         TUGVideo(3, "Yesterday, 10:15AM", "ON", "Medium", false),
@@ -66,116 +73,194 @@ fun ClinicianHomeScreen(navController: NavController, clinicianViewModel: Clinic
         TUGVideo(8, "April 20, 4:45PM", "OFF", "Low", true),
         TUGVideo(9, "April 18, 2:30PM", "ON", "High", true),
         TUGVideo(10, "April 15, 1:00PM", "OFF", "Medium", false),
-    )
+    )) }
 
-    val pendingReviews = tugVideos.count { !it.watchStatus } // Calculate number of videos that are not watched
+    val pendingReviews =
+        tugVideos.count { !it.watchStatus } // Calculate number of videos that are not watched
+
     // Start: Patient ViewModel testing
     val patientInfo by patientViewModel.patient.collectAsState()
     // End: Patient ViewModel testing
     // Start: Clinician ViewModel testing
     val clinicianInfo by clinicianViewModel.clinician.collectAsState()
 
+    // For the multiple mark-as-reviewed functionality
+    var selectedVideoIds by remember { mutableStateOf(setOf<Int>()) }
+
+    // To display either ALL/ Pending videos only
+    var showPendingVideos by remember { mutableStateOf(false) }
+
+    val filteredVideos = if (showPendingVideos) {
+        tugVideos.filter { !it.watchStatus }
+    } else {
+        tugVideos
+    }
+
     Spacer(Modifier.height(30.dp))
 
-//    Column(
-//        modifier = modifier
-//            .fillMaxSize()
-//            .fillMaxWidth()
-//            .background(bgColor)
-//            .verticalScroll(rememberScrollState())
-//            .padding(16.dp),
-//        verticalArrangement = Arrangement.spacedBy(24.dp),
-//        horizontalAlignment = Alignment.CenterHorizontally
-//    ) {
-////        Text(
-////            "Hello, ${patientInfo?.name ?: "User"}",
-////            fontWeight = ExtraBold,
-////            fontSize = Heading1,
-////            color = DefaultColor
-////        )
-////        Text(
-////            "Clinican Name, ${clinicianInfo?.name ?: "User"}",
-////            fontWeight = ExtraBold,
-////            fontSize = Heading1,
-////            color = DefaultColor
-////        )
-//        // Top Header to indicate Clinician and Patient details
-//        ClinicianHeader(
-//            clinicianName = "Dr. ${clinicianInfo?.name ?: "Clinician"}", // Replace with actual clinician name
-//            patient = patientInfo ?: Patient(id = 2, name = "Benny", age = 18),
-//            pendingReviews = pendingReviews // calculated based on watchStatus
-//        )
-//
-//        // Overview showing total number of test and pending reviews
-//        VideoReviewsSummaryCard(tugVideos.count(), pendingReviews)
-//
-//        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-//            Text("Patient's Assessment Records", fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color(0xFF2D3748))
-//            HorizontalDivider(thickness = 0.5.dp, color = Color(0xFF718096))
-//            // LazyColumn displaying the list of TUG videos done by the patient
-//            TUGVideoList(navController, tugVideos = tugVideos)
-//        }
-//    }
-    LazyColumn(
+    Box(
         modifier = modifier
             .fillMaxSize()
             .background(bgColor)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        item {
-            ClinicianHeader(
-                clinicianName = "Dr. ${clinicianInfo?.name ?: "Clinician"}",
-                patient = patientInfo ?: Patient(id = 2, name = "Benny", age = 18),
-                pendingReviews = pendingReviews
-            )
-        }
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+                .padding(bottom = if (selectedVideoIds.isNotEmpty()) 80.dp else 0.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            item {
+                ClinicianHeader(
+                    clinicianName = "Dr. ${clinicianInfo?.name ?: "Clinician"}",
+                    patient = patientInfo ?: Patient(id = 2, name = "Benny", age = 18),
+                    pendingReviews = pendingReviews
+                )
+            }
 
-        item {
-            VideoReviewsSummaryCard(tugVideos.count(), pendingReviews)
-        }
+            item {
+                VideoReviewsSummaryCard(
+                    totalTests = tugVideos.count(),
+                    pendingTests = pendingReviews,
+                    showOnlyPending = showPendingVideos,
+                    onFilterToggle = { showPendingVideos = it }
+                )
+            }
 
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Patient's Assessment Records", fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color(0xFF2D3748))
-                HorizontalDivider(thickness = 0.5.dp, color = Color(0xFF718096))
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Patient's Assessment Records", fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color(0xFF2D3748))
+                    HorizontalDivider(thickness = 0.5.dp, color = Color(0xFF718096))
+                }
+            }
+
+//            items(tugVideos) { video ->
+                items(filteredVideos) { video ->
+                TUGVideoItem(
+                    navController = navController,
+                    testId = video.testId,
+                    dateTime = video.dateTime,
+                    medication = video.medication,
+                    severity = video.severity,
+                    watchStatus = if (video.watchStatus) "Watched" else "Pending",
+                    isSelected = selectedVideoIds.contains(video.testId),
+                    onSelectionChanged = { isSelected ->
+                        selectedVideoIds = if (isSelected) {
+                            selectedVideoIds + video.testId
+                        } else {
+                            selectedVideoIds - video.testId
+                        }
+                    }
+                )
             }
         }
 
-        items(tugVideos) { video ->
-            TUGVideoItem(
-                navController,
-                testId = video.testId,
-                dateTime = video.dateTime,
-                medication = video.medication,
-                severity = video.severity,
-                watchStatus = if (video.watchStatus) "Watched" else "Pending"
+        if (selectedVideoIds.isNotEmpty()) {
+            MultiSelectControls(
+                selectedCount = selectedVideoIds.size,
+                onMarkAsWatched = {
+//                    // TODO: To update the database
+                    // TODO: something likeclinicianViewModel.markVideoAsWatched(videoId)
+                    selectedVideoIds.forEach { videoId ->
+                    }
+                    // For Testing Only
+                    tugVideos = tugVideos.map { video ->
+                        if (video.testId in selectedVideoIds) {
+                            video.copy(watchStatus = true)
+                        } else {
+                            video
+                        }
+                    }
+
+                    // After update then clear the selection
+                    selectedVideoIds = setOf()
+                },
+                onCancel = {
+                    selectedVideoIds = setOf()
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp)
             )
         }
     }
-
 }
 
 @Composable
-fun VideoReviewsSummaryCard(totalTests: Int, pendingTests: Int) {
+fun MultiSelectControls(
+    selectedCount: Int,
+    onMarkAsWatched: () -> Unit,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF4299E1)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    start = 16.dp,
+            top = 8.dp,
+            end = 16.dp,
+            bottom = 8.dp
+        )        ) {
+            Column {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "$selectedCount video${if (selectedCount != 1) "s" else ""} selected",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+        Row(modifier = modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceAround) {
+            Button(
+                onClick = onCancel,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Transparent
+                ),
+                border = ButtonDefaults.outlinedButtonBorder.copy(
+                    brush = SolidColor(Color.White)
+                )
+            ) {
+                Text("Cancel", color = Color.White)
+            }
+
+            Button(
+                onClick = onMarkAsWatched,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White
+                )
+            ) {
+                Text("Mark as Watched", color = Color(0xFF4299E1))
+            }
+        }
+    }
+}
+
+
+@Composable
+fun VideoReviewsSummaryCard(
+    totalTests: Int,
+    pendingTests: Int,
+    showOnlyPending: Boolean,
+    onFilterToggle: (Boolean) -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        ),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "Overview",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF2D3748)
-            )
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Overview", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF2D3748))
             Spacer(modifier = Modifier.height(8.dp))
             HorizontalDivider(thickness = 0.5.dp, color = Color(0xFF718096))
             Spacer(modifier = Modifier.height(8.dp))
@@ -187,11 +272,15 @@ fun VideoReviewsSummaryCard(totalTests: Int, pendingTests: Int) {
                 VideoOverviewStats(
                     value = totalTests.toString(),
                     label = "Total Tests",
+                    isSelected = !showOnlyPending,
+                    onClick = { onFilterToggle(false) },
                     modifier = Modifier.weight(1f)
                 )
                 VideoOverviewStats(
                     value = pendingTests.toString(),
                     label = "Needs Review",
+                    isSelected = showOnlyPending,
+                    onClick = { onFilterToggle(true) },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -203,10 +292,15 @@ fun VideoReviewsSummaryCard(totalTests: Int, pendingTests: Int) {
 fun VideoOverviewStats(
     value: String,
     label: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isSelected: Boolean = false,
+    onClick: () -> Unit
 ) {
     Column(
-        modifier = modifier,
+        modifier = modifier
+            .background(if (isSelected) Color(0xFFEEF2F6) else Color.Transparent, shape = RoundedCornerShape(8.dp))
+            .padding(8.dp)
+            .clickable { onClick() },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -223,6 +317,7 @@ fun VideoOverviewStats(
     }
 }
 
+
 @Composable
 fun TUGVideoItem(
     navController: NavController,
@@ -231,89 +326,107 @@ fun TUGVideoItem(
     medication: String,
     severity: String,
     watchStatus: String,
+    isSelected: Boolean = false,
+    onSelectionChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(Color.White)
+        modifier = modifier
+            .fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isSelected) 8.dp else 4.dp
+        ),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) Color(0xFFEBF8FF) else Color.White
+        ),
+        border = if (isSelected) {
+            BorderStroke(2.dp, Color(0xFF4299E1))
+        } else null
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            Row()
-            {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if(watchStatus == "Pending")
+                {
+                    Checkbox(
+                        checked = isSelected,
+                        onCheckedChange = onSelectionChanged,
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = Color(0xFF4299E1)
+                        )
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+
                 Text(
                     text = "TUG #${testId}",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF2D3748)
+                    color = Color(0xFF2D3748),
+                    modifier = Modifier.weight(1f)
                 )
-                Spacer(modifier.weight(0.1f))
+
                 VideoWatchStatus(watchStatus)
             }
+
             Text(
                 text = dateTime,
                 fontSize = 12.sp,
-                color = Color(0xFF2D3748)
+                color = Color(0xFF2D3748),
+                modifier = Modifier.padding(start = 48.dp) // Align with text above (checkbox width + spacer)
             )
 
             Spacer(modifier = Modifier.height(14.dp))
+
             Text(
                 buildAnnotatedString {
                     append("Medication: ")
-
                     withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
                         append(medication)
                     }
                 },
                 fontSize = 14.sp,
-                color = Color.Black
+                color = Color.Black,
+                modifier = Modifier.padding(start = 48.dp) // Align with text above
             )
+
             Spacer(modifier = Modifier.height(4.dp))
+
             Text(
                 buildAnnotatedString {
                     append("Video Severity Rating: ")
-
                     withStyle(style = SpanStyle(fontWeight = FontWeight.SemiBold)) {
                         append(severity)
                     }
                 },
                 fontSize = 14.sp,
-                color = Color.Black
+                color = Color.Black,
+                modifier = Modifier.padding(start = 48.dp) // Align with text above
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(
-                onClick = {
-                    navController.navigate("clinician_detailed_patient_view_screen")
-                }, //TODO: Update route when done
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = buttonBackgroundColor
-                )
-            ) {
-                Text("Review Assessment")
-            }
-        }
-    }
-}
 
-@Composable
-fun TUGVideoList(navController: NavController, tugVideos: List<TUGVideo>) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(tugVideos) { video ->
-            TUGVideoItem(
-                navController,
-                testId = video.testId,
-                dateTime = video.dateTime,
-                medication = video.medication,
-                severity = video.severity,
-                watchStatus = if (video.watchStatus) "Watched" else "Pending"
-            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Show Review button only when item is not selected
+            if (!isSelected) {
+                Button(
+                    onClick = {
+                        navController.navigate("clinician_detailed_patient_view_screen")
+                    },
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 48.dp), // Align with text above
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = buttonBackgroundColor
+                    )
+                ) {
+                    Text("Review Assessment")
+                }
+            }
         }
     }
 }
@@ -358,16 +471,6 @@ fun ClinicianHeader(
         horizontalAlignment = Alignment.CenterHorizontally
     )
     {
-//    Card(
-//        modifier = modifier
-//            .fillMaxWidth()
-//            .padding(bottom = 16.dp),
-//        shape = RoundedCornerShape(16.dp),
-//        colors = CardDefaults.cardColors(
-//            containerColor = Color.White
-//        ),
-//        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-//    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -461,6 +564,5 @@ fun ClinicianHeader(
                 }
             }
         }
-//    }
     }
 }
