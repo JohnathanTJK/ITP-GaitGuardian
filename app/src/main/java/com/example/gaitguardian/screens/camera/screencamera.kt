@@ -2,14 +2,9 @@ package com.example.gaitguardian.screens.camera
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
 import android.util.Log
 import android.view.OrientationEventListener
 import android.widget.Toast
-import androidx.camera.core.CameraSelector
 import androidx.camera.video.FileOutputOptions
 import androidx.camera.video.Quality
 import androidx.camera.video.QualitySelector
@@ -18,30 +13,53 @@ import androidx.camera.video.VideoRecordEvent
 import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.video.AudioConfig
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberBottomSheetScaffoldState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.example.gaitguardian.viewmodels.PatientViewModel
-import com.google.mlkit.vision.pose.PoseDetection
-import com.google.mlkit.vision.pose.defaults.PoseDetectorOptions
-import com.google.mlkit.vision.common.InputImage
 import kotlinx.coroutines.delay
 import java.io.File
 
@@ -121,7 +139,11 @@ fun rememberDeviceOrientation(): DeviceOrientation {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewCameraScreen(navController: NavController, patientViewModel: PatientViewModel, modifier: Modifier = Modifier) {
+fun NewCameraScreen(
+    navController: NavController,
+    patientViewModel: PatientViewModel,
+    modifier: Modifier = Modifier
+) {
     val scaffoldState = rememberBottomSheetScaffoldState()
     val context = LocalContext.current
     val deviceOrientation = rememberDeviceOrientation()
@@ -129,6 +151,7 @@ fun NewCameraScreen(navController: NavController, patientViewModel: PatientViewM
     // Add recording state
     var isRecording by remember { mutableStateOf(false) }
     val recordingTime = remember { mutableIntStateOf(0) }
+    var showRecordButton by remember { mutableStateOf(false) }
 
     // Add image analysis states
     var currentLuminance by remember { mutableStateOf(0.0) }
@@ -142,11 +165,40 @@ fun NewCameraScreen(navController: NavController, patientViewModel: PatientViewM
     var currentHorizontalCoverage by remember { mutableStateOf<Float?>(null) }
     var currentLateralCoverage by remember { mutableStateOf<Float?>(null) }
     var covered3Meters by remember { mutableStateOf<Boolean?>(null) }
-    //
+    var status by remember { mutableStateOf<String?>(null) }
+    var debugInfo by remember { mutableStateOf<String?>(null) }
+    var cameraTiltAngle by remember { mutableStateOf<Float?>(null) }
 
     // Show camera only when device is in landscape (either direction)
     val isDeviceLandscape = deviceOrientation == DeviceOrientation.LANDSCAPE_LEFT ||
             deviceOrientation == DeviceOrientation.LANDSCAPE_RIGHT
+
+    LaunchedEffect(
+        currentDistance,
+        currentHorizontalCoverage,
+        currentLateralCoverage,
+        cameraTiltAngle,
+        covered3Meters,
+        status,
+        debugInfo,
+        captureErrorMessage
+    ) {
+        val allReady = currentDistance != null &&
+                currentHorizontalCoverage != null &&
+                currentLateralCoverage != null &&
+                cameraTiltAngle != null &&
+                covered3Meters != null &&
+                status != null &&
+                debugInfo != null &&
+                captureErrorMessage == null
+
+        if (allReady) {
+            delay(3000) // Wait for 3 seconds
+            showRecordButton = true
+        } else {
+            showRecordButton = false // Reset when not ready
+        }
+    }
 
     val controller = remember {
         LifecycleCameraController(context).apply {
@@ -188,11 +240,14 @@ fun NewCameraScreen(navController: NavController, patientViewModel: PatientViewM
                         isTooBright = isBright
                         captureErrorMessage = errorMessage
                     },
-                    onDistanceDetectionResult = { distance, horizontal, lateral, covers3 ->
+                    onDistanceDetectionResult = { distance, horizontal, lateral, covers3, getStatus, getDebugInfo, tiltAngle ->
                         currentDistance = distance
                         currentHorizontalCoverage = horizontal
                         currentLateralCoverage = lateral
                         covered3Meters = covers3
+                        status = getStatus
+                        debugInfo = getDebugInfo
+                        cameraTiltAngle = tiltAngle
                     }
                 )
 
@@ -215,38 +270,122 @@ fun NewCameraScreen(navController: NavController, patientViewModel: PatientViewM
                             .padding(16.dp),
                         horizontalArrangement = Arrangement.SpaceAround
                     ) {
-                        IconButton(
-                            onClick = {
-                                recordVideo(
-                                    context = context,
-                                    controller = controller,
-                                    navController = navController,
-                                    patientViewModel = patientViewModel,
-                                    recordingTimeState = recordingTime,// ✅ pass the whole state
-                                    onRecordingStateChange = { recording -> isRecording = recording }
+                        if(showRecordButton)
+                        {
+                            IconButton(
+                                onClick = {
+                                    recordVideo(
+                                        context = context,
+                                        controller = controller,
+                                        navController = navController,
+                                        patientViewModel = patientViewModel,
+                                        recordingTimeState = recordingTime,
+                                        onRecordingStateChange = { recording ->
+                                            isRecording = recording
+                                        }
+                                    )
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = if (isRecording) Icons.Default.Stop else Icons.Default.Videocam,
+                                    contentDescription = if (isRecording) "Stop Recording" else "Start Recording",
+                                    tint = if (isRecording) Color.Red else Color.White
                                 )
                             }
-                        ) {
-                            Icon(
-                                imageVector = if (isRecording) Icons.Default.Stop else Icons.Default.Videocam,
-                                contentDescription = if (isRecording) "Stop Recording" else "Start Recording",
-                                tint = if (isRecording) Color.Red else Color.White
-                            )
                         }
                     }
-
-                    // Distance + Analysis Info
-                    Column(
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .align(Alignment.TopStart)
+                    if (currentLateralCoverage != null && currentHorizontalCoverage != null && currentDistance != null && cameraTiltAngle != null
+                        && covered3Meters != null && status != null && debugInfo != null
                     ) {
-                        Text("Distance: $currentDistance")
-                        Text("Horizontal: $currentHorizontalCoverage")
-                        Text("Lateral: $currentLateralCoverage")
-                        Text("3m covered: $covered3Meters")
-                    }
 
+                        // Distance + Analysis Info
+                        Column(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(16.dp)
+                                .background(Color.Black.copy(alpha = 0.7f))
+                                .padding(16.dp)
+                        ) {
+                            status?.let { status ->
+                                Text(text = status, color = Color.White, fontSize = 16.sp)
+                            }
+                            debugInfo?.let { debug ->
+                                Text(
+                                    text = debug,
+                                    color = Color.Yellow,
+                                    fontSize = 14.sp,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
+
+                            // Only show distance info when data is available
+                            currentDistance?.let { distance ->
+                                Text(
+                                    text = "Distance: ${"%.1f".format(distance)}m",
+                                    color = Color.White,
+                                    fontSize = 18.sp,
+                                    modifier = Modifier.padding(top = 8.dp)
+                                )
+                            }
+
+                            // Safe lateral coverage display
+                            currentLateralCoverage?.let { lateral ->
+                                Text(
+                                    text = "Ground Coverage: ${"%.1f".format(lateral)}m",
+                                    color = if (lateral >= 6f) Color.Green else Color.Red,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            // Safe horizontal coverage display
+                            currentHorizontalCoverage?.let { horizontal ->
+                                Text(
+                                    text = "Person Ground Width: ${"%.2f".format(horizontal)}m",
+                                    color = Color.Cyan,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
+
+                            // Camera info - safe tilt angle display
+                            cameraTiltAngle?.let { tilt ->
+                                Text(
+                                    text = "Tilt: ${String.format("%.1f", tilt)}°",
+                                    color = Color.Gray,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
+
+                            // 3-meter coverage check - safe display
+                            currentLateralCoverage?.let { horizontal ->
+                                if (horizontal > 0f) {
+                                    Text(
+                                        text = if (covered3Meters == true) {
+                                            if (horizontal > 0.4f) {
+                                                "Too much, move camera closer"
+                                            } else {  // horizontal <= 0.4f AND covers 3m
+                                                "Covers 3m+ ground distance"
+                                            }
+                                        } else {
+                                            "Less than 3m coverage (${
+                                                String.format(
+                                                    "%.2f",
+                                                    horizontal
+                                                )
+                                            }m)"
+                                        },
+                                        color = if (covered3Meters == true) Color.Green else Color.Red,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(top = 8.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
                     // Capture Error for Blur / Brightness
                     captureErrorMessage?.let { message ->
                         Card(
@@ -351,6 +490,7 @@ private fun recordVideo(
                 // get time in seconds
                 recordingStartTimeNanos = System.nanoTime()
             }
+
             is VideoRecordEvent.Finalize -> {
                 if (event.hasError()) {
                     recording?.close()
@@ -365,7 +505,8 @@ private fun recordVideo(
 //                    recordingTimeState.value = event.recordingStats.recordedDurationNanos.toInt() / 1_000_000_000
 //                    Log.d("recordingTime", recordingTimeState.value.toString())
                     // difference between current and start time = video duration
-                    val durationSeconds = ((System.nanoTime() - recordingStartTimeNanos) / 1_000_000_000).toInt()
+                    val durationSeconds =
+                        ((System.nanoTime() - recordingStartTimeNanos) / 1_000_000_000).toInt()
                     recordingTimeState.value = durationSeconds
                     Log.d("recordingTime", recordingTimeState.value.toString())
                     onRecordingStateChange(false)

@@ -43,7 +43,11 @@ import androidx.navigation.navArgument
 import com.example.gaitguardian.screens.SettingsScreen
 import com.example.gaitguardian.screens.SplashScreen
 import com.example.gaitguardian.screens.StartScreen
+import com.example.gaitguardian.screens.camera.ARCoreDistanceCheckScreen
+//import com.example.gaitguardian.screens.camera.CameraScreenWithDistanceDetection
+//import com.example.gaitguardian.screens.camera.IntegratedCameraScreen
 import com.example.gaitguardian.screens.camera.NewCameraScreen
+//import com.example.gaitguardian.screens.camera.NewCameraScreen
 import com.example.gaitguardian.screens.camera.mergedsiti.CameraScreen
 import com.example.gaitguardian.screens.clinician.ClinicianDetailedPatientViewScreen
 import com.example.gaitguardian.screens.clinician.ClinicianHomeScreen
@@ -249,9 +253,17 @@ fun NavGraph(
                     composable("camera_screen")
                     {
 //                    CameraScreen()
-                        NewCameraScreen(navController, patientViewModel)
-                    }
+                    NewCameraScreen(navController, patientViewModel)
+//                    CameraScreenWithDistanceDetection()
+//                    IntegratedCameraScreen(navController,patientViewModel)
                 }
+                composable("ar_test")
+                {
+                    ARCoreDistanceCheckScreen(
+                        onDistanceMet = {navController.navigate("camera_screen")}
+                    )
+                }
+            }
 
                 // Patient-Specific Screens here
                 navigation(
