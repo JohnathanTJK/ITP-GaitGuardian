@@ -50,43 +50,38 @@ import com.example.gaitguardian.viewmodels.PatientViewModel
 fun SettingsScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
-    isClinician: Boolean = false, // pass this flag from MainActivity
+    isClinician: Boolean = false,
     patientViewModel: PatientViewModel
 ) {
-
     val saveVideos by patientViewModel.saveVideos.collectAsState()
     var showPrivacyDialog by remember { mutableStateOf(false) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
+
+    val availableLanguages = listOf(
+        "en" to "English",
+        "bm" to "Malay",
+        "in" to "Indian",
+        "zh" to "Chinese"
+    )
+    val currentLanguage = "en" // TODO: get from DataStore
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .fillMaxSize()
             .background(bgColor)
+            .padding(8.dp)
     ) {
-        var showLanguageDialog by remember { mutableStateOf(false) }
-
-        val availableLanguages = listOf(
-            "en" to "English",
-            "bm" to "Malay",
-            "in" to "Indian",
-            "zh" to "Chinese"
-        )
-
-        val currentLanguage = "en" // To get from DataStore
-
-        var isLoading by remember { mutableStateOf(false) }
+        // General Card
         Surface(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(8.dp)
                 .shadow(8.dp, shape = MaterialTheme.shapes.medium),
             color = Color(0xFFFFC279),
             shape = MaterialTheme.shapes.medium,
             shadowElevation = 8.dp
         ) {
-            Column(
-                modifier = Modifier.padding(20.dp)
-            ) {
+            Column(modifier = Modifier.padding(20.dp)) {
                 Text(
                     text = "General",
                     fontSize = 28.sp,
@@ -97,64 +92,18 @@ fun SettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable(onClick = {
-                            navController.navigate("start_screen")
-                        })
+                        .clickable { navController.navigate("start_screen") }
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Default.SwitchAccount,
-                        contentDescription = "title",
+                        contentDescription = "Switch Account",
                         tint = Color.Black
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(text = "Switch to Clinician View", fontSize = 18.sp, color = Color.Black)
                 }
-
-                // Only show for patients
-                if (!isClinician) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { showPrivacyDialog = true }
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.AccountCircle, contentDescription = "Privacy", tint = Color.Black)
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text("Manage Video Privacy", fontSize = 18.sp, color = Color.Black)
-                    }
-                    // Show the dialog if needed
-                    if (showPrivacyDialog) {
-                        VideoPrivacyDialog(
-                            saveVideos = saveVideos,
-                            onConfirm = { newValue ->
-                                patientViewModel.setSaveVideos(newValue)
-                                showPrivacyDialog = false
-                            },
-                            onDismiss = { showPrivacyDialog = false }
-                        )
-                    }
-
-
-                    if (saveVideos) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { navController.navigate("view_videos_screen") }
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.Delete, contentDescription = "View Videos", tint = Color.Black)
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Text("View Saved Videos", fontSize = 18.sp, color = Color.Black)
-                        }
-                    }
-                }
-
-
-
 
                 Row(
                     modifier = Modifier
@@ -178,17 +127,76 @@ fun SettingsScreen(
                         currentLanguageCode = currentLanguage,
                         onDismissRequest = { showLanguageDialog = false },
                         onLanguageSelected = { selectedLangCode ->
-                            // TODO: To save into DataStore first,
-                            //  update language after main functionality completed
-                            Log.d("SettingsScreen", "Selected language: $selectedLangCode")
+                            // TODO: Save language change
                         }
                     )
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Video Privacy Card - only for patients
+        if (!isClinician) {
+            Surface(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .shadow(8.dp, shape = MaterialTheme.shapes.medium),
+                color = Color(0xFFFFC279),
+                shape = MaterialTheme.shapes.medium,
+                shadowElevation = 8.dp
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Text(
+                        text = "Video Privacy",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 5.dp),
+                        color = Color.Black
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showPrivacyDialog = true }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.AccountCircle, contentDescription = "Privacy", tint = Color.Black)
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text("Manage Video Privacy", fontSize = 18.sp, color = Color.Black)
+                    }
+                    if (showPrivacyDialog) {
+                        VideoPrivacyDialog(
+                            saveVideos = saveVideos,
+                            onConfirm = { newValue ->
+                                patientViewModel.setSaveVideos(newValue)
+                                showPrivacyDialog = false
+                            },
+                            onDismiss = { showPrivacyDialog = false }
+                        )
+                    }
+
+                    if (saveVideos) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { navController.navigate("view_videos_screen") }
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = "View Videos", tint = Color.Black)
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Text("View Saved Videos", fontSize = 18.sp, color = Color.Black)
+                        }
+                    }
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
     }
 }
+
 
 @Composable
 fun LanguagePickerDialog(

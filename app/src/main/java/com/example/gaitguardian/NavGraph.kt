@@ -41,6 +41,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import androidx.navigation.navArgument
 import com.example.gaitguardian.screens.SettingsScreen
+import com.example.gaitguardian.screens.SplashScreen
 import com.example.gaitguardian.screens.StartScreen
 import com.example.gaitguardian.screens.camera.NewCameraScreen
 import com.example.gaitguardian.screens.camera.mergedsiti.CameraScreen
@@ -59,197 +60,6 @@ import com.example.gaitguardian.screens.patient.VideoCaptureScreen
 import com.example.gaitguardian.screens.patient.ViewVideosScreen
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import com.example.gaitguardian.viewmodels.PatientViewModel
-
-
-@Composable
-fun NavGraph(
-    navController: NavHostController,
-//    modifier: Modifier = Modifier,
-    patientViewModel: PatientViewModel,
-    clinicianViewModel: ClinicianViewModel
-) {
-    val saveVideos by patientViewModel.saveVideos.collectAsState()
-    var showPrivacyDialog by remember { mutableStateOf(false) }
-
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentDestination = navBackStackEntry?.destination?.route
-
-    val currentUserView by clinicianViewModel.getCurrentUserView.collectAsState(initial = "")
-    // to track if the initial navigation already happened
-    var hasNavigated by rememberSaveable {mutableStateOf(false)}
-
-    // Upon app start,
-    // check what is the saved current view and load directly into the graph
-    LaunchedEffect(currentUserView) {
-        if(!hasNavigated){
-            when (currentUserView) {
-                "clinician" -> {
-                    navController.navigate("clinician_graph") {
-                        popUpTo("start_screen") { inclusive = true }
-                    }
-                    hasNavigated = true
-                }
-
-                "patient" -> {
-                    navController.navigate("patient_graph") {
-                        popUpTo("start_screen") { inclusive = true }
-                    }
-                    hasNavigated = true
-                }
-            }
-        }
-    }
-
-    Scaffold(modifier = Modifier.fillMaxSize(),
-        topBar = {
-//            PatientTopBar()
-            if (currentDestination != null && currentDestination != "camera_screen" && currentDestination != "3m_screen") {
-                NavTopBar(navController, currentDestination)
-            }
-        },
-        bottomBar = {
-            if (currentDestination != "camera_screen" && currentDestination != "3m_screen")
-            {
-                NavigationBar(
-//                containerColor = Color(0xFFFFC279),
-                    containerColor = Color.White,
-//                containerColor =Color(0xFFFFD9A1),
-                ) {
-                    // List of Bottom Nav Bar Icons
-                    val bottomNavItems = listOf(
-                        Triple("Home", "patient_home_screen", Icons.Filled.Home to Icons.Outlined.Home),
-                        Triple(
-                            "Settings",
-                            "settings_screen",
-                            Icons.Filled.Settings to Icons.Outlined.Settings
-                        )
-                    )
-                    bottomNavItems.forEach { (navLabel, route, icons) ->
-                        val isSelected = currentDestination == route
-                        NavigationBarItem(
-                            selected = isSelected,
-                            onClick = { navController.navigate(route) },
-                            icon = {
-                                Icon(
-                                    imageVector = if (isSelected) icons.first else icons.second,
-                                    contentDescription = navLabel,
-                                    tint = Color(0xFFE18F00)
-                                )
-                            },
-                            label = {
-                                Text(
-                                    navLabel,
-                                    color = Color(0xFFE18F00),
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                )
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                indicatorColor = Color.Transparent // Removes active indicator
-                            )
-                        )
-                    }
-                }
-            }
-        }
-
-    ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = "start_screen",
-            modifier = Modifier.padding(innerPadding)
-        ) {
-            // General Screens here
-            composable("start_screen")
-            {
-                StartScreen(navController, patientViewModel, clinicianViewModel)
-            }
-            composable("settings_screen") {
-                SettingsScreen(
-                    navController = navController,
-                    patientViewModel = patientViewModel,
-                    isClinician = currentUserView == "clinician"
-                )
-            }
-            // Clinician-Specific Screens here
-            navigation(
-                startDestination = "clinician_home_screen", route = "clinician_graph"
-            )
-            {
-                composable("clinician_home_screen") {
-                    ClinicianHomeScreen(navController, clinicianViewModel, patientViewModel)
-                }
-                composable("clinician_detailed_patient_view_screen") {
-                    ClinicianDetailedPatientViewScreen(navController)
-                }
-                composable("performance_screen")
-                {
-                    PerformanceScreen()
-                }
-                composable("3m_screen")
-                {
-                    LateralCoverageScreen()
-                }
-                composable("camera_screen")
-                {
-//                    CameraScreen()
-                    NewCameraScreen(navController, patientViewModel)
-                }
-            }
-
-            // Patient-Specific Screens here
-            navigation(
-                startDestination = "patient_home_screen", route = "patient_graph"
-            )
-            {
-                composable("patient_home_screen") {
-                    PatientHomeScreen(navController, patientViewModel)
-                }
-                composable(
-                    route = "assessment_info_screen/{assessmentTitle}",
-                    arguments = listOf(navArgument("assessmentTitle") { type = NavType.StringType })
-                ) { backStackEntry ->
-                    AssessmentInfoScreen(
-                        navController = navController,
-                        modifier = Modifier,
-                        patientViewModel = patientViewModel,
-                        assessmentTitle = backStackEntry.arguments?.getString("assessmentTitle")
-                            ?: "Assessment"
-                    )
-                }
-                composable("gait_assessment_screen") {
-                    GaitAssessmentScreen(navController)
-                }
-                composable("tug_assessment_screen") {
-                    TugAssessmentScreen(navController)
-                }
-                composable("ftfs_assessment_screen") {
-                    FtfsAssessmentScreen(navController)
-                }
-                composable("video_capture_screen") {
-                    VideoCaptureScreen(navController, patientViewModel)
-                }
-                composable("video_privacy_screen") {
-                    ManageVideoPrivacyScreen(navController, patientViewModel)
-                }
-                composable("view_videos_screen") {
-                    ViewVideosScreen(navController)
-                }
-                composable("loading_screen/{time}") { backStackEntry ->
-                    val time = backStackEntry.arguments?.getString("time")?.toIntOrNull() ?: 0
-                    LoadingScreen(navController, time)
-                }
-                composable(
-                    route = "result_screen/{time}",
-                    arguments = listOf(navArgument("time") { type = NavType.IntType })
-                ) { backStackEntry ->
-                    val time = backStackEntry.arguments?.getInt("time") ?: 0
-                    ResultScreen(navController = navController, recordingTime = time, patientViewModel = patientViewModel)
-                }
-            }
-        }
-    }
-}
-
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -270,7 +80,7 @@ fun NavTopBar(navController: NavHostController, currentDestination: String) {
             if (currentDestination != "start_screen" &&
                 currentDestination != "patient_home_screen" &&
                 currentDestination != "clinician_home_screen"
-                ) {
+            ) {
                 IconButton(onClick = { navController.popBackStack() }) {
                     Icon(
                         imageVector = Icons.Default.ArrowBackIosNew,
@@ -294,4 +104,214 @@ fun NavTopBar(navController: NavHostController, currentDestination: String) {
         }
     )
 }
+
+
+
+@Composable
+fun NavGraph(
+    navController: NavHostController,
+//    modifier: Modifier = Modifier,
+    patientViewModel: PatientViewModel,
+    clinicianViewModel: ClinicianViewModel
+) {
+    val saveVideos by patientViewModel.saveVideos.collectAsState()
+    var showPrivacyDialog by remember { mutableStateOf(false) }
+
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = navBackStackEntry?.destination?.route
+
+    val currentUserView by clinicianViewModel.getCurrentUserView.collectAsState(initial = "")
+    // to track if the initial navigation already happened
+    var hasNavigated by rememberSaveable { mutableStateOf(false) }
+
+    // Upon app start,
+    // check what is the saved current view and load directly into the graph
+    LaunchedEffect(currentUserView) {
+        if (!hasNavigated) {
+            when (currentUserView) {
+                "clinician" -> {
+                    navController.navigate("clinician_graph") {
+                        popUpTo("start_screen") { inclusive = true }
+                    }
+                    hasNavigated = true
+                }
+
+                "patient" -> {
+                    navController.navigate("patient_graph") {
+                        popUpTo("start_screen") { inclusive = true }
+                    }
+                    hasNavigated = true
+                }
+            }
+        }
+    }
+    if (currentDestination == "splash_screen") {
+        // No Scaffold — just directly display SplashScreen
+        SplashScreen(navController, clinicianViewModel)
+    } else {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            topBar = {
+//            PatientTopBar()
+                if (currentDestination != null && currentDestination != "camera_screen" && currentDestination != "3m_screen") {
+                    NavTopBar(navController, currentDestination)
+                }
+            },
+            bottomBar = {
+                if (currentDestination != "camera_screen" && currentDestination != "3m_screen") {
+                    NavigationBar(
+//                containerColor = Color(0xFFFFC279),
+                        containerColor = Color.White,
+//                containerColor =Color(0xFFFFD9A1),
+                    ) {
+                        // List of Bottom Nav Bar Icons
+                        val bottomNavItems = listOf(
+                            Triple(
+                                "Home",
+                                "patient_home_screen",
+                                Icons.Filled.Home to Icons.Outlined.Home
+                            ),
+                            Triple(
+                                "Settings",
+                                "settings_screen",
+                                Icons.Filled.Settings to Icons.Outlined.Settings
+                            )
+                        )
+                        bottomNavItems.forEach { (navLabel, route, icons) ->
+                            val isSelected = currentDestination == route
+                            NavigationBarItem(
+                                selected = isSelected,
+                                onClick = { navController.navigate(route) },
+                                icon = {
+                                    Icon(
+                                        imageVector = if (isSelected) icons.first else icons.second,
+                                        contentDescription = navLabel,
+                                        tint = Color(0xFFE18F00)
+                                    )
+                                },
+                                label = {
+                                    Text(
+                                        navLabel,
+                                        color = Color(0xFFE18F00),
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                },
+                                colors = NavigationBarItemDefaults.colors(
+                                    indicatorColor = Color.Transparent // Removes active indicator
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+
+
+        ) { innerPadding ->
+            NavHost(
+                navController = navController,
+                startDestination = "splash_screen",
+                modifier = Modifier.padding(innerPadding)
+            ) {
+                composable("splash_screen") {
+                    SplashScreen(navController, clinicianViewModel)
+                }
+                // General Screens here
+                composable("start_screen")
+                {
+                    StartScreen(navController, patientViewModel, clinicianViewModel)
+                }
+                composable("settings_screen") {
+                    SettingsScreen(
+                        navController = navController,
+                        patientViewModel = patientViewModel,
+                        isClinician = currentUserView == "clinician"
+                    )
+                }
+                // Clinician-Specific Screens here
+                navigation(
+                    startDestination = "clinician_home_screen", route = "clinician_graph"
+                )
+                {
+                    composable("clinician_home_screen") {
+                        ClinicianHomeScreen(navController, clinicianViewModel, patientViewModel)
+                    }
+                    composable("clinician_detailed_patient_view_screen") {
+                        ClinicianDetailedPatientViewScreen(navController)
+                    }
+                    composable("performance_screen")
+                    {
+                        PerformanceScreen()
+                    }
+                    composable("3m_screen")
+                    {
+                        LateralCoverageScreen()
+                    }
+                    composable("camera_screen")
+                    {
+//                    CameraScreen()
+                        NewCameraScreen(navController, patientViewModel)
+                    }
+                }
+
+                // Patient-Specific Screens here
+                navigation(
+                    startDestination = "patient_home_screen", route = "patient_graph"
+                )
+                {
+                    composable("patient_home_screen") {
+                        PatientHomeScreen(navController, patientViewModel)
+                    }
+                    composable(
+                        route = "assessment_info_screen/{assessmentTitle}",
+                        arguments = listOf(navArgument("assessmentTitle") {
+                            type = NavType.StringType
+                        })
+                    ) { backStackEntry ->
+                        AssessmentInfoScreen(
+                            navController = navController,
+                            modifier = Modifier,
+                            patientViewModel = patientViewModel,
+                            assessmentTitle = backStackEntry.arguments?.getString("assessmentTitle")
+                                ?: "Assessment"
+                        )
+                    }
+                    composable("gait_assessment_screen") {
+                        GaitAssessmentScreen(navController)
+                    }
+                    composable("tug_assessment_screen") {
+                        TugAssessmentScreen(navController)
+                    }
+                    composable("ftfs_assessment_screen") {
+                        FtfsAssessmentScreen(navController)
+                    }
+                    composable("video_capture_screen") {
+                        VideoCaptureScreen(navController, patientViewModel)
+                    }
+                    composable("video_privacy_screen") {
+                        ManageVideoPrivacyScreen(navController, patientViewModel)
+                    }
+                    composable("view_videos_screen") {
+                        ViewVideosScreen(navController)
+                    }
+                    composable("loading_screen/{time}") { backStackEntry ->
+                        val time = backStackEntry.arguments?.getString("time")?.toIntOrNull() ?: 0
+                        LoadingScreen(navController, time)
+                    }
+                    composable(
+                        route = "result_screen/{time}",
+                        arguments = listOf(navArgument("time") { type = NavType.IntType })
+                    ) { backStackEntry ->
+                        val time = backStackEntry.arguments?.getInt("time") ?: 0
+                        ResultScreen(
+                            navController = navController,
+                            recordingTime = time,
+                            patientViewModel = patientViewModel
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 

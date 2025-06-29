@@ -33,25 +33,43 @@ fun ResultScreen(
     val latestTiming by patientViewModel.latestDuration.collectAsState()
     val comment by patientViewModel.assessmentComment.collectAsState()
 
+    // Local state for toggle, initialized from ViewModel medicationStatus
+    var isMedicationOn by remember { mutableStateOf(medicationStatus == "ON") }
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(bgColor),
-        verticalArrangement = Arrangement.SpaceBetween
+        verticalArrangement = Arrangement.Top
     ) {
-        Column {
-            Spacer(modifier = Modifier.height(16.dp))
-            LatestAssessmentResultsCard(
-                previousTiming = previousTiming,
-                latestTiming = latestTiming,
-                medicationOn = (medicationStatus == "ON"),
-                showMedicationToggle = true,
-                comment = comment,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-            )
+        Spacer(modifier = Modifier.height(16.dp))
+        LatestAssessmentResultsCard(
+            previousTiming = previousTiming,
+            latestTiming = latestTiming,
+            medicationOn = isMedicationOn,
+            showMedicationToggle = true,
+            comment = comment,
+            onMedicationToggle = { isOn ->
+                isMedicationOn = isOn
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = {
+                // Call ViewModel to update medication status based on toggle
+                patientViewModel.setMedicationStatus(if (isMedicationOn) "ON" else "OFF")
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text(text = "Update Medication Status", fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -64,9 +82,15 @@ fun LatestAssessmentResultsCard(
     comment: String,
     modifier: Modifier = Modifier,
     showDivider: Boolean = true,
-    showMedicationToggle: Boolean = false
+    showMedicationToggle: Boolean = false,
+    onMedicationToggle: ((Boolean) -> Unit)? = null
 ) {
     var isMedicationOn by remember { mutableStateOf(medicationOn) }
+
+    // Sync local state with param changes (optional)
+    LaunchedEffect(medicationOn) {
+        isMedicationOn = medicationOn
+    }
 
     val maxVal = maxOf(previousTiming, latestTiming, 30)
 
@@ -75,8 +99,6 @@ fun LatestAssessmentResultsCard(
         modifier = modifier
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-
-            // Title
             Text(
                 text = "Assessment Result",
                 fontSize = subheading1,
@@ -86,7 +108,6 @@ fun LatestAssessmentResultsCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Type and Date row
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -109,7 +130,6 @@ fun LatestAssessmentResultsCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Status row
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier
@@ -129,7 +149,6 @@ fun LatestAssessmentResultsCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Progress Bar
             HorizontalProgressBar(
                 previousValue = previousTiming.toFloat(),
                 latestValue = latestTiming.toFloat(),
@@ -156,7 +175,10 @@ fun LatestAssessmentResultsCard(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Button(
-                    onClick = { isMedicationOn = !isMedicationOn },
+                    onClick = {
+                        isMedicationOn = !isMedicationOn
+                        onMedicationToggle?.invoke(isMedicationOn)
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = buttonBackgroundColor),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -173,7 +195,6 @@ fun LatestAssessmentResultsCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Comments section (like in PatientHomeScreen card design)
             Text(
                 text = "Comments:",
                 fontSize = subheading1,
