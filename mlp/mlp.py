@@ -57,6 +57,14 @@ X_selected_rf = X[:, top_features_idx]
 selected_features_rf = [feature_names[i] for i in top_features_idx]
 print(f"Top {X_selected_rf.shape[1]} features (RF importance): {selected_features_rf}")
 
+X_selected = X_selected_rf
+selected_features = selected_features_rf
+# Save selected features and labels to disk for reuse
+np.save('./mlp/X_selected.npy', X_selected)
+np.save('./mlp/y_selected.npy', y)
+print("Saved selected MLP features as X_selected.npy and y_selected.npy")
+
+
 # Use Random Forest selected features as they often work better for medical data
 X_selected = X_selected_rf
 selected_features = selected_features_rf
