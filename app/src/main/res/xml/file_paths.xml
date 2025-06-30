@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<paths>
-    <external-files-path
-        name="movies"
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Grant access to the Movies folder -->
+    <external-path
+        name="external_files"
         path="Movies/" />
 </paths>

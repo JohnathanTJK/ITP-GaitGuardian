@@ -2,6 +2,7 @@ package com.example.gaitguardian.screens.camera
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.os.Environment
 import android.util.Log
 import android.view.OrientationEventListener
 import android.widget.Toast
@@ -470,11 +471,14 @@ private fun recordVideo(
         onRecordingStateChange(false)
         return
     }
+    val publicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
+    if (!publicDir.exists()) publicDir.mkdirs()
 
     val outputFile = File(
-        context.getExternalFilesDir(android.os.Environment.DIRECTORY_MOVIES),
+        publicDir,
         "my-recording-${System.currentTimeMillis()}.mp4"
     )
+
 
     var recordingStartTimeNanos = 0L // to track the start time
 
