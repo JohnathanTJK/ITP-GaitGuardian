@@ -102,7 +102,11 @@ fun SettingsScreen(
                         tint = Color.Black
                     )
                     Spacer(modifier = Modifier.width(16.dp))
-                    Text(text = "Switch to Clinician View", fontSize = 18.sp, color = Color.Black)
+                    Text(
+                        text = if (isClinician) "Switch to Patient View" else "Switch to Clinician View",
+                        fontSize = 18.sp,
+                        color = Color.Black
+                    )
                 }
 
                 Row(

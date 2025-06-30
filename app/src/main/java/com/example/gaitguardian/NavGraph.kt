@@ -128,8 +128,8 @@ fun NavGraph(
     // to track if the initial navigation already happened
     var hasNavigated by rememberSaveable { mutableStateOf(false) }
 
-    // Upon app start,
-    // check what is the saved current view and load directly into the graph
+//    // Upon app start,
+//    // check what is the saved current view and load directly into the graph
     LaunchedEffect(currentUserView) {
         if (!hasNavigated) {
             when (currentUserView) {
@@ -164,15 +164,15 @@ fun NavGraph(
             bottomBar = {
                 if (currentDestination != "camera_screen" && currentDestination != "3m_screen") {
                     NavigationBar(
-//                containerColor = Color(0xFFFFC279),
                         containerColor = Color.White,
-//                containerColor =Color(0xFFFFD9A1),
                     ) {
-                        // List of Bottom Nav Bar Icons
+                        // Dynamically assign home route based on user view
+                        val homeRoute = if (currentUserView == "clinician") "clinician_home_screen" else "patient_home_screen"
+
                         val bottomNavItems = listOf(
                             Triple(
                                 "Home",
-                                "patient_home_screen",
+                                homeRoute,
                                 Icons.Filled.Home to Icons.Outlined.Home
                             ),
                             Triple(
@@ -181,11 +181,19 @@ fun NavGraph(
                                 Icons.Filled.Settings to Icons.Outlined.Settings
                             )
                         )
+
                         bottomNavItems.forEach { (navLabel, route, icons) ->
                             val isSelected = currentDestination == route
                             NavigationBarItem(
                                 selected = isSelected,
-                                onClick = { navController.navigate(route) },
+                                onClick = {
+                                    // Avoid adding duplicate copies in back stack
+                                    if (navController.currentDestination?.route != route) {
+                                        navController.navigate(route) {
+                                            launchSingleTop = true
+                                        }
+                                    }
+                                },
                                 icon = {
                                     Icon(
                                         imageVector = if (isSelected) icons.first else icons.second,
@@ -201,14 +209,13 @@ fun NavGraph(
                                     )
                                 },
                                 colors = NavigationBarItemDefaults.colors(
-                                    indicatorColor = Color.Transparent // Removes active indicator
+                                    indicatorColor = Color.Transparent
                                 )
                             )
                         }
                     }
                 }
             }
-
 
         ) { innerPadding ->
             NavHost(
