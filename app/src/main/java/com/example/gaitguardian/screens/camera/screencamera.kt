@@ -471,14 +471,10 @@ private fun recordVideo(
         onRecordingStateChange(false)
         return
     }
-    val publicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
-    if (!publicDir.exists()) publicDir.mkdirs()
-
     val outputFile = File(
-        publicDir,
+        context.getExternalFilesDir(android.os.Environment.DIRECTORY_MOVIES),
         "my-recording-${System.currentTimeMillis()}.mp4"
     )
-
 
     var recordingStartTimeNanos = 0L // to track the start time
 

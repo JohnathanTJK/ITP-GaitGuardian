@@ -66,7 +66,7 @@ fun ViewVideosScreen(
     navController: NavController
 ) {
     val context = LocalContext.current
-    val videoFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
+    val videoFolder = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
     val videoFiles = remember {
         videoFolder?.listFiles()?.filter { it.extension == "mp4" }
             ?.sortedByDescending { it.lastModified() } ?: emptyList()

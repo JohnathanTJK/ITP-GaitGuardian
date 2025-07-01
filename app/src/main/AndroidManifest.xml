@@ -5,8 +5,8 @@
     <!-- ADD CAMERA PERMISSION HERE -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+<!--    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />-->
+<!--    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />-->
 
     <!-- For ARCore-->
     <uses-feature android:name="android.hardware.camera.ar" android:required="true" />
