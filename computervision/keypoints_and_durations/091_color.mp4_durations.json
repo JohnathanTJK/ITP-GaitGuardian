@@ -1,0 +1,8 @@
+{
+    "Walk-From-Chair": 3.8,
+    "Walk-To-Chair": 2.9,
+    "Turn-Second": 1.6,
+    "Sit-To-Stand": 1.5,
+    "Turn-First": 1.43,
+    "Stand-To-Sit": 1.37
+}
