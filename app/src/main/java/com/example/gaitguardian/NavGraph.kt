@@ -49,9 +49,11 @@ import com.example.gaitguardian.screens.camera.ARCoreDistanceCheckScreen
 import com.example.gaitguardian.screens.camera.NewCameraScreen
 //import com.example.gaitguardian.screens.camera.NewCameraScreen
 import com.example.gaitguardian.screens.camera.mergedsiti.CameraScreen
+//import com.example.gaitguardian.screens.cameraTEST.WalkableDistanceScreen
 import com.example.gaitguardian.screens.clinician.ClinicianDetailedPatientViewScreen
 import com.example.gaitguardian.screens.clinician.ClinicianHomeScreen
 import com.example.gaitguardian.screens.clinician.PerformanceScreen
+import com.example.gaitguardian.screens.clinician.PinEntryExample
 import com.example.gaitguardian.screens.patient.AssessmentInfoScreen
 import com.example.gaitguardian.screens.patient.FtfsAssessmentScreen
 import com.example.gaitguardian.screens.patient.GaitAssessmentScreen
@@ -157,12 +159,12 @@ fun NavGraph(
             modifier = Modifier.fillMaxSize(),
             topBar = {
 //            PatientTopBar()
-                if (currentDestination != null && currentDestination != "camera_screen" && currentDestination != "3m_screen") {
+                if (currentDestination != null && currentDestination != "camera_screen" && currentDestination != "3m_screen" && currentDestination != "gpt_screen") {
                     NavTopBar(navController, currentDestination)
                 }
             },
             bottomBar = {
-                if (currentDestination != "camera_screen" && currentDestination != "3m_screen") {
+                if (currentDestination != "camera_screen" && currentDestination != "3m_screen" && currentDestination != "gpt_screen") {
                     NavigationBar(
                         containerColor = Color.White,
                     ) {
@@ -240,15 +242,21 @@ fun NavGraph(
                 }
                 // Clinician-Specific Screens here
                 navigation(
-                    startDestination = "clinician_home_screen", route = "clinician_graph"
+//                    startDestination = "clinician_home_screen", route = "clinician_graph"
+                    startDestination = "clinician_pin_verification_screen", route = "clinician_graph"
+
                 )
                 {
+                    composable("clinician_pin_verification_screen") {
+                        PinEntryExample(navController)
+                    }
                     composable("clinician_home_screen") {
                         ClinicianHomeScreen(navController, clinicianViewModel, patientViewModel)
                     }
                     composable("clinician_detailed_patient_view_screen") {
                         ClinicianDetailedPatientViewScreen(navController)
                     }
+
                     composable("performance_screen")
                     {
                         PerformanceScreen()
@@ -270,6 +278,10 @@ fun NavGraph(
                         onDistanceMet = {navController.navigate("camera_screen")}
                     )
                 }
+//                composable("gpt_screen")
+//                {
+//                    WalkableDistanceScreen()
+//                }
             }
 
                 // Patient-Specific Screens here
