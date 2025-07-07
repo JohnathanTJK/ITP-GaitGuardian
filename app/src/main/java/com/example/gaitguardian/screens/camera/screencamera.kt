@@ -60,9 +60,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
+import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessment
 import com.example.gaitguardian.viewmodels.PatientViewModel
 import kotlinx.coroutines.delay
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 enum class DeviceOrientation {
     PORTRAIT, LANDSCAPE_LEFT, LANDSCAPE_RIGHT, PORTRAIT_UPSIDE_DOWN
@@ -516,8 +520,18 @@ private fun recordVideo(
                         Toast.LENGTH_LONG
                     ).show()
                     if (patientViewModel.saveVideos.value) {
+                        val currentDateTime: String = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+                            .format(Date())
                         patientViewModel.addRecording(recordingTimeState.value)
                         navController.navigate("loading_screen/${recordingTimeState.value}")
+                        val newTug = TUGAssessment (
+                            // TODO: TO UPDATE WITH PATIENT'S MEDICATION STATUS + COMMENTS ETC.
+                            dateTime = currentDateTime,
+                            videoDuration = recordingTimeState.value.toFloat(),
+                            videoTitle = outputFile.name
+                        )
+                        patientViewModel.insertNewAssessment(newTug)
+                        Log.d("tug", "tug inserted into db")
                     } else {
                         val videoUri = event.outputResults.outputUri
                         val file = File(videoUri.path ?: "")

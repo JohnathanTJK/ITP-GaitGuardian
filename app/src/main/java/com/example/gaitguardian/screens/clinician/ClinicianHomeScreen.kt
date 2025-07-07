@@ -80,9 +80,11 @@ fun ClinicianHomeScreen(
 
     // Start: Patient ViewModel testing
     val patientInfo by patientViewModel.patient.collectAsState()
+
     // End: Patient ViewModel testing
     // Start: Clinician ViewModel testing
     val clinicianInfo by clinicianViewModel.clinician.collectAsState()
+    val uploadedAssesssments by clinicianViewModel.allTUGAssessments.collectAsState()
 
     // For the multiple mark-as-reviewed functionality
     var selectedVideoIds by remember { mutableStateOf(setOf<Int>()) }
@@ -134,7 +136,21 @@ fun ClinicianHomeScreen(
                     HorizontalDivider(thickness = 0.5.dp, color = Color(0xFF718096))
                 }
             }
+            item{
+                Text("db stuff")
+            }
+            items(uploadedAssesssments){ assessment ->
+                TUGVideoItem(
+                    navController = navController,
+                    testId = assessment.testId,
+                    dateTime = assessment.dateTime,
+                    medication = "",
+                    severity = "",
+                    watchStatus = if (assessment.watchStatus) "Watched" else "Pending",
 
+                )
+
+            }
 //            items(tugVideos) { video ->
                 items(filteredVideos) { video ->
                 TUGVideoItem(

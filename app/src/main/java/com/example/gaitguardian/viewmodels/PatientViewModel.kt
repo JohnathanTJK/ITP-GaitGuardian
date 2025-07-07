@@ -3,9 +3,11 @@ package com.example.gaitguardian.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.gaitguardian.data.roomDatabase.AppPreferencesRepository
 import com.example.gaitguardian.data.roomDatabase.patient.Patient
 import com.example.gaitguardian.data.roomDatabase.patient.PatientRepository
+import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessment
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessmentRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,6 +50,11 @@ class PatientViewModel(private val patientRepository: PatientRepository,private 
     }
 
     //TODO: Add the function to upload the TUG assessment into RoomDb
+    fun insertNewAssessment(assessment: TUGAssessment){
+        viewModelScope.launch(Dispatchers.IO) {
+            tugRepository.insert(assessment)
+        }
+    }
 
     // Store Current User
     fun saveCurrentUserView(currentUser: String) {

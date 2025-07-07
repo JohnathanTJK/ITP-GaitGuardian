@@ -8,6 +8,7 @@ import com.example.gaitguardian.data.roomDatabase.AppPreferencesRepository
 import com.example.gaitguardian.data.roomDatabase.clinician.Clinician
 import com.example.gaitguardian.data.roomDatabase.clinician.ClinicianDao
 import com.example.gaitguardian.data.roomDatabase.clinician.ClinicianRepository
+import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessment
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessmentRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +25,9 @@ class ClinicianViewModel(private val clinicianRepository: ClinicianRepository, p
     private val _allClinicians = MutableStateFlow<List<Clinician>>(emptyList())
     val allClinicians: StateFlow<List<Clinician>> = _allClinicians
 
+    // TUG
+    private val _allTUGAssessments = MutableStateFlow<List<TUGAssessment>>(emptyList())
+    val allTUGAssessments: StateFlow<List<TUGAssessment>> = _allTUGAssessments
     init {
         Log.d("ClinicianViewModel", "ClinicianVM init called")
 
@@ -38,6 +42,13 @@ class ClinicianViewModel(private val clinicianRepository: ClinicianRepository, p
             clinicianRepository.allClinicians.collect { clinicians ->
                 _allClinicians.value = clinicians
                 Log.d("ClinicianVM", "Loaded ${clinicians.size} clinicians: $clinicians")
+            }
+        }
+
+        viewModelScope.launch {
+            tugRepository.allTUGAssessments.collect { tugList ->
+                _allTUGAssessments.value = tugList
+                Log.d("ClinicianVM", "Loaded ${tugList.size} assessments: $tugList")
             }
         }
     }
@@ -64,7 +75,6 @@ class ClinicianViewModel(private val clinicianRepository: ClinicianRepository, p
         }
     }
     // Update the TUG Assessment (Notes, Reviewed) etc.
-
 
     //Datastore Preferences
     // Store Current User
