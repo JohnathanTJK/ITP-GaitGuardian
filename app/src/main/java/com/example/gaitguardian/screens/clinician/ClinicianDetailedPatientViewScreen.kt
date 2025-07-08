@@ -33,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -83,15 +84,30 @@ fun ClinicianDetailedPatientViewScreen(
         clinicianViewModel.loadAssessmentById(testId)
     }
 
+
     val assessment by clinicianViewModel.selectedTUGAssessment.collectAsState()
 
 
     val patient = Patient(2,"Benny", 18)
 
+    var tugDateTime by remember { mutableStateOf("") }
+    var tugVideo by remember { mutableStateOf("") }
+    var tugDuration by remember { mutableFloatStateOf(0f) }
     var clinicianComments by remember { mutableStateOf("") }
     var isReviewed by remember { mutableStateOf(false) }
+    var markAsReviewed by remember {mutableStateOf(false)}
     var statusUpdateMsg by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
+
+    LaunchedEffect(assessment?.testId) {
+        assessment?.let {
+            tugDateTime = it.dateTime
+            tugVideo = it.videoTitle
+            tugDuration = it.videoDuration
+            clinicianComments = it.notes.orEmpty()
+            isReviewed = it.watchStatus
+        }
+    }
 
     Column(
         modifier = modifier
@@ -113,13 +129,6 @@ fun ClinicianDetailedPatientViewScreen(
                 color = Color(0xFF718096),
                 fontWeight = FontWeight.Medium
             )
-            assessment?.let {
-                Text("Video Title: ${it.videoTitle}")
-                Text("Video Description: ${it.dateTime}")
-                if (it.videoTitle.isNotEmpty()) {
-                    VideoButton(it.videoTitle, it.videoDuration)
-                }
-            }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -136,16 +145,29 @@ fun ClinicianDetailedPatientViewScreen(
                     color = Color(0xFF718096)
                 )
             }
+
             Text(
-                "Video Details: 04/15/2023 1:30PM", fontSize = 14.sp,
+                "Assessment Details: ${tugDateTime}", fontSize = 14.sp,
                 color = Color(0xFF718096)
             )
-            Text(
-                "TUG TEST #5",
-                fontSize = 16.sp,
-                textAlign = TextAlign.Center,
-                color = Color.Black
-            )
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    "TUG TEST #${testId}",
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                    color = Color.Black
+                )
+                VideoWatchStatus((if (isReviewed) "Reviewed" else "Pending"))
+            }
+
+                VideoButton(tugVideo, tugDuration)
+
         }
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -182,6 +204,10 @@ fun ClinicianDetailedPatientViewScreen(
             Spacer(modifier = Modifier.height(16.dp))
             TUGsubTasksList()
             Spacer(modifier = Modifier.height(16.dp))
+//        assessment?.let {
+//            clinicianComments = it.notes.toString()
+//            isReviewed = it.watchStatus
+//        }
             Column{
                 Text("Clinician Notes:", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
                 OutlinedTextField(
@@ -201,50 +227,66 @@ fun ClinicianDetailedPatientViewScreen(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceAround,
-                    modifier = Modifier.padding(top = 16.dp).fillMaxWidth()
+                    modifier = Modifier
+                        .padding(top = 16.dp)
+                        .fillMaxWidth()
                 ) {
-                    Checkbox(
-                        checked = isReviewed,
-                        onCheckedChange = { isReviewed = it }
-                    )
-                    Text(text = "Mark as Reviewed", color = Color.Black)
-//                    Spacer(modifier = Modifier.weight(1f))
-                    Button(
-                        shape = RoundedCornerShape(10.dp),
-                        onClick = {
-                            //TODO: Update Database
-                            statusUpdateMsg = "Status Updated Successfully."
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = buttonBackgroundColor,
-                            contentColor = Color.Black,
-                            disabledContainerColor = Color.LightGray,
-                            disabledContentColor = Color.DarkGray
-                        ),
-                        // If no comments/ not reviewed, don't allow update.
-                        enabled = !clinicianComments.isEmpty() || isReviewed,
-                    ) {
-                        Text("Update Status", color = Color.Black)
+
+                    if (statusUpdateMsg.isNotEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFFDFF0D8), shape = RoundedCornerShape(8.dp))
+                                .padding(12.dp)
+                        ) {
+                            Text(
+                                text = statusUpdateMsg,
+                                color = Color(0xFF3C763D),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    } else {
+                        if(!isReviewed) {
+//                            Checkbox(
+//                                checked = isReviewed,
+//                                onCheckedChange = { isReviewed = it }
+//                            )
+                            Checkbox(
+                                checked = markAsReviewed,
+                                onCheckedChange = { markAsReviewed = it }
+                            )
+                            Text(text = "Mark as Reviewed", color = Color.Black)
+                        }
+                        Button(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(10.dp),
+                            onClick = {
+                                val finalReviewed = isReviewed || markAsReviewed
+                                clinicianViewModel.updateTUGReview(
+                                    testId,
+                                    finalReviewed,
+                                    clinicianComments
+                                )
+
+                                isReviewed = finalReviewed // update the isReviewed state
+                                statusUpdateMsg = "Status Updated Successfully."
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = buttonBackgroundColor,
+                                contentColor = Color.Black,
+                                disabledContainerColor = Color.LightGray,
+                                disabledContentColor = Color.DarkGray
+                            ),
+                            // If no comments/ not reviewed, don't allow update.
+                            enabled = !clinicianComments.isEmpty() || isReviewed,
+                        ) {
+                            Text("Update Status", color = Color.Black)
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                if (statusUpdateMsg.isNotEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0xFFDFF0D8), shape = RoundedCornerShape(8.dp))
-                            .padding(12.dp)
-                    ) {
-                        Text(
-                            text = statusUpdateMsg,
-                            color = Color(0xFF3C763D),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
             }
-
     }
 }
 
@@ -374,14 +416,29 @@ fun VideoButton(videoTitle: String, videoDuration: Float)
         VideoListItem(context,videoFile, videoDuration)
     }
     else{
-        Text("No video recording available.")
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFFFFF5F5), shape = RoundedCornerShape(8.dp))
+                .padding(12.dp)
+        ) {
+            Text(
+                text = "No Video Available",
+                color = Color(0xFFE53E3E),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 
 @Composable
 fun VideoListItem(context: Context, file: File, videoDuration: Float) {
 
-        Column(modifier = Modifier.fillMaxWidth().padding(20.dp)) {
+        Column(modifier = Modifier
+            .fillMaxWidth()
+            .padding(20.dp)) {
             Button(
                 onClick = {
                     val uri = FileProvider.getUriForFile(

@@ -86,6 +86,17 @@ class ClinicianViewModel(private val clinicianRepository: ClinicianRepository, p
             _selectedTUGAssessment.value = assessment
         }
     }
+    // Update the TUG Assessment (Notes, Reviewed) etc.
+    fun updateTUGReview(id: Int, watchStatus: Boolean, notes: String) {
+        viewModelScope.launch {
+            tugRepository.updateClinicianReview(id, watchStatus, notes)
+        }
+    }
+    fun markMultiAsReviewed(id: Int) {
+        viewModelScope.launch {
+            tugRepository.multiSelectMarkAsReviewed(id, true)
+        }
+    }
 
     //Datastore Preferences
     // Store Current User

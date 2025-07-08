@@ -17,6 +17,11 @@ interface TugDao {
     @Query("SELECT * FROM tug_assessment_table WHERE testId = :id")
     suspend fun getAssessmentById(id: Int): TUGAssessment?
 
+    @Query("UPDATE tug_assessment_table SET watchStatus = :watchStatus, notes = :notes WHERE testId = :id")
+    suspend fun updateClinicianReview(id: Int, watchStatus: Boolean, notes: String)
+
+    @Query("UPDATE tug_assessment_table SET watchStatus = :watchStatus WHERE testId = :id")
+    suspend fun multiSelectMarkAsReviewed(id: Int, watchStatus: Boolean)
 //    @Query("DELETE FROM patients_table WHERE id = :id")
 //    fun deletePatient(id: Int)
 }

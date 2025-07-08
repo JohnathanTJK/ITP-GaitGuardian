@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.gaitguardian.data.roomDatabase.patient.Patient
+import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessment
 import com.example.gaitguardian.data.roomDatabase.tug.TUGVideo
 import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.ui.theme.buttonBackgroundColor
@@ -61,22 +62,19 @@ fun ClinicianHomeScreen(
     modifier: Modifier = Modifier
 ) {
 
-    var tugVideos by remember { mutableStateOf(listOf(
-        //TODO: Replace with actual data
-        TUGVideo(1, "Today, 1:30PM", "ON", "High", true),
-        TUGVideo(2, "Today, 2:00PM", "OFF", "Low", true),
-        TUGVideo(3, "Yesterday, 10:15AM", "ON", "Medium", false),
-        TUGVideo(4, "May 5, 3:45PM", "OFF", "High", true),
-        TUGVideo(5, "April 30, 9:00AM", "ON", "Low", false),
-        TUGVideo(6, "April 28, 11:20AM", "OFF", "High", false),
-        TUGVideo(7, "April 25, 12:15PM", "ON", "Medium", true),
-        TUGVideo(8, "April 20, 4:45PM", "OFF", "Low", true),
-        TUGVideo(9, "April 18, 2:30PM", "ON", "High", true),
-        TUGVideo(10, "April 15, 1:00PM", "OFF", "Medium", false),
-    )) }
-
-    val pendingReviews =
-        tugVideos.count { !it.watchStatus } // Calculate number of videos that are not watched
+//    var tugVideos by remember { mutableStateOf(listOf(
+//        //TODO: Replace with actual data
+//        TUGVideo(1, "Today, 1:30PM", "ON", "High", true),
+//        TUGVideo(2, "Today, 2:00PM", "OFF", "Low", true),
+//        TUGVideo(3, "Yesterday, 10:15AM", "ON", "Medium", false),
+//        TUGVideo(4, "May 5, 3:45PM", "OFF", "High", true),
+//        TUGVideo(5, "April 30, 9:00AM", "ON", "Low", false),
+//        TUGVideo(6, "April 28, 11:20AM", "OFF", "High", false),
+//        TUGVideo(7, "April 25, 12:15PM", "ON", "Medium", true),
+//        TUGVideo(8, "April 20, 4:45PM", "OFF", "Low", true),
+//        TUGVideo(9, "April 18, 2:30PM", "ON", "High", true),
+//        TUGVideo(10, "April 15, 1:00PM", "OFF", "Medium", false),
+//    )) }
 
     // Start: Patient ViewModel testing
     val patientInfo by patientViewModel.patient.collectAsState()
@@ -86,6 +84,11 @@ fun ClinicianHomeScreen(
     val clinicianInfo by clinicianViewModel.clinician.collectAsState()
     val uploadedAssesssments by clinicianViewModel.allTUGAssessments.collectAsState()
 
+    val pendingReviews =
+        uploadedAssesssments.count { !it.watchStatus } // Calculate number of videos that are not watched
+    // tugVideos.count { !it.watchStatus } // Calculate number of videos that are not watched
+
+
     // For the multiple mark-as-reviewed functionality
     var selectedVideoIds by remember { mutableStateOf(setOf<Int>()) }
 
@@ -93,9 +96,10 @@ fun ClinicianHomeScreen(
     var showPendingVideos by remember { mutableStateOf(false) }
 
     val filteredVideos = if (showPendingVideos) {
-        tugVideos.filter { !it.watchStatus }
+        uploadedAssesssments.filter { !it.watchStatus }
+//        tugVideos.filter { !it.watchStatus }
     } else {
-        tugVideos
+        uploadedAssesssments
     }
 
     Spacer(Modifier.height(30.dp))
@@ -123,7 +127,8 @@ fun ClinicianHomeScreen(
 
             item {
                 VideoReviewsSummaryCard(
-                    totalTests = tugVideos.count(),
+//                    totalTests = tugVideos.count(),
+                    totalTests = uploadedAssesssments.count(),
                     pendingTests = pendingReviews,
                     showOnlyPending = showPendingVideos,
                     onFilterToggle = { showPendingVideos = it }
@@ -136,30 +141,18 @@ fun ClinicianHomeScreen(
                     HorizontalDivider(thickness = 0.5.dp, color = Color(0xFF718096))
                 }
             }
-            item{
-                Text("db stuff")
-            }
-            items(uploadedAssesssments){ assessment ->
-                TUGVideoItem(
-                    navController = navController,
-                    testId = assessment.testId,
-                    dateTime = assessment.dateTime,
-                    medication = "",
-                    severity = "",
-                    watchStatus = if (assessment.watchStatus) "Watched" else "Pending",
 
-                )
-
-            }
 //            items(tugVideos) { video ->
                 items(filteredVideos) { video ->
                 TUGVideoItem(
                     navController = navController,
                     testId = video.testId,
                     dateTime = video.dateTime,
-                    medication = video.medication,
-                    severity = video.severity,
-                    watchStatus = if (video.watchStatus) "Watched" else "Pending",
+//                    medication = video.medication,
+//                    severity = video.severity,
+                    medication = "TO BE UPDATED",
+                    severity = "TO BE UPDATED",
+                    watchStatus = if (video.watchStatus) "Reviewed" else "Pending",
                     isSelected = selectedVideoIds.contains(video.testId),
                     onSelectionChanged = { isSelected ->
                         selectedVideoIds = if (isSelected) {
@@ -179,15 +172,16 @@ fun ClinicianHomeScreen(
 //                    // TODO: To update the database
                     // TODO: something likeclinicianViewModel.markVideoAsWatched(videoId)
                     selectedVideoIds.forEach { videoId ->
+                        clinicianViewModel.markMultiAsReviewed(videoId)
                     }
                     // For Testing Only
-                    tugVideos = tugVideos.map { video ->
-                        if (video.testId in selectedVideoIds) {
-                            video.copy(watchStatus = true)
-                        } else {
-                            video
-                        }
-                    }
+//                    tugVideos = tugVideos.map { video ->
+//                        if (video.testId in selectedVideoIds) {
+//                            video.copy(watchStatus = true)
+//                        } else {
+//                            video
+//                        }
+//                    }
 
                     // After update then clear the selection
                     selectedVideoIds = setOf()
@@ -255,7 +249,7 @@ fun MultiSelectControls(
                     containerColor = Color.White
                 )
             ) {
-                Text("Mark as Watched", color = Color(0xFF4299E1))
+                Text("Mark as Reviewed", color = Color(0xFF4299E1))
             }
         }
     }
@@ -457,7 +451,7 @@ fun VideoWatchStatus(watchStatus: String) {
             .width(80.dp),
         shape = RoundedCornerShape(5.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (watchStatus == "Watched") Color(0xFFC6F6D5) else Color(0xFFFEEBC8),
+            containerColor = if (watchStatus == "Reviewed") Color(0xFFC6F6D5) else Color(0xFFFEEBC8),
         )
     ) {
         Box(
@@ -468,7 +462,7 @@ fun VideoWatchStatus(watchStatus: String) {
                 text = watchStatus,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = if (watchStatus == "Watched") Color(0xFF2F855A) else Color(0xFFDD6B20),
+                color = if (watchStatus == "Reviewed") Color(0xFF2F855A) else Color(0xFFDD6B20),
                 textAlign = TextAlign.Center
             )
         }

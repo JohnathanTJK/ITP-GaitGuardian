@@ -15,4 +15,15 @@ class TUGAssessmentRepository(private val tugDao: TugDao) {
     suspend fun getAssessmentById(id: Int): TUGAssessment? {
         return tugDao.getAssessmentById(id)
     }
+
+    @WorkerThread
+    suspend fun updateClinicianReview(id: Int, watchStatus: Boolean, notes: String) {
+        tugDao.updateClinicianReview(id, watchStatus, notes)
+    }
+
+    @WorkerThread
+    suspend fun multiSelectMarkAsReviewed(id: Int, watchStatus: Boolean) {
+        tugDao.multiSelectMarkAsReviewed(id, watchStatus)
+    }
+
 }
