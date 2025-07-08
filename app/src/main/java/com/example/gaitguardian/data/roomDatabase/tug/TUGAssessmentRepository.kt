@@ -10,4 +10,9 @@ class TUGAssessmentRepository(private val tugDao: TugDao) {
     suspend fun insert(tugAssessment: TUGAssessment) {
         tugDao.insertNewTUGAssessment(tugAssessment)
     }
+
+    @WorkerThread
+    suspend fun getAssessmentById(id: Int): TUGAssessment? {
+        return tugDao.getAssessmentById(id)
+    }
 }

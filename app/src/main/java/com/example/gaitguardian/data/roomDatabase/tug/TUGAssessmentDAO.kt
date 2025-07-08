@@ -14,6 +14,9 @@ interface TugDao {
     @Insert
     suspend fun insertNewTUGAssessment(tugAssessment: TUGAssessment)
 
+    @Query("SELECT * FROM tug_assessment_table WHERE testId = :id")
+    suspend fun getAssessmentById(id: Int): TUGAssessment?
+
 //    @Query("DELETE FROM patients_table WHERE id = :id")
 //    fun deletePatient(id: Int)
 }

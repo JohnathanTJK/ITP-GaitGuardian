@@ -28,6 +28,10 @@ class ClinicianViewModel(private val clinicianRepository: ClinicianRepository, p
     // TUG
     private val _allTUGAssessments = MutableStateFlow<List<TUGAssessment>>(emptyList())
     val allTUGAssessments: StateFlow<List<TUGAssessment>> = _allTUGAssessments
+
+    private val _selectedTUGAssessment = MutableStateFlow<TUGAssessment?>(null)
+    val selectedTUGAssessment: StateFlow<TUGAssessment?> = _selectedTUGAssessment
+
     init {
         Log.d("ClinicianViewModel", "ClinicianVM init called")
 
@@ -75,6 +79,13 @@ class ClinicianViewModel(private val clinicianRepository: ClinicianRepository, p
         }
     }
     // Update the TUG Assessment (Notes, Reviewed) etc.
+    // Get selected assessment by Id from RoomDB
+    fun loadAssessmentById(id: Int) {
+        viewModelScope.launch {
+            val assessment = tugRepository.getAssessmentById(id)
+            _selectedTUGAssessment.value = assessment
+        }
+    }
 
     //Datastore Preferences
     // Store Current User

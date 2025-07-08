@@ -1,6 +1,10 @@
 package com.example.gaitguardian.screens.clinician
 
+import android.content.Context
+import android.content.Intent
+import android.os.Environment
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,11 +24,14 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,14 +39,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.navigation.NavController
 import com.example.gaitguardian.data.roomDatabase.patient.Patient
 import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.ui.theme.buttonBackgroundColor
+import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
@@ -56,12 +66,26 @@ import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.core.common.component.TextComponent
 import com.patrykandpatrick.vico.core.common.shape.CorneredShape
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun ClinicianDetailedPatientViewScreen(
     navController: NavController,
+    clinicianViewModel: ClinicianViewModel,
+    testId: Int,
     modifier: Modifier = Modifier
 ) {
+
+    LaunchedEffect(testId) { // pre-load with the testId from backStackEntry
+        clinicianViewModel.loadAssessmentById(testId)
+    }
+
+    val assessment by clinicianViewModel.selectedTUGAssessment.collectAsState()
+
+
     val patient = Patient(2,"Benny", 18)
 
     var clinicianComments by remember { mutableStateOf("") }
@@ -89,6 +113,13 @@ fun ClinicianDetailedPatientViewScreen(
                 color = Color(0xFF718096),
                 fontWeight = FontWeight.Medium
             )
+            assessment?.let {
+                Text("Video Title: ${it.videoTitle}")
+                Text("Video Description: ${it.dateTime}")
+                if (it.videoTitle.isNotEmpty()) {
+                    VideoButton(it.videoTitle, it.videoDuration)
+                }
+            }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -330,4 +361,48 @@ fun JetpackComposeBasicLineChart(modifier: Modifier = Modifier) {
         }
     }
     JetpackComposeBasicLineChart(modelProducer, modifier)
+}
+
+
+@Composable
+fun VideoButton(videoTitle: String, videoDuration: Float)
+{
+    val context = LocalContext.current
+    val videoFolder = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
+    val videoFile = videoFolder?.listFiles()?.find { it.name == videoTitle }
+    if (videoFile != null && videoFile.exists()) {
+        VideoListItem(context,videoFile, videoDuration)
+    }
+    else{
+        Text("No video recording available.")
+    }
+}
+
+@Composable
+fun VideoListItem(context: Context, file: File, videoDuration: Float) {
+
+        Column(modifier = Modifier.fillMaxWidth().padding(20.dp)) {
+            Button(
+                onClick = {
+                    val uri = FileProvider.getUriForFile(
+                        context,
+                        "${context.packageName}.provider",
+                        file
+                    )
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(uri, "video/mp4")
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    context.startActivity(intent)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFFC9E4F),
+                    contentColor = Color.Black
+                )
+            ) {
+                Text("Watch Assessment Recording", fontWeight = FontWeight.Bold)
+            }
+        }
 }

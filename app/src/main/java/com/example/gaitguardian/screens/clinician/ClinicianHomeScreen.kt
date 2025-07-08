@@ -430,7 +430,9 @@ fun TUGVideoItem(
             if (!isSelected) {
                 Button(
                     onClick = {
-                        navController.navigate("clinician_detailed_patient_view_screen")
+//                        navController.navigate("clinician_detailed_patient_view_screen")
+                        navController.navigate("clinician_detailed_patient_view_screen/${testId}")
+
                     },
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier

@@ -253,9 +253,18 @@ fun NavGraph(
                     composable("clinician_home_screen") {
                         ClinicianHomeScreen(navController, clinicianViewModel, patientViewModel)
                     }
-                    composable("clinician_detailed_patient_view_screen") {
-                        ClinicianDetailedPatientViewScreen(navController)
+//                    composable("clinician_detailed_patient_view_screen") {
+//                        ClinicianDetailedPatientViewScreen(navController)
+//                    }
+                    composable("clinician_detailed_patient_view_screen/{testId}") { backStackEntry ->
+                        val testId = backStackEntry.arguments?.getString("testId")?.toIntOrNull()
+                        if (testId != null) {
+                            ClinicianDetailedPatientViewScreen(navController, clinicianViewModel,testId)
+                        }
                     }
+//                    composable("clinician_detailed_patient_view_screen") {
+//                        ClinicianDetailedPatientViewScreen(navController)
+//                    }
 
                     composable("performance_screen")
                     {
