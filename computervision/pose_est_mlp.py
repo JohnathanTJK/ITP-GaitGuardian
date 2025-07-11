@@ -23,19 +23,9 @@ import warnings
 warnings.filterwarnings('ignore')
 
 class GaitGuardianMLP:
-    """
-    Multi-Layer Perceptron for GaitGuardian project
-    Handles both subtask classification and severity prediction for Parkinson's disease patients
-    """
     
     def __init__(self, task='subtask', random_state=42):
-        """
-        Initialize the MLP model
-        
-        Args:
-            task (str): 'subtask' for TUG subtask classification or 'severity' for severity prediction
-            random_state (int): Random seed for reproducibility
-        """
+
         self.task = task
         self.random_state = random_state
         self.model = None
@@ -61,13 +51,6 @@ class GaitGuardianMLP:
             raise ValueError("Task must be 'subtask' or 'severity'")
     
     def load_data(self, input_dir="./computervision/keypoints_and_durations", gait_features_path="./computervision/keypoints_and_durations/gait_features.csv"):
-        """
-        Load and preprocess data from CSV files
-        
-        Args:
-            input_dir (str): Directory containing labeled CSV files
-            gait_features_path (str): Path to gait features CSV
-        """
         print(f"[INFO] Loading data for {self.task} task...")
         
         if self.task == 'subtask':
@@ -102,18 +85,22 @@ class GaitGuardianMLP:
             
             # Create synthetic severity labels based on gait metrics (for demonstration)
             # In practice, these would come from clinical assessments
-            self.df['severity'] = self._generate_severity_labels_improved(self.df)
+            self.df['severity'] = self.generate_severity_labels(self.df)
             
             # Prepare features and labels
             self.feature_cols = [c for c in self.df.columns if c not in ['video', 'severity']]
             self.X = self.df[self.feature_cols].fillna(0).values
             self.y = self.df['severity'].values
+            
+            # FIX: Update classes and output_dim based on actual data
+            self.classes = sorted(list(set(self.y)))
+            self.output_dim = len(self.classes)
+            print(f"[INFO] Detected {self.output_dim} severity classes: {self.classes}")
         
         print(f"[INFO] Loaded {len(self.df)} samples with {len(self.feature_cols)} features")
         print(f"[INFO] Class distribution: {Counter(self.y)}")
-    
+
     def _smooth_labels(self, df, window=7):
-        """Smooth labels per video to reduce noise"""
         smoothed_dfs = []
         for video in df['video'].unique():
             sub_df = df[df['video'] == video].copy()
@@ -129,7 +116,6 @@ class GaitGuardianMLP:
         return pd.concat(smoothed_dfs, ignore_index=True)
     
     def debug_severity_classification(self):
-        """Debug the severity classification by examining the data"""
         print("\n[DEBUG] Examining gait features data...")
         print("-" * 50)
         
@@ -156,191 +142,10 @@ class GaitGuardianMLP:
             print(duration_cols)
         
         return self.df.columns.tolist()
+    
+    def generate_severity_labels(self, df):
 
-    def _generate_severity_labels(self, df):
-        """
-        Generate severity labels based on TUG test performance
-        
-        Classification criteria:
-        - Normal: ≤7s total time, turning/walking ratio <0.5
-        - Slight: ≤13s total time, turning/walking ratio <1.0
-        - Mild: ≤13s total time, turning/walking ratio ≥1.0
-        - Moderate: >13s total time, turning/walking ratio >1.0, but straight walking still reasonable
-        - Severe: >13s total time with obvious issues in both turning and straight walking
-        
-        Args:
-            df (pd.DataFrame): DataFrame containing gait features
-            
-        Returns:
-            list: Severity labels for each sample
-        """
-        severity_labels = []
-        
-        for _, row in df.iterrows():
-            # Calculate total TUG time (assuming we have these components)
-            # You may need to adjust these column names based on your actual data
-            total_time = (row.get('sit_to_stand_duration', 0) + 
-                        row.get('walk_from_chair_duration', 0) + 
-                        row.get('turn1_duration', 0) + 
-                        row.get('walk_to_chair_duration', 0) + 
-                        row.get('turn2_duration', 0) + 
-                        row.get('stand_to_sit_duration', 0))
-            
-            # Calculate turning time (both turns combined)
-            turning_time = row.get('turn1_duration', 0) + row.get('turn2_duration', 0)
-            
-            # Calculate straight walking time
-            straight_walking_time = (row.get('walk_from_chair_duration', 0) + 
-                                row.get('walk_to_chair_duration', 0))
-            
-            # Calculate turning to walking ratio
-            if straight_walking_time > 0:
-                turning_ratio = turning_time / straight_walking_time
-            else:
-                turning_ratio = float('inf')  # Handle division by zero
-            
-            # Additional gait quality indicators
-            cadence = row.get('cadence', 120)  # steps per minute
-            step_symmetry = row.get('step_symmetry', 0)
-            upper_body_sway = row.get('upper_body_sway', 0)
-            
-            # Classify severity based on clinical criteria
-            if total_time <= 7 and turning_ratio < 0.5:
-                # Normal: Healthy adult performance
-                severity_labels.append('Normal')
-                
-            elif total_time <= 13 and turning_ratio < 1.0:
-                # Slight: Can complete within normal time with minimal turning issues
-                severity_labels.append('Slight')
-                
-            elif total_time <= 13 and turning_ratio >= 1.0:
-                # Mild: Can complete within normal time but turning is problematic
-                severity_labels.append('Mild')
-                
-            elif total_time > 13 and turning_ratio > 1.0:
-                # Need to distinguish between Moderate and Severe
-                # Moderate: Turning is the main issue, straight walking still reasonable
-                # Severe: Both turning and straight walking are problematic
-                
-                # Define "reasonable" straight walking (based on expected walking speed)
-                # Normal walking speed for 6m total distance should be around 3-4 seconds
-                expected_walking_time = 4.0  # seconds for 6m at normal speed
-                walking_impairment_ratio = straight_walking_time / expected_walking_time
-                
-                # Additional severity indicators
-                severe_indicators = 0
-                
-                # Very slow cadence
-                if cadence < 80:
-                    severe_indicators += 1
-                
-                # Poor step symmetry
-                if step_symmetry > 0.3:
-                    severe_indicators += 1
-                    
-                # Excessive upper body sway
-                if upper_body_sway > 0.15:
-                    severe_indicators += 1
-                    
-                # Very long straight walking time
-                if walking_impairment_ratio > 2.0:
-                    severe_indicators += 1
-                    
-                # Very long turning time
-                if turning_time > 8.0:
-                    severe_indicators += 1
-                
-                # Classify as Moderate or Severe
-                if severe_indicators >= 3 or walking_impairment_ratio > 2.5:
-                    severity_labels.append('Severe')
-                else:
-                    severity_labels.append('Moderate')
-                    
-            else:
-                # Fallback for edge cases (total_time > 13 but turning_ratio <= 1.0)
-                # This suggests straight walking is the main issue
-                if total_time > 20:  # Very slow overall
-                    severity_labels.append('Severe')
-                else:
-                    severity_labels.append('Moderate')
-        
-        return severity_labels
-    
-    def _generate_severity_labels_fixed(self, df):
-        """
-        Fixed severity classification with proper column handling and debugging
-        """
-        print("\n[DEBUG] Generating severity labels...")
-        
-        severity_labels = []
-        
-        # First, let's examine what columns we actually have
-        print("Available columns:", df.columns.tolist())
-        
-        for idx, row in df.iterrows():
-            print(f"\n[DEBUG] Processing sample {idx}:")
-            
-            # Try to identify actual duration columns in your data
-            # You'll need to adjust these based on your actual column names
-            duration_cols = [col for col in df.columns if 'duration' in col.lower() or 'time' in col.lower()]
-            print(f"Duration columns found: {duration_cols}")
-            
-            # Calculate total time using available columns
-            total_time = 0
-            turning_time = 0
-            straight_walking_time = 0
-            
-            # Add up all duration columns for total time
-            for col in duration_cols:
-                value = row.get(col, 0)
-                if pd.notna(value):
-                    total_time += value
-                    print(f"  {col}: {value}s")
-                    
-                    # Categorize as turning or walking
-                    if 'turn' in col.lower():
-                        turning_time += value
-                    elif 'walk' in col.lower():
-                        straight_walking_time += value
-            
-            print(f"  Total time: {total_time}s")
-            print(f"  Turning time: {turning_time}s")
-            print(f"  Walking time: {straight_walking_time}s")
-            
-            # Calculate ratio
-            if straight_walking_time > 0:
-                turning_ratio = turning_time / straight_walking_time
-            else:
-                turning_ratio = 0
-            
-            print(f"  Turning ratio: {turning_ratio:.2f}")
-            
-            # Apply classification rules
-            if total_time <= 7 and turning_ratio < 0.5:
-                severity = 'Normal'
-            elif total_time <= 13 and turning_ratio < 1.0:
-                severity = 'Slight'
-            elif total_time <= 13 and turning_ratio >= 1.0:
-                severity = 'Mild'
-            elif total_time > 13:
-                # For demonstration, let's be more generous with Moderate classification
-                if turning_ratio > 2.0 or total_time > 25:
-                    severity = 'Severe'
-                else:
-                    severity = 'Moderate'
-            else:
-                severity = 'Normal'  # fallback
-            
-            print(f"  Classified as: {severity}")
-            severity_labels.append(severity)
-        
-        return severity_labels
-    
-    def _generate_severity_labels_improved(self, df):
-        """
-        Improved severity classification with better thresholds and validation
-        """
-        print("\n[DEBUG] Generating improved severity labels...")
+        print("\n[DEBUG] Generating optimized severity labels...")
         
         severity_labels = []
         
@@ -368,57 +173,305 @@ class GaitGuardianMLP:
                     elif 'walk' in col.lower():
                         walking_time += value
             
-            # Validate total time makes sense
-            if total_time < 5:  # Suspiciously fast
-                print(f"[WARNING] Sample {idx}: Total time {total_time:.2f}s seems too fast")
-                # Could be subsection durations rather than full TUG
-                total_time *= 2  # Adjust if needed
+            # Data validation
+            if total_time < 3:  # Suspiciously fast - likely incomplete data
+                print(f"[WARNING] Sample {idx}: Total time {total_time:.2f}s seems incomplete")
+                # Handle according to your data structure
             
-            # Calculate movement efficiency metrics
+            # Calculate turning ratio (key metric per feedback)
             if walking_time > 0:
                 turning_ratio = turning_time / walking_time
             else:
-                turning_ratio = 0
+                turning_ratio = float('inf')  # Handle edge case
             
-            # Improved classification thresholds based on clinical literature
-            if total_time <= 10:
-                if turning_ratio < 0.3:
-                    severity = 'Normal'
-                elif turning_ratio < 0.8:
-                    severity = 'Slight'
-                else:
-                    severity = 'Mild'
-            elif total_time <= 15:
-                if turning_ratio < 0.5:
-                    severity = 'Slight'
-                elif turning_ratio < 1.2:
-                    severity = 'Mild'
-                else:
-                    severity = 'Moderate'
-            elif total_time <= 20:
+            # Classification based on clinical feedback:
+            # Normal: ≤7s, turning_ratio < 1.0 (healthy adults)
+            # Slight: ≤13s, turning_ratio < 1.0 (low risk, brief turning)
+            # Mild: ≤13s, turning_ratio ≥ 1.0 (low risk, prolonged turning)
+            # Moderate: >13s, turning_ratio > 1.0, walking still reasonable
+            # Severe: >13s, obvious issues with both walking and turning
+            
+            if total_time <= 7 and turning_ratio < 1.0:
+                severity = 'Normal'
+                
+            elif total_time <= 13:
                 if turning_ratio < 1.0:
+                    severity = 'Slight'
+                else:
                     severity = 'Mild'
+                    
+            else:  # total_time > 13
+                if turning_ratio > 1.0:
+                    # Need to distinguish Moderate vs Severe
+                    # Moderate: turning is main issue, walking still reasonable
+                    # Severe: both turning and walking are problematic
+                    
+                    # Define "reasonable" walking speed
+                    # For 6m total distance, normal speed ~3-4 seconds
+                    expected_walking_time = 4.0
+                    walking_impairment_ratio = walking_time / expected_walking_time if expected_walking_time > 0 else 0
+                    
+                    # Severe indicators
+                    severe_conditions = [
+                        walking_impairment_ratio > 2.5,  # Very slow straight walking
+                        turning_time > 8.0,              # Excessively long turning
+                        total_time > 20,                 # Very slow overall
+                    ]
+                    
+                    if sum(severe_conditions) >= 2:
+                        severity = 'Severe'
+                    else:
+                        severity = 'Moderate'
                 else:
-                    severity = 'Moderate'
-            else:  # > 20 seconds
-                if turning_ratio > 2.0:
-                    severity = 'Severe'
-                else:
-                    severity = 'Moderate'
+                    # total_time > 13 but turning_ratio <= 1.0
+                    # This suggests straight walking is the main issue
+                    if total_time > 20:
+                        severity = 'Severe'
+                    else:
+                        severity = 'Moderate'
             
-            print(f"Sample {idx}: Total={total_time:.2f}s, Turning ratio={turning_ratio:.2f} → {severity}")
+            print(f"Sample {idx}: Total={total_time:.2f}s, Walking={walking_time:.2f}s, "
+                f"Turning={turning_time:.2f}s, Ratio={turning_ratio:.2f} → {severity}")
+            
+            severity_labels.append(severity)
+        return severity_labels
+    
+    def generate_severity_labels_fixed(self, df):
+        """
+        Fixed severity classification that works with available data
+        Uses only turn durations and stride_time when walking durations are missing
+        """
+        print("\n[DEBUG] Generating severity labels with available data...")
+        
+        severity_labels = []
+        
+        # Print available columns for debugging
+        print("Available columns:", df.columns.tolist())
+        
+        # Find all duration columns
+        duration_cols = [col for col in df.columns if 'duration' in col.lower() or 'time' in col.lower()]
+        print(f"Duration columns found: {duration_cols}")
+        
+        for idx, row in df.iterrows():
+            # Get available duration data
+            turn1_duration = row.get('turn1_duration', 0)
+            turn2_duration = row.get('turn2_duration', 0)
+            stride_time = row.get('stride_time', 0)
+            
+            # Calculate total turning time
+            total_turning_time = turn1_duration + turn2_duration
+            
+            # Estimate total TUG time using available data
+            # Method 1: If stride_time represents average stride duration
+            step_count = row.get('step_count', 0)
+            if step_count > 0 and stride_time > 0:
+                estimated_walking_time = step_count * stride_time
+                total_time = total_turning_time + estimated_walking_time
+            else:
+                # Method 2: Use turning time as primary indicator
+                # Assume normal ratio of turning:walking is about 1:2 for healthy individuals
+                # So if turning time is T, total time ≈ T + 2*T = 3*T
+                estimated_walking_time = total_turning_time * 2
+                total_time = total_turning_time + estimated_walking_time
+            
+            # Alternative: Use only turning time for classification
+            # This is more reliable given your data structure
+            primary_metric = total_turning_time
+            
+            # Revised classification based on turning time only
+            # Based on literature: normal turning time is 1-3 seconds total
+            if primary_metric <= 4.0:  # Normal turning (1-4s total)
+                severity = 'Normal'
+            elif primary_metric <= 6.0:  # Slightly slow turning (4-6s)
+                severity = 'Slight'
+            elif primary_metric <= 9.0:  # Mild impairment (6-9s)
+                severity = 'Mild'
+            elif primary_metric <= 15.0:  # Moderate impairment (9-15s)
+                severity = 'Moderate'
+            else:  # Severe impairment (>15s)
+                severity = 'Severe'
+            
+            print(f"Sample {idx}: Turn1={turn1_duration:.2f}s, Turn2={turn2_duration:.2f}s, "
+                f"Total_Turning={total_turning_time:.2f}s → {severity}")
+            
             severity_labels.append(severity)
         
         return severity_labels
+
+    def generate_severity_labels_comprehensive(self, df):
+        """
+        Comprehensive severity classification using multiple gait features
+        """
+        print("\n[DEBUG] Generating comprehensive severity labels...")
+        
+        severity_labels = []
+        
+        for idx, row in df.iterrows():
+            # Collect all available metrics
+            turn1_duration = row.get('turn1_duration', 0)
+            turn2_duration = row.get('turn2_duration', 0)
+            stride_time = row.get('stride_time', 0)
+            cadence = row.get('cadence', 0)
+            step_symmetry = row.get('step_symmetry', 0)
+            upper_body_sway = row.get('upper_body_sway', 0)
+            
+            # Calculate composite scores
+            total_turning_time = turn1_duration + turn2_duration
+            
+            # Scoring system (0-4 scale for each metric)
+            turning_score = min(4, max(0, (total_turning_time - 2) / 2))  # 0-4 based on 2-10s range
+            
+            # Cadence score (normal: 100-120 steps/min)
+            if cadence > 0:
+                cadence_score = min(4, max(0, (120 - cadence) / 10))
+            else:
+                cadence_score = 2  # Neutral if missing
+                
+            # Stride time score (normal: 0.9-1.2s)
+            if stride_time > 0:
+                stride_score = min(4, max(0, (stride_time - 0.9) / 0.2))
+            else:
+                stride_score = 2  # Neutral if missing
+                
+            # Symmetry score (normal: close to 1.0)
+            if step_symmetry > 0:
+                symmetry_score = min(4, max(0, abs(step_symmetry - 1.0) * 4))
+            else:
+                symmetry_score = 2  # Neutral if missing
+                
+            # Sway score (normal: minimal sway)
+            if upper_body_sway > 0:
+                sway_score = min(4, max(0, upper_body_sway / 0.1))
+            else:
+                sway_score = 2  # Neutral if missing
+            
+            # Weighted composite score
+            weights = {
+                'turning': 0.3,
+                'cadence': 0.2,
+                'stride': 0.2,
+                'symmetry': 0.15,
+                'sway': 0.15
+            }
+            
+            composite_score = (
+                turning_score * weights['turning'] +
+                cadence_score * weights['cadence'] +
+                stride_score * weights['stride'] +
+                symmetry_score * weights['symmetry'] +
+                sway_score * weights['sway']
+            )
+            
+            # Classification based on composite score
+            if composite_score <= 0.8:
+                severity = 'Normal'
+            elif composite_score <= 1.5:
+                severity = 'Slight'
+            elif composite_score <= 2.5:
+                severity = 'Mild'
+            elif composite_score <= 3.5:
+                severity = 'Moderate'
+            else:
+                severity = 'Severe'
+            
+            print(f"Sample {idx}: Turning={total_turning_time:.2f}s, Cadence={cadence:.1f}, "
+                f"Stride={stride_time:.3f}s, Composite={composite_score:.2f} → {severity}")
+            
+            severity_labels.append(severity)
+        
+        return severity_labels
+
+    def rule_based_severity_classifier(self, df):
+        """
+        Rule-based severity classifier that doesn't require ML training
+        More suitable for small datasets
+        """
+        print("\n[INFO] Using rule-based severity classification...")
+        
+        results = []
+        
+        for idx, row in df.iterrows():
+            # Extract features
+            turn1_duration = row.get('turn1_duration', 0)
+            turn2_duration = row.get('turn2_duration', 0)
+            stride_time = row.get('stride_time', 0)
+            cadence = row.get('cadence', 0)
+            step_symmetry = row.get('step_symmetry', 1.0)
+            upper_body_sway = row.get('upper_body_sway', 0)
+            
+            # Rule-based decision tree
+            total_turning_time = turn1_duration + turn2_duration
+            
+            # Primary indicator: turning time
+            if total_turning_time <= 4.0:
+                if cadence >= 100 and stride_time <= 1.2:
+                    severity = 'Normal'
+                else:
+                    severity = 'Slight'
+            elif total_turning_time <= 8.0:
+                if cadence >= 80:
+                    severity = 'Mild'
+                else:
+                    severity = 'Moderate'
+            else:
+                severity = 'Severe'
+            
+            # Confidence score
+            confidence = 0.8 if total_turning_time > 0 else 0.5
+            
+            results.append({
+                'severity': severity,
+                'confidence': confidence,
+                'turning_time': total_turning_time,
+                'cadence': cadence,
+                'stride_time': stride_time
+            })
+        
+        return results
+
+    def improved_severity_classification(self):
+
+        print("\n[INFO] Improved Severity Classification Approach")
+        print("-" * 50)
+        
+        # Option 1: Use rule-based classification
+        rule_results = self.rule_based_severity_classifier(self.df)
+        
+        # Option 2: Use comprehensive feature-based classification
+        comprehensive_labels = self.generate_severity_labels_comprehensive(self.df)
+        
+        # Option 3: Use simple turning-time based classification
+        simple_labels = self.generate_severity_labels_fixed(self.df)
+        
+        # Compare results
+        print("\n[INFO] Comparison of Classification Methods:")
+        print("-" * 50)
+        
+        from collections import Counter
+        
+        rule_severities = [r['severity'] for r in rule_results]
+        print(f"Rule-based: {Counter(rule_severities)}")
+        print(f"Comprehensive: {Counter(comprehensive_labels)}")
+        print(f"Simple: {Counter(simple_labels)}")
+        
+        # Recommend best approach based on data distribution
+        simple_dist = Counter(simple_labels)
+        if len(simple_dist) >= 3 and min(simple_dist.values()) >= 2:
+            print("\n[RECOMMENDATION] Use simple turning-time based classification")
+            selected_labels = simple_labels
+        else:
+            print("\n[RECOMMENDATION] Use rule-based classification for this dataset")
+            selected_labels = rule_severities
+        
+        # FIX: Update classes and output_dim based on selected labels
+        self.classes = sorted(list(set(selected_labels)))
+        self.output_dim = len(self.classes)
+        print(f"[INFO] Final classes: {self.classes}")
+        print(f"[INFO] Final output dimension: {self.output_dim}")
+        
+        return selected_labels
     
     def _validate_severity_classification(self, df, severity_labels):
-        """
-        Validate the severity classification and provide statistics
-        
-        Args:
-            df (pd.DataFrame): DataFrame containing gait features
-            severity_labels (list): Generated severity labels
-        """
         print("\n[INFO] Severity Classification Validation")
         print("-" * 50)
         
@@ -471,7 +524,6 @@ class GaitGuardianMLP:
 
 
     def plot_severity_distribution(self):
-        """Plot the distribution of severity levels and their characteristics"""
         if not hasattr(self, 'df') or 'severity' not in self.df.columns:
             print("[ERROR] No severity data available for plotting")
             return
@@ -560,10 +612,14 @@ class GaitGuardianMLP:
         plt.show()
         
     def handle_small_dataset(self, test_size=0.2, val_size=0.2):
-        """
-        Modified preprocessing to handle small datasets
-        """
         print("[INFO] Preprocessing data for small dataset...")
+        
+        # FIX: Update classes and output_dim based on actual data before preprocessing
+        if self.task == 'severity':
+            self.classes = sorted(list(set(self.y)))
+            self.output_dim = len(self.classes)
+            print(f"[INFO] Updated severity classes: {self.classes}")
+            print(f"[INFO] Updated output dimension: {self.output_dim}")
         
         # Check dataset size
         if len(self.df) < 10:
@@ -640,6 +696,8 @@ class GaitGuardianMLP:
         print(f"[INFO] Training set: {X_train_scaled.shape}")
         print(f"[INFO] Validation set: {X_val_scaled.shape}")
         print(f"[INFO] Test set: {X_test_scaled.shape}")
+        print(f"[INFO] Training labels shape: {y_train.shape}")
+        print(f"[INFO] Model output dimension: {self.output_dim}")
         
         # Compute class weights for imbalanced data
         y_train_labels = y_train.argmax(axis=1)
@@ -655,13 +713,6 @@ class GaitGuardianMLP:
 
     
     def preprocess_data(self, test_size=0.2, val_size=0.2):
-        """
-        Preprocess data: encode labels, scale features, split data
-        
-        Args:
-            test_size (float): Proportion of data for testing
-            val_size (float): Proportion of training data for validation
-        """
         print("[INFO] Preprocessing data...")
         
         # Encode labels
@@ -707,12 +758,7 @@ class GaitGuardianMLP:
         print(f"[INFO] Class weights: {self.class_weights}")
     
     def build_model(self, params=None):
-        """
-        Build MLP model with given parameters
-        
-        Args:
-            params (dict): Model hyperparameters
-        """
+
         if params is None:
             params = self._get_default_params()
         
@@ -752,7 +798,6 @@ class GaitGuardianMLP:
         return model
     
     def _get_default_params(self):
-        """Get default hyperparameters"""
         return {
             'hidden_units_1': 512,
             'hidden_units_2': 256,
@@ -768,12 +813,6 @@ class GaitGuardianMLP:
         }
     
     def hyperparameter_tuning(self, n_trials=50):
-        """
-        Perform hyperparameter tuning using Optuna
-        
-        Args:
-            n_trials (int): Number of optimization trials
-        """
         print("[INFO] Starting hyperparameter tuning...")
         
         def objective(trial):
@@ -822,13 +861,6 @@ class GaitGuardianMLP:
         return study.best_params
     
     def train(self, params=None, use_best_params=True):
-        """
-        Train the MLP model
-        
-        Args:
-            params (dict): Training parameters
-            use_best_params (bool): Whether to use hyperparameter tuning results
-        """
         if use_best_params and self.best_params is not None:
             params = self.best_params
         elif params is None:
@@ -876,7 +908,6 @@ class GaitGuardianMLP:
         print("[INFO] Training completed!")
     
     def evaluate(self):
-        """Evaluate the trained model"""
         if self.model is None:
             raise ValueError("Model not trained yet!")
         
@@ -913,7 +944,6 @@ class GaitGuardianMLP:
         }
     
     def plot_training_history(self):
-        """Plot training history"""
         if self.history is None:
             raise ValueError("No training history available!")
         
@@ -942,7 +972,6 @@ class GaitGuardianMLP:
         plt.show()
     
     def plot_confusion_matrix(self, cm, classes):
-        """Plot confusion matrix"""
         plt.figure(figsize=(10, 8))
         sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
                    xticklabels=classes, yticklabels=classes)
@@ -954,7 +983,6 @@ class GaitGuardianMLP:
         plt.show()
     
     def predict(self, X):
-        """Make predictions on new data"""
         if self.model is None:
             raise ValueError("Model not trained yet!")
         
@@ -966,7 +994,6 @@ class GaitGuardianMLP:
         return predicted_labels, predictions
     
     def save_model(self, filepath=None):
-        """Save the trained model and preprocessors"""
         if filepath is None:
             filepath = f'gait_guardian_mlp_{self.task}'
         
@@ -984,7 +1011,6 @@ class GaitGuardianMLP:
         print(f"[INFO] Model saved to {filepath}")
     
     def load_model(self, filepath):
-        """Load a saved model and preprocessors"""
         # Load model
         self.model = tf.keras.models.load_model(f'{filepath}_model.h5')
         
@@ -999,9 +1025,7 @@ class GaitGuardianMLP:
         print(f"[INFO] Model loaded from {filepath}")
 
 
-def main():
-    """Main function to demonstrate the MLP implementation"""
-    
+def main():    
     # Initialize MLP for subtask classification
     print("\n1. SUBTASK CLASSIFICATION")
     print("-" * 30)
@@ -1048,8 +1072,17 @@ def main():
         # Debug the data first
         available_cols = mlp_severity.debug_severity_classification()
         
-        # Use fixed severity classification
-        mlp_severity.df['severity'] = mlp_severity._generate_severity_labels_improved(mlp_severity.df)
+        # Use the improved severity classification method
+        print("\n[INFO] Using improved severity classification approach...")
+        severity_labels = mlp_severity.improved_severity_classification()
+        
+        # Handle the different return types from improved_severity_classification
+        if isinstance(severity_labels[0], dict):
+            # If rule-based classification was used (returns list of dicts)
+            mlp_severity.df['severity'] = [result['severity'] for result in severity_labels]
+        else:
+            # If simple/comprehensive classification was used (returns list of strings)
+            mlp_severity.df['severity'] = severity_labels
         
         # Validate the severity classification
         mlp_severity._validate_severity_classification(
@@ -1057,39 +1090,51 @@ def main():
             mlp_severity.df['severity'].values
         )
         
+        # Plot severity distribution analysis
+        mlp_severity.plot_severity_distribution()
+        
         # Update the target variable
         mlp_severity.y = mlp_severity.df['severity'].values
         
         # Check if we have enough samples for each class
         class_counts = Counter(mlp_severity.y)
-        print(f"\n[INFO] Updated class distribution: {class_counts}")
+        print(f"\n[INFO] Final class distribution: {class_counts}")
         
-        if len(mlp_severity.df) < 20:
-            print("[WARNING] Dataset too small for reliable ML. Consider:")
-            print("  1. Collecting more data")
-            print("  2. Using rule-based classification instead")
-            print("  3. Synthetic data generation")
+        # Check if dataset is suitable for ML training
+        min_samples_per_class = min(class_counts.values())
+        total_samples = len(mlp_severity.df)
+        
+        if total_samples < 20 or min_samples_per_class < 2:
+            print(f"[WARNING] Dataset characteristics:")
+            print(f"  - Total samples: {total_samples}")
+            print(f"  - Min samples per class: {min_samples_per_class}")
+            print(f"  - Recommendation: Consider rule-based classification only")
             
-            # For very small datasets, skip ML training
-            return
+            # For very small datasets, you might want to skip ML training
+            # and use the rule-based results directly
+            if total_samples < 10:
+                print("[INFO] Dataset too small for ML training. Using rule-based classification results.")
+                return
         
         # Use modified preprocessing for small datasets
         mlp_severity.handle_small_dataset()
         
         # Train with reduced complexity for small datasets
         simple_params = {
-            'hidden_units_1': 32,
-            'hidden_units_2': 16,
-            'hidden_units_3': 8,
+            'hidden_units_1': min(32, len(mlp_severity.feature_cols) // 2),
+            'hidden_units_2': min(16, len(mlp_severity.feature_cols) // 4),
+            'hidden_units_3': min(8, len(mlp_severity.feature_cols) // 8),
             'dropout_1': 0.2,
             'dropout_2': 0.3,
             'dropout_3': 0.4,
             'learning_rate': 0.01,
             'l1_reg': 0.001,
             'l2_reg': 0.001,
-            'batch_size': 4,  # Small batch for small dataset
-            'epochs': 50
+            'batch_size': max(2, min(8, total_samples // 10)),  # Adaptive batch size
+            'epochs': min(50, max(20, total_samples * 2))  # Adaptive epochs
         }
+        
+        print(f"[INFO] Training with adapted parameters for dataset size: {simple_params}")
         
         mlp_severity.train(params=simple_params, use_best_params=False)
         
@@ -1098,15 +1143,18 @@ def main():
         
         # Plot results
         mlp_severity.plot_training_history()
+        mlp_severity.plot_confusion_matrix(results['confusion_matrix'], 
+                                         mlp_severity.label_encoder.classes_)
         
         # Save model
         mlp_severity.save_model()
+        
+        print("\n[INFO] Severity prediction completed successfully!")
         
     except Exception as e:
         print(f"[ERROR] Severity prediction failed: {e}")
         import traceback
         traceback.print_exc()
-    
 
 if __name__ == "__main__":
     main()
