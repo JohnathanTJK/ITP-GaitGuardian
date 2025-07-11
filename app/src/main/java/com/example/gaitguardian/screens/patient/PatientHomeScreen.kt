@@ -25,8 +25,12 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -58,10 +62,25 @@ fun PatientHomeScreen(
     modifier: Modifier = Modifier
 ) {
     val patientInfo by patientViewModel.patient.collectAsState()
-    val previousTiming by patientViewModel.previousDuration.collectAsState()
-    val latestTiming by patientViewModel.latestDuration.collectAsState()
+//    val previousTiming by patientViewModel.previousDuration.collectAsState()
+//    val latestTiming by patientViewModel.latestDuration.collectAsState()
     val medicationStatus by patientViewModel.medicationStatus.collectAsState()
     val patientcomments by patientViewModel.assessmentComment.collectAsState()
+
+    // Recreated previousTiming and latestTiming to track state from database fetch instead
+    var previousTiming by remember { mutableFloatStateOf(0f) }
+    var latestTiming by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(Unit)
+    {
+        patientViewModel.getLatestTwoDurations()
+    }
+
+    val latestTwoDurations by patientViewModel.latestTwoDurations.collectAsState()
+
+    if (latestTwoDurations.size >= 2) { // Ensure there are at least two values fetched
+        latestTiming = latestTwoDurations[0] // Sorted by testId DESC
+        previousTiming = latestTwoDurations[1]
+    }
 
     Column(
         modifier = modifier

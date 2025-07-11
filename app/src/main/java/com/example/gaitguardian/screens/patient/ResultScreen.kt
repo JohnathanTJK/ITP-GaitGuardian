@@ -28,13 +28,29 @@ fun ResultScreen(
     patientViewModel: PatientViewModel,
     modifier: Modifier = Modifier
 ) {
+
+
     val medicationStatus by patientViewModel.medicationStatus.collectAsState()
-    val previousTiming by patientViewModel.previousDuration.collectAsState()
-    val latestTiming by patientViewModel.latestDuration.collectAsState()
+//    val previousTiming by patientViewModel.previousDuration.collectAsState()
+//    val latestTiming by patientViewModel.latestDuration.collectAsState()
+    var previousTiming by remember { mutableFloatStateOf(0f) }
+    var latestTiming by remember { mutableFloatStateOf(0f) }
     val comment by patientViewModel.assessmentComment.collectAsState()
 
     // Local state for toggle, initialized from ViewModel medicationStatus
     var isMedicationOn by remember { mutableStateOf(medicationStatus == "ON") }
+
+    LaunchedEffect(Unit)
+    {
+        patientViewModel.getLatestTwoDurations()
+    }
+
+    val latestTwoDurations by patientViewModel.latestTwoDurations.collectAsState()
+
+    if (latestTwoDurations.size >= 2) { // Ensure there are at least two values fetched
+        latestTiming = latestTwoDurations[0]
+        previousTiming = latestTwoDurations[1]
+    }
 
     Column(
         modifier = modifier
@@ -43,6 +59,7 @@ fun ResultScreen(
         verticalArrangement = Arrangement.Top
     ) {
         Spacer(modifier = Modifier.height(16.dp))
+
         LatestAssessmentResultsCard(
             previousTiming = previousTiming,
             latestTiming = latestTiming,
@@ -76,8 +93,8 @@ fun ResultScreen(
 
 @Composable
 fun LatestAssessmentResultsCard(
-    previousTiming: Int = 13,
-    latestTiming: Int,
+    previousTiming: Float = 13f, // Updated to Float to match TUGAssessment videoDuration data type
+    latestTiming: Float, // Updated to Float to match TUGAssessment videoDuration data type
     medicationOn: Boolean,
     patientcomment: String,
     modifier: Modifier = Modifier,
@@ -92,7 +109,7 @@ fun LatestAssessmentResultsCard(
         isMedicationOn = medicationOn
     }
 
-    val maxVal = maxOf(previousTiming, latestTiming, 30)
+    val maxVal = maxOf(previousTiming, latestTiming, 30f)
 
     Card(
         colors = CardDefaults.cardColors(containerColor = cardBackgroundColor),
@@ -150,9 +167,9 @@ fun LatestAssessmentResultsCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             HorizontalProgressBar(
-                previousValue = previousTiming.toFloat(),
-                latestValue = latestTiming.toFloat(),
-                maxValue = maxVal.toFloat(),
+                previousValue = previousTiming,
+                latestValue = latestTiming,
+                maxValue = maxVal,
                 modifier = Modifier.padding(horizontal = 4.dp)
             )
 

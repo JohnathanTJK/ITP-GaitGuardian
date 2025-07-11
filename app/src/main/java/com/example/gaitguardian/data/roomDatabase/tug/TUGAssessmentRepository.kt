@@ -26,4 +26,8 @@ class TUGAssessmentRepository(private val tugDao: TugDao) {
         tugDao.multiSelectMarkAsReviewed(id, watchStatus)
     }
 
+    @WorkerThread
+    suspend fun getLatestTwoDuration(): List<Float> {
+        return tugDao.getLatestTwoDurations()
+    }
 }

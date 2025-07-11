@@ -37,6 +37,16 @@ class PatientViewModel(private val patientRepository: PatientRepository,private 
     val latestDuration: StateFlow<Int> = appPreferencesRepository.getLatestDuration()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
+    // Using RoomDb data to get the latest and previous timing
+    private val _latestTwoDurations = MutableStateFlow<List<Float>>(emptyList())
+    val latestTwoDurations: StateFlow<List<Float>> = _latestTwoDurations
+
+    fun getLatestTwoDurations()
+    {
+        viewModelScope.launch(Dispatchers.IO) {
+            _latestTwoDurations.value = tugRepository.getLatestTwoDuration()
+        }
+    }
     // function to insert patient into RoomDB,
     fun insertFirstPatient() {
         val patient = Patient( // to edit these before adding :D

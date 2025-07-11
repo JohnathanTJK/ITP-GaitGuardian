@@ -22,6 +22,11 @@ interface TugDao {
 
     @Query("UPDATE tug_assessment_table SET watchStatus = :watchStatus WHERE testId = :id")
     suspend fun multiSelectMarkAsReviewed(id: Int, watchStatus: Boolean)
+
+    // To be used in PatientViewModel
+    @Query(" SELECT videoDuration FROM tug_assessment_table ORDER BY testId DESC LIMIT 2")
+    suspend fun getLatestTwoDurations(): List<Float>
+
 //    @Query("DELETE FROM patients_table WHERE id = :id")
 //    fun deletePatient(id: Int)
 }
