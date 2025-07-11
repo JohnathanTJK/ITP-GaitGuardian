@@ -61,7 +61,7 @@ fun PatientHomeScreen(
     val previousTiming by patientViewModel.previousDuration.collectAsState()
     val latestTiming by patientViewModel.latestDuration.collectAsState()
     val medicationStatus by patientViewModel.medicationStatus.collectAsState()
-    val comment by patientViewModel.assessmentComment.collectAsState()
+    val patientcomments by patientViewModel.assessmentComment.collectAsState()
 
     Column(
         modifier = modifier
@@ -97,7 +97,7 @@ fun PatientHomeScreen(
                 previousTiming = previousTiming,
                 latestTiming = latestTiming,
                 medicationOn = (medicationStatus == "ON"),
-                comment = comment,
+                patientcomment = patientcomments,
                 showMedicationToggle = false, // Set false for home screen
                 modifier = Modifier.fillMaxWidth()
             )

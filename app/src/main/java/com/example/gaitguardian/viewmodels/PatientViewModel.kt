@@ -69,7 +69,7 @@ class PatientViewModel(private val patientRepository: PatientRepository,private 
 //    }
 
     // Medication status
-    private val _medicationStatus = MutableStateFlow("OFF")
+    private val _medicationStatus = MutableStateFlow("ON")
     val medicationStatus: StateFlow<String> = _medicationStatus
 
     fun setMedicationStatus(status: String) {

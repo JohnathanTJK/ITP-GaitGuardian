@@ -14,10 +14,10 @@ data class TUGAssessment(
     val videoDuration: Float,
     @ColumnInfo(name ="videoTitle")
     val videoTitle: String,
-//    @ColumnInfo(name = "medication")
-//    val medication: String,
-//    @ColumnInfo(name = "patientComments")
-//    val patientComments = String,
+    @ColumnInfo(name = "medication")
+    val medication: String,
+    @ColumnInfo(name = "patientComments")
+    val patientComments: String,
     // Clinician Information
     @ColumnInfo(name = "clinicianId")
     val clinicianId: Int? = null,

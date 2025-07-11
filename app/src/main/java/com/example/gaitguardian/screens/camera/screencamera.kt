@@ -528,7 +528,9 @@ private fun recordVideo(
                             // TODO: TO UPDATE WITH PATIENT'S MEDICATION STATUS + COMMENTS ETC.
                             dateTime = currentDateTime,
                             videoDuration = recordingTimeState.value.toFloat(),
-                            videoTitle = outputFile.name
+                            videoTitle = outputFile.name,
+                            medication = patientViewModel.medicationStatus.value,
+                            patientComments = patientViewModel.assessmentComment.value
                         )
                         patientViewModel.insertNewAssessment(newTug)
                         Log.d("tug", "tug inserted into db")

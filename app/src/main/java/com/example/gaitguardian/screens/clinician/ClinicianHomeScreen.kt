@@ -48,7 +48,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.gaitguardian.data.roomDatabase.patient.Patient
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessment
-import com.example.gaitguardian.data.roomDatabase.tug.TUGVideo
 import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.ui.theme.buttonBackgroundColor
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
@@ -150,7 +149,8 @@ fun ClinicianHomeScreen(
                     dateTime = video.dateTime,
 //                    medication = video.medication,
 //                    severity = video.severity,
-                    medication = "TO BE UPDATED",
+                    medication = video.medication,
+                    patientcomments = video.patientComments,
                     severity = "TO BE UPDATED",
                     watchStatus = if (video.watchStatus) "Reviewed" else "Pending",
                     isSelected = selectedVideoIds.contains(video.testId),
@@ -335,6 +335,7 @@ fun TUGVideoItem(
     dateTime: String,
     medication: String,
     severity: String,
+    patientcomments: String,
     watchStatus: String,
     isSelected: Boolean = false,
     onSelectionChanged: (Boolean) -> Unit = {},

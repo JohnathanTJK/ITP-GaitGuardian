@@ -48,7 +48,7 @@ fun ResultScreen(
             latestTiming = latestTiming,
             medicationOn = isMedicationOn,
             showMedicationToggle = true,
-            comment = comment,
+            patientcomment = comment,
             onMedicationToggle = { isOn ->
                 isMedicationOn = isOn
             },
@@ -79,7 +79,7 @@ fun LatestAssessmentResultsCard(
     previousTiming: Int = 13,
     latestTiming: Int,
     medicationOn: Boolean,
-    comment: String,
+    patientcomment: String,
     modifier: Modifier = Modifier,
     showDivider: Boolean = true,
     showMedicationToggle: Boolean = false,
@@ -205,7 +205,7 @@ fun LatestAssessmentResultsCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = if (comment.isEmpty()) "No comment provided" else comment,
+                text = if (patientcomment.isEmpty()) "No comment provided" else patientcomment,
                 color = Color.Black,
                 fontSize = body
             )
