@@ -16,6 +16,8 @@ data class TUGAssessment(
     val videoTitle: String,
     @ColumnInfo(name = "medication")
     val medication: String,
+    @ColumnInfo(name = "onMedication")
+    val onMedication: Boolean,
     @ColumnInfo(name = "patientComments")
     val patientComments: String,
     // Clinician Information
@@ -26,7 +28,7 @@ data class TUGAssessment(
     @ColumnInfo(name = "notes")
     val notes: String? = null,
 )
-
+//TODO: probably another table for the video analysis output and match with testID
 //package com.example.gaitguardian.data.roomDatabase.tug
 //
 //import androidx.room.ColumnInfo

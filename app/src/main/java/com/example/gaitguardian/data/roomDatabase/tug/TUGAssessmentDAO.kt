@@ -27,6 +27,9 @@ interface TugDao {
     @Query(" SELECT videoDuration FROM tug_assessment_table ORDER BY testId DESC LIMIT 2")
     suspend fun getLatestTwoDurations(): List<Float>
 
+    @Query("UPDATE tug_assessment_table SET onMedication = :medication WHERE testId = (SELECT MAX(testId) FROM tug_assessment_table)")
+    suspend fun updateOnMedicationStatus(medication: Boolean)
+
 //    @Query("DELETE FROM patients_table WHERE id = :id")
 //    fun deletePatient(id: Int)
 }

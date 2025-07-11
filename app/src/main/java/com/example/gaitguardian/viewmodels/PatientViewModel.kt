@@ -1,5 +1,6 @@
 package com.example.gaitguardian.viewmodels
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -82,10 +83,24 @@ class PatientViewModel(private val patientRepository: PatientRepository,private 
     private val _medicationStatus = MutableStateFlow("ON")
     val medicationStatus: StateFlow<String> = _medicationStatus
 
+    private val _onMedication = MutableStateFlow(true)
+    val onMedication: StateFlow<Boolean> = _onMedication
+
     fun setMedicationStatus(status: String) {
         _medicationStatus.value = status
     }
 
+    fun setOnMedication(status: Boolean) {
+        _onMedication.value = status
+        Log.d("PatientViewModel", "Medication status set to: $status")
+
+    }
+
+    fun updatePostAssessmentOnMedicationStatus(medication: Boolean) {
+        viewModelScope.launch {
+            tugRepository.updateOnMedicationStatus(medication)
+        }
+    }
     // Assessment comment
     private val _assessmentComment = MutableStateFlow("")
     val assessmentComment: StateFlow<String> = _assessmentComment

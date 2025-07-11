@@ -30,4 +30,11 @@ class TUGAssessmentRepository(private val tugDao: TugDao) {
     suspend fun getLatestTwoDuration(): List<Float> {
         return tugDao.getLatestTwoDurations()
     }
+
+    @WorkerThread
+    suspend fun updateOnMedicationStatus(medication: Boolean) {
+        tugDao.updateOnMedicationStatus(medication)
+    }
+
+
 }

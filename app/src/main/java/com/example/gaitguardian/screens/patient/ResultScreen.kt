@@ -30,7 +30,7 @@ fun ResultScreen(
 ) {
 
 
-    val medicationStatus by patientViewModel.medicationStatus.collectAsState()
+//    val medicationStatus by patientViewModel.medicationStatus.collectAsState()
 //    val previousTiming by patientViewModel.previousDuration.collectAsState()
 //    val latestTiming by patientViewModel.latestDuration.collectAsState()
     var previousTiming by remember { mutableFloatStateOf(0f) }
@@ -38,7 +38,16 @@ fun ResultScreen(
     val comment by patientViewModel.assessmentComment.collectAsState()
 
     // Local state for toggle, initialized from ViewModel medicationStatus
-    var isMedicationOn by remember { mutableStateOf(medicationStatus == "ON") }
+//    var isMedicationOn by remember { mutableStateOf(medicationStatus == "ON") }
+
+    val onMedication by patientViewModel.onMedication.collectAsState()
+    // Local state for UI toggle - initialized from ViewModel state
+//    var localMedicationToggle by remember { mutableStateOf(onMedication) }
+
+    // Update local state when ViewModel state changes (e.g., from external updates)
+//    LaunchedEffect(onMedication) {
+//        localMedicationToggle = onMedication
+//    }
 
     LaunchedEffect(Unit)
     {
@@ -63,12 +72,9 @@ fun ResultScreen(
         LatestAssessmentResultsCard(
             previousTiming = previousTiming,
             latestTiming = latestTiming,
-            medicationOn = isMedicationOn,
+            medicationOn = onMedication,
             showMedicationToggle = true,
             patientcomment = comment,
-            onMedicationToggle = { isOn ->
-                isMedicationOn = isOn
-            },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
@@ -78,8 +84,9 @@ fun ResultScreen(
 
         Button(
             onClick = {
-                // Call ViewModel to update medication status based on toggle
-                patientViewModel.setMedicationStatus(if (isMedicationOn) "ON" else "OFF")
+                // VM to update based on existing medication state
+                patientViewModel.updatePostAssessmentOnMedicationStatus(!onMedication)
+                patientViewModel.setOnMedication((!onMedication))
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -93,21 +100,14 @@ fun ResultScreen(
 
 @Composable
 fun LatestAssessmentResultsCard(
+    modifier: Modifier = Modifier,
     previousTiming: Float = 13f, // Updated to Float to match TUGAssessment videoDuration data type
     latestTiming: Float, // Updated to Float to match TUGAssessment videoDuration data type
     medicationOn: Boolean,
     patientcomment: String,
-    modifier: Modifier = Modifier,
     showDivider: Boolean = true,
     showMedicationToggle: Boolean = false,
-    onMedicationToggle: ((Boolean) -> Unit)? = null
 ) {
-    var isMedicationOn by remember { mutableStateOf(medicationOn) }
-
-    // Sync local state with param changes (optional)
-    LaunchedEffect(medicationOn) {
-        isMedicationOn = medicationOn
-    }
 
     val maxVal = maxOf(previousTiming, latestTiming, 30f)
 
@@ -158,7 +158,7 @@ fun LatestAssessmentResultsCard(
                 if (!showMedicationToggle) {
                     StatusBox(
                         title = "Medication",
-                        value = if (isMedicationOn) "ON" else "OFF",
+                        value = if (medicationOn) "ON" else "OFF",
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -191,22 +191,23 @@ fun LatestAssessmentResultsCard(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Button(
-                    onClick = {
-                        isMedicationOn = !isMedicationOn
-                        onMedicationToggle?.invoke(isMedicationOn)
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = buttonBackgroundColor),
+                Surface(
+                    color = buttonBackgroundColor,
+                    shape = RoundedCornerShape(8.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(70.dp)
                         .padding(vertical = 12.dp),
-                    shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text(
-                        text = if (isMedicationOn) "ON" else "OFF",
-                        color = DefaultColor
-                    )
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Text(
+                            text = if (medicationOn) "ON" else "OFF",
+                            color = DefaultColor
+                        )
+                    }
                 }
             }
 

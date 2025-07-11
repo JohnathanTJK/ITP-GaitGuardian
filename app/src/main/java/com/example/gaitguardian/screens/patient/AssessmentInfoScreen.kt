@@ -24,6 +24,7 @@ fun AssessmentInfoScreen(
 ) {
     val medicationStatus by patientViewModel.medicationStatus.collectAsState()  // Observe ViewModel state
     val comments by patientViewModel.assessmentComment.collectAsState()
+    val onMedication by patientViewModel.onMedication.collectAsState()
 
     Column(
         modifier = modifier
@@ -62,14 +63,18 @@ fun AssessmentInfoScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 MedicationStatusButton(
                     text = "ON",
-                    isSelected = medicationStatus == "ON",
-                    onClick = { patientViewModel.setMedicationStatus("ON") },
+//                    isSelected = medicationStatus == "ON",
+//                    onClick = { patientViewModel.setMedicationStatus("ON") },
+                    isSelected = onMedication,
+                    onClick = { patientViewModel.setOnMedication(true) },
                     modifier = Modifier.weight(1f)
                 )
                 MedicationStatusButton(
                     text = "OFF",
-                    isSelected = medicationStatus == "OFF",
-                    onClick = { patientViewModel.setMedicationStatus("OFF") },
+//                    isSelected = medicationStatus == "OFF",
+//                    onClick = { patientViewModel.setMedicationStatus("OFF") },
+                    isSelected = !onMedication,
+                    onClick = { patientViewModel.setOnMedication(false) },
                     modifier = Modifier.weight(1f)
                 )
             }
