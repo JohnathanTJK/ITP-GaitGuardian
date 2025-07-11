@@ -10,12 +10,12 @@ from sklearn.preprocessing import LabelEncoder
 from scipy.signal import find_peaks
 
 # === Config ===
-input_dir = "videos"
-output_video_dir = "video_results"
-output_csv_dir = "keypoints_and_durations"
-model_path = "xgb_model.pkl"
-label_path = "xgb_label_encoder.pkl"
-feature_path = "xgb_features.json"
+input_dir = "./computervision/videos"
+output_video_dir = "./computervision/video_results"
+output_csv_dir = "./computervision/keypoints_and_durations"
+model_path = "./computervision/xgb_model.pkl"
+label_path = "./computervision/xgb_label_encoder.pkl"
+feature_path = "./computervision/xgb_features.json"
 
 os.makedirs(output_video_dir, exist_ok=True)
 os.makedirs(output_csv_dir, exist_ok=True)
