@@ -87,7 +87,6 @@ for fold, (train_idx, val_idx) in enumerate(skf.split(X, y), 1):
     cv_accuracies.append(val_acc)
     cv_aucs.append(val_auc)
 
-    # Save best fold model based on val accuracy
     if val_acc > best_fold_acc:
         best_fold_acc = val_acc
         model.save(best_fold_model_path)
@@ -95,54 +94,3 @@ for fold, (train_idx, val_idx) in enumerate(skf.split(X, y), 1):
 
 print(f"\nCross-validation accuracy: {np.mean(cv_accuracies):.4f} (+/- {np.std(cv_accuracies)*2:.4f})")
 print(f"Cross-validation ROC AUC: {np.mean(cv_aucs):.4f} (+/- {np.std(cv_aucs)*2:.4f})")
-
-# --- Final model training on full dataset ---
-print("\n--- Training final model on full dataset ---")
-
-final_class_weights = compute_class_weight('balanced', classes=np.unique(y), y=y)
-final_class_weight_dict = dict(zip(np.unique(y), final_class_weights))
-print(f"Final training class weights: {final_class_weight_dict}")
-
-final_model = create_lstm_model((X.shape[1], X.shape[2]))
-
-final_callbacks = [
-    EarlyStopping(monitor='val_loss', patience=15, restore_best_weights=True, verbose=1),
-    ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=7, min_lr=1e-6, verbose=1),
-    ModelCheckpoint('./lstm/new_lstm_model_final.h5', save_best_only=True, verbose=1)
-]
-
-history_final = final_model.fit(
-    X, y,
-    epochs=150,
-    batch_size=32,
-    validation_split=0.2,
-    class_weight=final_class_weight_dict,
-    callbacks=final_callbacks,
-    verbose=1
-)
-
-# Load best final model weights
-final_model = load_model('./lstm/new_lstm_model_final.h5')
-
-# Evaluate final model on held-out validation set from training
-X_train_full, X_val_full, y_train_full, y_val_full = train_test_split(
-    X, y, test_size=0.2, stratify=y, random_state=42
-)
-
-val_loss, val_acc = final_model.evaluate(X_val_full, y_val_full, verbose=0)
-y_val_pred_prob = final_model.predict(X_val_full).flatten()
-y_val_pred = (y_val_pred_prob > 0.5).astype(int)
-val_auc = roc_auc_score(y_val_full, y_val_pred_prob)
-
-print("\nFinal Model Evaluation on 20% Hold-out Set:")
-print(f"Loss: {val_loss:.4f}")
-print(f"Accuracy: {val_acc:.4f}")
-print(f"ROC AUC: {val_auc:.4f}")
-print("Classification Report:")
-print(classification_report(y_val_full, y_val_pred, target_names=[str(c) for c in label_encoder.classes_]))
-print("Confusion Matrix:")
-print(confusion_matrix(y_val_full, y_val_pred))
-
-# Save the final full model for deployment
-final_model.save('./lstm/new_lstm_model_final_full.keras')
-print("Final model saved as new_lstm_model_final_full.keras")
