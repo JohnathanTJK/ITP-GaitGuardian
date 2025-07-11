@@ -4,8 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,6 +16,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessment
 import com.example.gaitguardian.ui.theme.*
 import com.example.gaitguardian.viewmodels.PatientViewModel
 
@@ -29,7 +28,10 @@ fun ResultScreen(
     modifier: Modifier = Modifier
 ) {
 
-
+LaunchedEffect(Unit){ // fetch latest TUG assessment (aka the one that was just recorded)
+    patientViewModel.getLatestTUGAssessment()
+    patientViewModel.getLatestTwoDurations()
+}
 //    val medicationStatus by patientViewModel.medicationStatus.collectAsState()
 //    val previousTiming by patientViewModel.previousDuration.collectAsState()
 //    val latestTiming by patientViewModel.latestDuration.collectAsState()
@@ -41,19 +43,7 @@ fun ResultScreen(
 //    var isMedicationOn by remember { mutableStateOf(medicationStatus == "ON") }
 
     val onMedication by patientViewModel.onMedication.collectAsState()
-    // Local state for UI toggle - initialized from ViewModel state
-//    var localMedicationToggle by remember { mutableStateOf(onMedication) }
-
-    // Update local state when ViewModel state changes (e.g., from external updates)
-//    LaunchedEffect(onMedication) {
-//        localMedicationToggle = onMedication
-//    }
-
-    LaunchedEffect(Unit)
-    {
-        patientViewModel.getLatestTwoDurations()
-    }
-
+    val latestTugAssessment by patientViewModel.latestAssessment.collectAsState()
     val latestTwoDurations by patientViewModel.latestTwoDurations.collectAsState()
 
     if (latestTwoDurations.size >= 2) { // Ensure there are at least two values fetched
@@ -70,11 +60,12 @@ fun ResultScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         LatestAssessmentResultsCard(
+            latestAssessment = latestTugAssessment,
             previousTiming = previousTiming,
             latestTiming = latestTiming,
             medicationOn = onMedication,
             showMedicationToggle = true,
-            patientcomment = comment,
+//            patientcomment = comment,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
@@ -82,18 +73,36 @@ fun ResultScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+    // Use the database flag to determine if already updated
+        val hasBeenUpdated = latestTugAssessment?.updateMedication == true
+        var hasUpdatedMedication by remember { mutableStateOf(hasBeenUpdated) }
+    // Sync local state with database state using LaunchedEffect
+        LaunchedEffect(hasBeenUpdated) {
+            hasUpdatedMedication = hasBeenUpdated
+        }
+
         Button(
             onClick = {
-                // VM to update based on existing medication state
-                patientViewModel.updatePostAssessmentOnMedicationStatus(!onMedication)
-                patientViewModel.setOnMedication((!onMedication))
+                if (!hasUpdatedMedication) {
+                    // Update local state immediately
+                    hasUpdatedMedication = true
+
+                    // Update database
+                    patientViewModel.setOnMedication(!onMedication)
+                    patientViewModel.updatePostAssessmentOnMedicationStatus(true)
+                    patientViewModel.getLatestTUGAssessment()
+                }
             },
+            enabled = !hasUpdatedMedication, // Use local state
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Text(text = "Update Medication Status", fontWeight = FontWeight.Bold)
+            Text(
+                text = if (hasBeenUpdated) "Medication Status Updated" else "Update Medication Status",
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
@@ -101,10 +110,11 @@ fun ResultScreen(
 @Composable
 fun LatestAssessmentResultsCard(
     modifier: Modifier = Modifier,
+    latestAssessment: TUGAssessment?,
     previousTiming: Float = 13f, // Updated to Float to match TUGAssessment videoDuration data type
     latestTiming: Float, // Updated to Float to match TUGAssessment videoDuration data type
-    medicationOn: Boolean,
-    patientcomment: String,
+    medicationOn: Boolean? = null,
+//    patientcomment: String,
     showDivider: Boolean = true,
     showMedicationToggle: Boolean = false,
 ) {
@@ -138,7 +148,7 @@ fun LatestAssessmentResultsCard(
                 )
                 VerticalDivider()
                 Text(
-                    text = "Date: 14 June 2025",
+                    text = latestAssessment?.dateTime ?: "14 June 2025",
                     color = Color.Black,
                     fontSize = body,
                     fontWeight = FontWeight.Medium
@@ -156,11 +166,26 @@ fun LatestAssessmentResultsCard(
                 StatusBox(title = "Severity", value = "2", modifier = Modifier.weight(1f))
 
                 if (!showMedicationToggle) {
-                    StatusBox(
-                        title = "Medication",
-                        value = if (medicationOn) "ON" else "OFF",
-                        modifier = Modifier.weight(1f)
-                    )
+                    if(medicationOn != null) { // Shows in ResultScreen
+                        StatusBox(
+                            title = "Medication",
+//                        value = if (onMedication) "ON" else "OFF",
+                            value = if (medicationOn == true) "ON" else "OFF",
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    else { // Showing in PatientHomeScreen
+                        val isOn = latestAssessment?.onMedication == true
+                        val wasUpdated = latestAssessment?.updateMedication == true
+                        // If updated, flip the status
+                        val displayStatus = if (wasUpdated) !isOn else isOn
+                        StatusBox(
+                            title = "Medication",
+                            value =
+                            if (displayStatus) "ON" else "OFF",
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
 
@@ -204,7 +229,8 @@ fun LatestAssessmentResultsCard(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         Text(
-                            text = if (medicationOn) "ON" else "OFF",
+                            text = if (medicationOn == true) "ON" else "OFF",
+//                            text = if (latestAssessment?.onMedication == true) "ON" else "OFF",
                             color = DefaultColor
                         )
                     }
@@ -222,11 +248,14 @@ fun LatestAssessmentResultsCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = if (patientcomment.isEmpty()) "No comment provided" else patientcomment,
-                color = Color.Black,
-                fontSize = body
-            )
+            (if (latestAssessment?.patientComments?.isEmpty() == true) "No comment provided" else latestAssessment?.patientComments)?.let {
+                Text(
+        //                text = if (patientcomment.isEmpty()) "No comment provided" else patientcomment,
+                    text = it,
+                    color = Color.Black,
+                    fontSize = body
+                )
+            }
         }
     }
 }

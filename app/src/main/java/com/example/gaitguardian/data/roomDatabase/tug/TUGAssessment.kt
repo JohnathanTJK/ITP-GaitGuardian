@@ -18,6 +18,8 @@ data class TUGAssessment(
     val medication: String,
     @ColumnInfo(name = "onMedication")
     val onMedication: Boolean,
+    @ColumnInfo(name = "updateMedication")
+    val updateMedication: Boolean = false,
     @ColumnInfo(name = "patientComments")
     val patientComments: String,
     // Clinician Information

@@ -86,6 +86,9 @@ class PatientViewModel(private val patientRepository: PatientRepository,private 
     private val _onMedication = MutableStateFlow(true)
     val onMedication: StateFlow<Boolean> = _onMedication
 
+    private val _latestAssessment = MutableStateFlow<TUGAssessment?>(null)
+    val latestAssessment: StateFlow<TUGAssessment?> = _latestAssessment
+
     fun setMedicationStatus(status: String) {
         _medicationStatus.value = status
     }
@@ -93,7 +96,6 @@ class PatientViewModel(private val patientRepository: PatientRepository,private 
     fun setOnMedication(status: Boolean) {
         _onMedication.value = status
         Log.d("PatientViewModel", "Medication status set to: $status")
-
     }
 
     fun updatePostAssessmentOnMedicationStatus(medication: Boolean) {
@@ -101,6 +103,14 @@ class PatientViewModel(private val patientRepository: PatientRepository,private 
             tugRepository.updateOnMedicationStatus(medication)
         }
     }
+
+    fun getLatestTUGAssessment()
+    {
+        viewModelScope.launch(Dispatchers.IO) {
+            _latestAssessment.value = tugRepository.getLatestAssessment()
+        }
+    }
+
     // Assessment comment
     private val _assessmentComment = MutableStateFlow("")
     val assessmentComment: StateFlow<String> = _assessmentComment

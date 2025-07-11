@@ -73,9 +73,12 @@ fun PatientHomeScreen(
     LaunchedEffect(Unit)
     {
         patientViewModel.getLatestTwoDurations()
+        patientViewModel.getLatestTUGAssessment()
     }
 
     val latestTwoDurations by patientViewModel.latestTwoDurations.collectAsState()
+
+    val latestAssessment by patientViewModel.latestAssessment.collectAsState()
 
     if (latestTwoDurations.size >= 2) { // Ensure there are at least two values fetched
         latestTiming = latestTwoDurations[0] // Sorted by testId DESC
@@ -113,10 +116,12 @@ fun PatientHomeScreen(
 
             // ✅ Display the latest result card below
             LatestAssessmentResultsCard(
+                latestAssessment = latestAssessment,
                 previousTiming = previousTiming,
                 latestTiming = latestTiming,
-                medicationOn = (medicationStatus == "ON"),
-                patientcomment = patientcomments,
+                medicationOn = null,
+//                medicationOn = (medicationStatus == "ON"),
+//                patientcomment = patientcomments,
                 showMedicationToggle = false, // Set false for home screen
                 modifier = Modifier.fillMaxWidth()
             )
