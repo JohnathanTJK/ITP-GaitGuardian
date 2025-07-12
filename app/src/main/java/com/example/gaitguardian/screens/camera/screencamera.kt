@@ -275,8 +275,8 @@ fun NewCameraScreen(
                             .padding(16.dp),
                         horizontalArrangement = Arrangement.SpaceAround
                     ) {
-                        if(showRecordButton)
-                        {
+//                        if(showRecordButton)
+//                        {
                             IconButton(
                                 onClick = {
                                     recordVideo(
@@ -297,7 +297,7 @@ fun NewCameraScreen(
                                     tint = if (isRecording) Color.Red else Color.White
                                 )
                             }
-                        }
+//                        }
                     }
                     if (currentLateralCoverage != null && currentHorizontalCoverage != null && currentDistance != null && cameraTiltAngle != null
                         && covered3Meters != null && status != null && debugInfo != null
@@ -531,7 +531,7 @@ private fun recordVideo(
                             videoTitle = outputFile.name,
                             medication = patientViewModel.medicationStatus.value,
                             onMedication = patientViewModel.onMedication.value,
-                            patientComments = patientViewModel.assessmentComment.value
+                            patientComments = patientViewModel.assessmentComment.value,
                         )
                         patientViewModel.insertNewAssessment(newTug)
                         Log.d("tug", "tug inserted into db")
