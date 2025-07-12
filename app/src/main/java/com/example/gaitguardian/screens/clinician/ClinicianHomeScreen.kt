@@ -143,28 +143,47 @@ fun ClinicianHomeScreen(
             }
 
 //            items(tugVideos) { video ->
+            if(filteredVideos.isEmpty()){
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (showPendingVideos) "No pending assessments to review." else "No assessments available.",
+                            fontSize = 16.sp,
+                            color = Color.Gray
+                        )
+                    }
+                }
+            }
+            else{
                 items(filteredVideos.reversed()) { video -> // show latest first
                     val finalMedicationState = video.onMedication != video.updateMedication
 
-                TUGVideoItem(
-                    navController = navController,
-                    testId = video.testId,
-                    dateTime = video.dateTime,
+                    TUGVideoItem(
+                        navController = navController,
+                        testId = video.testId,
+                        dateTime = video.dateTime,
 //                    medication = video.medication,
 //                    severity = video.severity,
-                    medication = finalMedicationState,
-                    patientcomments = video.patientComments,
-                    severity = "TO BE UPDATED",
-                    watchStatus = if (video.watchStatus) "Reviewed" else "Pending",
-                    isSelected = selectedVideoIds.contains(video.testId),
-                    onSelectionChanged = { isSelected ->
-                        selectedVideoIds = if (isSelected) {
-                            selectedVideoIds + video.testId
-                        } else {
-                            selectedVideoIds - video.testId
+                        medication = finalMedicationState,
+                        patientcomments = video.patientComments,
+                        severity = "2",
+                        watchStatus = if (video.watchStatus) "Reviewed" else "Pending",
+                        isSelected = selectedVideoIds.contains(video.testId),
+                        onSelectionChanged = { isSelected ->
+                            selectedVideoIds = if (isSelected) {
+                                selectedVideoIds + video.testId
+                            } else {
+                                selectedVideoIds - video.testId
+                            }
                         }
-                    }
-                )
+                    )
+                }
+
             }
         }
 
