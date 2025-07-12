@@ -135,21 +135,21 @@ fun NavGraph(
         if (!hasNavigated) {
             when (currentUserView) {
                 null -> {
-                    navController.navigate("start_screen") {
-                        popUpTo("start_screen") { inclusive = true }
+                    navController.navigate("patient_graph") {
+                        popUpTo("splash_screen") { inclusive = true }
                     }
                     hasNavigated = true
                 }
                 "clinician" -> {
                     navController.navigate("clinician_graph") {
-                        popUpTo("start_screen") { inclusive = true }
+                        popUpTo("splash_screen") { inclusive = true }
                     }
                     hasNavigated = true
                 }
 
                 "patient" -> {
                     navController.navigate("patient_graph") {
-                        popUpTo("start_screen") { inclusive = true }
+                        popUpTo("splash_screen") { inclusive = true }
                     }
                     hasNavigated = true
                 }
