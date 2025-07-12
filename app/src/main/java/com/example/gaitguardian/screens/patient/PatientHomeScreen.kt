@@ -113,8 +113,7 @@ fun PatientHomeScreen(
             }
 
             MissedAssessmentCard(navController)
-
-            // ✅ Display the latest result card below
+            
             LatestAssessmentResultsCard(
                 latestAssessment = latestAssessment,
                 previousTiming = previousTiming,
