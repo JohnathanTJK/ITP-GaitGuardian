@@ -53,6 +53,23 @@ fun SettingsScreen(
     isClinician: Boolean = false,
     patientViewModel: PatientViewModel
 ) {
+    
+    fun switchViewAndNavigate(isClinician: Boolean) {
+        if (isClinician) {
+            patientViewModel.saveCurrentUserView("patient")
+            navController.navigate("patient_graph") {
+                popUpTo("clinician_graph") { inclusive = true }
+                launchSingleTop = true
+            }
+        } else {
+            patientViewModel.saveCurrentUserView("clinician")
+            navController.navigate("clinician_graph") {
+                popUpTo("patient_graph") { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
+
     val saveVideos by patientViewModel.saveVideos.collectAsState()
     var showPrivacyDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
@@ -92,7 +109,7 @@ fun SettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { navController.navigate("start_screen") }
+                        .clickable { switchViewAndNavigate(isClinician) }
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {

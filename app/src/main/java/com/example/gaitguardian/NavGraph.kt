@@ -83,8 +83,7 @@ fun NavTopBar(navController: NavHostController, currentDestination: String) {
             )
         },
         navigationIcon = {
-            if (currentDestination != "start_screen" &&
-                currentDestination != "patient_home_screen" &&
+            if (currentDestination != "patient_home_screen" &&
                 currentDestination != "clinician_home_screen"
             ) {
                 IconButton(onClick = { navController.popBackStack() }) {
@@ -228,11 +227,7 @@ fun NavGraph(
                 composable("splash_screen") {
                     SplashScreen(navController, clinicianViewModel)
                 }
-                // General Screens here
-                composable("start_screen")
-                {
-                    StartScreen(navController, patientViewModel, clinicianViewModel)
-                }
+
                 composable("settings_screen") {
                     SettingsScreen(
                         navController = navController,
