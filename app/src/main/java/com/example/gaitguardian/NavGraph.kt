@@ -134,6 +134,12 @@ fun NavGraph(
     LaunchedEffect(currentUserView) {
         if (!hasNavigated) {
             when (currentUserView) {
+                null -> {
+                    navController.navigate("start_screen") {
+                        popUpTo("start_screen") { inclusive = true }
+                    }
+                    hasNavigated = true
+                }
                 "clinician" -> {
                     navController.navigate("clinician_graph") {
                         popUpTo("start_screen") { inclusive = true }
