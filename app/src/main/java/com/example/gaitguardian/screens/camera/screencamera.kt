@@ -530,6 +530,7 @@ private fun recordVideo(
                             videoDuration = recordingTimeState.value.toFloat(),
                             videoTitle = outputFile.name,
                             medication = patientViewModel.medicationStatus.value,
+                            onMedication = patientViewModel.onMedication.value,
                             patientComments = patientViewModel.assessmentComment.value
                         )
                         patientViewModel.insertNewAssessment(newTug)
