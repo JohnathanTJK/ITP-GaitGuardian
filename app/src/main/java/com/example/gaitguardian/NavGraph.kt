@@ -1,5 +1,6 @@
 package com.example.gaitguardian
 
+import android.util.Log
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -125,7 +126,7 @@ fun NavGraph(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination?.route
 
-    val currentUserView by clinicianViewModel.getCurrentUserView.collectAsState(initial = "")
+    val currentUserView by clinicianViewModel.getCurrentUserView.collectAsState()
     // to track if the initial navigation already happened
     var hasNavigated by rememberSaveable { mutableStateOf(false) }
 
@@ -134,26 +135,23 @@ fun NavGraph(
     LaunchedEffect(currentUserView) {
         if (!hasNavigated) {
             when (currentUserView) {
-                "" -> {
-                    navController.navigate("patient_graph") {
+                null -> {
+                    navController.navigate("start_screen") {
                         popUpTo("splash_screen") { inclusive = true }
                     }
-                    hasNavigated = true
                 }
                 "clinician" -> {
                     navController.navigate("clinician_graph") {
                         popUpTo("splash_screen") { inclusive = true }
                     }
-                    hasNavigated = true
                 }
-
                 "patient" -> {
                     navController.navigate("patient_graph") {
                         popUpTo("splash_screen") { inclusive = true }
                     }
-                    hasNavigated = true
                 }
             }
+            hasNavigated = true
         }
     }
     if (currentDestination == "splash_screen") {
@@ -230,6 +228,9 @@ fun NavGraph(
                 startDestination = "splash_screen",
                 modifier = Modifier.padding(innerPadding)
             ) {
+                composable("start_screen") {
+                    StartScreen(navController, patientViewModel, clinicianViewModel)
+                }
                 composable("splash_screen") {
                     SplashScreen(navController, clinicianViewModel)
                 }

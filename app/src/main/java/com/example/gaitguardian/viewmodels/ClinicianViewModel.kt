@@ -67,6 +67,12 @@ class ClinicianViewModel(private val clinicianRepository: ClinicianRepository, p
             clinicianRepository.insert(clinician)
         }
     }
+    // function to insert clinician into RoomDB,
+    fun insertClinician(clinician: Clinician) {
+        viewModelScope.launch(Dispatchers.IO) {
+            clinicianRepository.insert(clinician)
+        }
+    }
     fun deleteAll() {
         viewModelScope.launch(Dispatchers.IO) {
             clinicianRepository.deleteAll()
@@ -110,7 +116,7 @@ class ClinicianViewModel(private val clinicianRepository: ClinicianRepository, p
         }
     }
 
-    val getCurrentUserView: StateFlow<String> = appPreferencesRepository.getCurrentUserView()
+    val getCurrentUserView: StateFlow<String?> = appPreferencesRepository.getCurrentUserView()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
 //    fun getCurrentUserView(): StateFlow<String> {

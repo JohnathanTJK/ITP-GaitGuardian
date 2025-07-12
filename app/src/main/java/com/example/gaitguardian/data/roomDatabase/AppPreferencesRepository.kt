@@ -62,9 +62,9 @@ class AppPreferencesRepository(private val dataStore: DataStore<Preferences>){
     }
 
     // Retrieve current view from DataStore
-    fun getCurrentUserView(): Flow<String> {
+    fun getCurrentUserView(): Flow<String?> {
         return dataStore.data.map { preferences ->
-            preferences[CURRENT_USER_VIEW] ?: ""
+            preferences[CURRENT_USER_VIEW] // returns null if not set
         }
     }
 }

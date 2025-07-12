@@ -49,12 +49,18 @@ class PatientViewModel(private val patientRepository: PatientRepository,private 
         }
     }
     // function to insert patient into RoomDB,
-    fun insertFirstPatient() {
-        val patient = Patient( // to edit these before adding :D
-            id = 1,
-            name = "Sophia Tan",
-            age = 45
-        )
+//    fun insertFirstPatient() {
+//        val patient = Patient( // to edit these before adding :D
+//            id = 1,
+//            name = "Sophia Tan",
+//            age = 45
+//        )
+//        viewModelScope.launch(Dispatchers.IO) {
+//            patientRepository.insert(patient)
+//        }
+//    }
+    // function to insert patient into RoomDB,
+    fun insertPatient(patient: Patient) {
         viewModelScope.launch(Dispatchers.IO) {
             patientRepository.insert(patient)
         }
@@ -138,7 +144,7 @@ class PatientViewModel(private val patientRepository: PatientRepository,private 
         }
     }
 
-    val currentUserView: StateFlow<String> = appPreferencesRepository.getCurrentUserView()
+    val currentUserView: StateFlow<String?> = appPreferencesRepository.getCurrentUserView()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
     // For creating the VM in MainActivity
