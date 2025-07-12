@@ -529,7 +529,6 @@ private fun recordVideo(
                             dateTime = currentDateTime,
                             videoDuration = recordingTimeState.value.toFloat(),
                             videoTitle = outputFile.name,
-                            medication = patientViewModel.medicationStatus.value,
                             onMedication = patientViewModel.onMedication.value,
                             patientComments = patientViewModel.assessmentComment.value,
                         )

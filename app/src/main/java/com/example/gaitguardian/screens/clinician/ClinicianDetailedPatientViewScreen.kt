@@ -6,6 +6,7 @@ import android.os.Environment
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,6 +24,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -36,6 +38,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.example.gaitguardian.data.roomDatabase.patient.Patient
 import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.ui.theme.buttonBackgroundColor
@@ -93,114 +98,188 @@ fun ClinicianDetailedPatientViewScreen(
     var tugDateTime by remember { mutableStateOf("") }
     var tugVideo by remember { mutableStateOf("") }
     var tugDuration by remember { mutableFloatStateOf(0f) }
+    var onMedication by remember {mutableStateOf(false)}
+    var medicationUpdated by remember { mutableStateOf(false) }
     var clinicianComments by remember { mutableStateOf("") }
     var isReviewed by remember { mutableStateOf(false) }
     var markAsReviewed by remember {mutableStateOf(false)}
     var statusUpdateMsg by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
+    var loading by remember { mutableStateOf(true) }
 
+    // Updating of database
+    val scope = rememberCoroutineScope()
+    var isUpdating by remember { mutableStateOf(false) }
     LaunchedEffect(assessment?.testId) {
         assessment?.let {
             tugDateTime = it.dateTime
             tugVideo = it.videoTitle
             tugDuration = it.videoDuration
+            onMedication = it.onMedication
+            medicationUpdated = it.updateMedication
             clinicianComments = it.notes.orEmpty()
             isReviewed = it.watchStatus
         }
+        loading = false
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(bgColor)
-            .padding(16.dp)
-            .verticalScroll(scrollState),
+    if (loading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }    }
+    else {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .background(bgColor)
+                .padding(16.dp)
+                .verticalScroll(scrollState),
 //        verticalArrangement = Arrangement.spacedBy(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Column (
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            horizontalAlignment = Alignment.Start,
-            modifier = Modifier.fillMaxWidth()
-        ){
-            Text(
-                text = "Currently reviewing",
-                fontSize = 14.sp,
-                color = Color(0xFF718096),
-                fontWeight = FontWeight.Medium
-            )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Column (
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalAlignment = Alignment.Start,
+                modifier = Modifier.fillMaxWidth()
+            ){
                 Text(
-                    text = patient.name,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF2D3748)
-                )
-                Text(
-                    text = "• Age ${patient.age}",
+                    text = "Currently reviewing",
                     fontSize = 14.sp,
+                    color = Color(0xFF718096),
+                    fontWeight = FontWeight.Medium
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = patient.name,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF2D3748)
+                    )
+                    Text(
+                        text = "• Age ${patient.age}",
+                        fontSize = 14.sp,
+                        color = Color(0xFF718096)
+                    )
+                }
+
+                Text(
+                    "Assessment Details: ${tugDateTime}", fontSize = 14.sp,
                     color = Color(0xFF718096)
                 )
-            }
+                Spacer(modifier = Modifier.height(4.dp))
 
-            Text(
-                "Assessment Details: ${tugDateTime}", fontSize = 14.sp,
-                color = Color(0xFF718096)
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    "TUG TEST #${testId}",
-                    fontSize = 16.sp,
-                    textAlign = TextAlign.Center,
-                    color = Color.Black
-                )
-                VideoWatchStatus((if (isReviewed) "Reviewed" else "Pending"))
-            }
-
-                VideoButton(tugVideo, tugDuration)
-
-        }
-                Card(
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.White
-                    ),
-                ){
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ){
-                        Text("Overall Performance Graph", fontWeight = FontWeight.SemiBold,
-                            textAlign = TextAlign.Center,
-                            color = Color.Black
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "TUG TEST #${testId}",
+                        fontSize = 16.sp,
+                        textAlign = TextAlign.Center,
+                        color = Color.Black
+                    )
+                    VideoWatchStatus((if (isReviewed) "Reviewed" else "Pending"))
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Medication
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Medication:",
+                            fontSize = 14.sp,
+                            color = Color.Gray
                         )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    color = if (onMedication != medicationUpdated) Color(0xFFDCFCE7) else Color(0xFFFFE4E6),
+                                    shape = RoundedCornerShape(6.dp)
+                                )
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = if (onMedication != medicationUpdated) "ON" else "OFF",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (onMedication != medicationUpdated) Color(0xFF166534) else Color(0xFF9F1239)
+                            )
+                        }
                     }
 
-                    JetpackComposeBasicLineChart()
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Button(
-                            onClick = { navController.navigate("performance_screen") },
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = buttonBackgroundColor
-                            )
+                    // Patient Updated
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Patient Updated:",
+                            fontSize = 14.sp,
+                            color = Color.Gray
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    color = if (medicationUpdated) Color(0xFFDBEAFE) else Color(0xFFF0F0F0),
+                                    shape = RoundedCornerShape(6.dp)
+                                )
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
                         ) {
-                            Text("View Detailed Graph", color = Color.Black)
+                            Text(
+                                text = if (medicationUpdated) "YES" else "NO",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (medicationUpdated) Color(0xFF1D4ED8) else Color.DarkGray
+                            )
                         }
                     }
                 }
+
+                VideoButton(tugVideo, tugDuration)
+
+            }
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                ),
+            ){
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ){
+                    Text("Overall Performance Graph", fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                        color = Color.Black
+                    )
+                }
+
+                JetpackComposeBasicLineChart()
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Button(
+                        onClick = { navController.navigate("performance_screen") },
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonBackgroundColor
+                        )
+                    ) {
+                        Text("View Detailed Graph", color = Color.Black)
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(16.dp))
             TUGsubTasksList()
             Spacer(modifier = Modifier.height(16.dp))
@@ -263,14 +342,30 @@ fun ClinicianDetailedPatientViewScreen(
                             shape = RoundedCornerShape(10.dp),
                             onClick = {
                                 val finalReviewed = isReviewed || markAsReviewed
-                                clinicianViewModel.updateTUGReview(
-                                    testId,
-                                    finalReviewed,
-                                    clinicianComments
-                                )
+                                isUpdating = true
+                                statusUpdateMsg = ""
+                                scope.launch {
+                                    try {
+                                        val success = clinicianViewModel.updateTUGReview(
+                                            testId,
+                                            finalReviewed,
+                                            clinicianComments
+                                        )
 
-                                isReviewed = finalReviewed // update the isReviewed state
-                                statusUpdateMsg = "Status Updated Successfully."
+                                        if (success) {
+                                            isReviewed = finalReviewed
+                                            statusUpdateMsg = "Status Updated Successfully."
+                                            // Reload fresh data
+                                            clinicianViewModel.loadAssessmentById(testId)
+                                        } else {
+                                            statusUpdateMsg = "Update failed. Please try again."
+                                        }
+                                    } catch (e: Exception) {
+                                        statusUpdateMsg = "Error: ${e.message}"
+                                    } finally {
+                                        isUpdating = false
+                                    }
+                                }
                             },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = buttonBackgroundColor,
@@ -279,14 +374,22 @@ fun ClinicianDetailedPatientViewScreen(
                                 disabledContentColor = Color.DarkGray
                             ),
                             // If no comments/ not reviewed, don't allow update.
-                            enabled = !clinicianComments.isEmpty() || isReviewed,
+                            enabled = (!clinicianComments.isEmpty() || isReviewed) && !isUpdating,
                         ) {
-                            Text("Update Status", color = Color.Black)
+                            if (isUpdating) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    color = Color.Black
+                                )
+                            } else {
+                                Text("Update Status", color = Color.Black)
+                            }
                         }
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
             }
+        }
     }
 }
 

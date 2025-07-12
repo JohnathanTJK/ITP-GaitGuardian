@@ -87,9 +87,13 @@ class ClinicianViewModel(private val clinicianRepository: ClinicianRepository, p
         }
     }
     // Update the TUG Assessment (Notes, Reviewed) etc.
-    fun updateTUGReview(id: Int, watchStatus: Boolean, notes: String) {
-        viewModelScope.launch {
+    suspend fun updateTUGReview(id: Int, watchStatus: Boolean, notes: String): Boolean {
+        return try {
             tugRepository.updateClinicianReview(id, watchStatus, notes)
+            true // Return true on success
+        } catch (e: Exception) {
+            Log.e("ClinicianViewModel", "Error updating TUG review", e)
+            false // Return false on error
         }
     }
     fun markMultiAsReviewed(id: Int) {

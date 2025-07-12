@@ -1,5 +1,6 @@
 package com.example.gaitguardian.screens.clinician
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -142,14 +143,16 @@ fun ClinicianHomeScreen(
             }
 
 //            items(tugVideos) { video ->
-                items(filteredVideos) { video ->
+                items(filteredVideos.reversed()) { video -> // show latest first
+                    val finalMedicationState = video.onMedication != video.updateMedication
+
                 TUGVideoItem(
                     navController = navController,
                     testId = video.testId,
                     dateTime = video.dateTime,
 //                    medication = video.medication,
 //                    severity = video.severity,
-                    medication = video.medication,
+                    medication = finalMedicationState,
                     patientcomments = video.patientComments,
                     severity = "TO BE UPDATED",
                     watchStatus = if (video.watchStatus) "Reviewed" else "Pending",
@@ -333,7 +336,7 @@ fun TUGVideoItem(
     navController: NavController,
     testId: Int,
     dateTime: String,
-    medication: String,
+    medication: Boolean,
     severity: String,
     patientcomments: String,
     watchStatus: String,
@@ -341,6 +344,7 @@ fun TUGVideoItem(
     onSelectionChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    Log.d("tugtest", "mediciation value: ${medication}")
     Card(
         modifier = modifier
             .fillMaxWidth(),
@@ -397,7 +401,7 @@ fun TUGVideoItem(
                 buildAnnotatedString {
                     append("Medication: ")
                     withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append(medication)
+                        append(if (medication) "ON" else "OFF")
                     }
                 },
                 fontSize = 14.sp,

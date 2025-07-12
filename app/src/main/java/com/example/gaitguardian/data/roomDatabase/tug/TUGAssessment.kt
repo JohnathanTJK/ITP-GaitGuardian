@@ -14,8 +14,6 @@ data class TUGAssessment(
     val videoDuration: Float,
     @ColumnInfo(name ="videoTitle")
     val videoTitle: String,
-    @ColumnInfo(name = "medication")
-    val medication: String,
     @ColumnInfo(name = "onMedication")
     val onMedication: Boolean,
     @ColumnInfo(name = "updateMedication")
