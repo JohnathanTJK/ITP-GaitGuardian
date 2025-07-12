@@ -14,6 +14,7 @@ class AppPreferencesRepository(private val dataStore: DataStore<Preferences>){
     private val PREVIOUS_DURATION = intPreferencesKey("previous_duration")
     private val LATEST_DURATION = intPreferencesKey("latest_duration")
     private val SAVE_VIDEOS_KEY = booleanPreferencesKey("save_videos")
+    private val FIRST_PRIVACY_CHECK = booleanPreferencesKey("first_privacy_check")
 
     suspend fun setSaveVideos(shouldSave: Boolean) {
         dataStore.edit { prefs ->
@@ -23,6 +24,17 @@ class AppPreferencesRepository(private val dataStore: DataStore<Preferences>){
 
     fun getSaveVideos(): Flow<Boolean> {
         return dataStore.data.map { prefs -> prefs[SAVE_VIDEOS_KEY] ?: false }
+    }
+
+    // Check if it's their first video, if yes, ask if they want to save video !
+    suspend fun setFirstPrivacyCheck(shouldSave: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[FIRST_PRIVACY_CHECK] = shouldSave
+        }
+    }
+
+    fun getFirstPrivacyCheck(): Flow<Boolean> {
+        return dataStore.data.map { prefs -> prefs[FIRST_PRIVACY_CHECK] ?: false }
     }
 
     // Save both previous and latest duration

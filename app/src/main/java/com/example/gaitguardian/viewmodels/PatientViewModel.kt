@@ -74,24 +74,18 @@ class PatientViewModel(private val patientRepository: PatientRepository,private 
         }
     }
 
+    //
 //    fun getCurrentUserView(): StateFlow<String> {
 //        return appPreferencesRepository.getCurrentUserView()
 //            .stateIn(viewModelScope, SharingStarted.Lazily, "")
 //    }
 
     // Medication status
-    private val _medicationStatus = MutableStateFlow("ON")
-    val medicationStatus: StateFlow<String> = _medicationStatus
-
     private val _onMedication = MutableStateFlow(true)
     val onMedication: StateFlow<Boolean> = _onMedication
 
     private val _latestAssessment = MutableStateFlow<TUGAssessment?>(null)
     val latestAssessment: StateFlow<TUGAssessment?> = _latestAssessment
-
-    fun setMedicationStatus(status: String) {
-        _medicationStatus.value = status
-    }
 
     fun setOnMedication(status: Boolean) {
         _onMedication.value = status
@@ -111,6 +105,15 @@ class PatientViewModel(private val patientRepository: PatientRepository,private 
         }
     }
 
+    // Track First Time Privacy
+    val firstPrivacyCheck: StateFlow<Boolean> = appPreferencesRepository.getFirstPrivacyCheck()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    fun setFirstPrivacyCheck(shouldSave: Boolean) {
+        viewModelScope.launch {
+            appPreferencesRepository.setFirstPrivacyCheck(shouldSave)
+        }
+    }
     // Assessment comment
     private val _assessmentComment = MutableStateFlow("")
     val assessmentComment: StateFlow<String> = _assessmentComment

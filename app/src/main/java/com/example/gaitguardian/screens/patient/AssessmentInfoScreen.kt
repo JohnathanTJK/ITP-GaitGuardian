@@ -22,7 +22,7 @@ fun AssessmentInfoScreen(
     modifier: Modifier = Modifier,
     patientViewModel: PatientViewModel
 ) {
-    val medicationStatus by patientViewModel.medicationStatus.collectAsState()  // Observe ViewModel state
+    val firstPrivacyCheck by patientViewModel.firstPrivacyCheck.collectAsState()
     val comments by patientViewModel.assessmentComment.collectAsState()
     val onMedication by patientViewModel.onMedication.collectAsState()
 
@@ -94,8 +94,12 @@ fun AssessmentInfoScreen(
 
         Button(
             onClick = {
-//                navController.navigate("video_capture_screen")
-                navController.navigate("camera_screen")
+                if(!firstPrivacyCheck){
+                    navController.navigate("video_privacy_screen")
+                }
+                else{
+                    navController.navigate("camera_screen")
+                }
             },
             colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
             shape = RoundedCornerShape(16.dp),

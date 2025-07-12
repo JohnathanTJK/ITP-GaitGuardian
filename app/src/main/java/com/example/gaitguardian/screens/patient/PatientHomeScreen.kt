@@ -64,8 +64,6 @@ fun PatientHomeScreen(
     val patientInfo by patientViewModel.patient.collectAsState()
 //    val previousTiming by patientViewModel.previousDuration.collectAsState()
 //    val latestTiming by patientViewModel.latestDuration.collectAsState()
-    val medicationStatus by patientViewModel.medicationStatus.collectAsState()
-    val patientcomments by patientViewModel.assessmentComment.collectAsState()
 
     // Recreated previousTiming and latestTiming to track state from database fetch instead
     var previousTiming by remember { mutableFloatStateOf(0f) }

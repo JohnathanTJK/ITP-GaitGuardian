@@ -1,6 +1,5 @@
 package com.example.gaitguardian
 
-import ManageVideoPrivacyScreen
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -59,6 +58,7 @@ import com.example.gaitguardian.screens.patient.FtfsAssessmentScreen
 import com.example.gaitguardian.screens.patient.GaitAssessmentScreen
 import com.example.gaitguardian.screens.patient.LoadingScreen
 import com.example.gaitguardian.screens.patient.LateralCoverageScreen
+import com.example.gaitguardian.screens.patient.ManageVideoPrivacyScreen
 import com.example.gaitguardian.screens.patient.PatientHomeScreen
 import com.example.gaitguardian.screens.patient.ResultScreen
 import com.example.gaitguardian.screens.patient.TugAssessmentScreen
@@ -134,7 +134,7 @@ fun NavGraph(
     LaunchedEffect(currentUserView) {
         if (!hasNavigated) {
             when (currentUserView) {
-                null -> {
+                "" -> {
                     navController.navigate("patient_graph") {
                         popUpTo("splash_screen") { inclusive = true }
                     }
