@@ -120,6 +120,7 @@ fun PatientHomeScreen(
                 previousTiming = previousTiming,
                 latestTiming = latestTiming,
                 medicationOn = null,
+                showDivider = false,
 //                medicationOn = (medicationStatus == "ON"),
 //                patientcomment = patientcomments,
                 showMedicationToggle = false, // Set false for home screen

@@ -1,5 +1,6 @@
 package com.example.gaitguardian.screens.patient
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -7,14 +8,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontWeight.Companion.ExtraBold
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessment
 import com.example.gaitguardian.ui.theme.*
@@ -103,6 +107,7 @@ LaunchedEffect(Unit){ // fetch latest TUG assessment (aka the one that was just 
                 text = if (hasBeenUpdated) "Medication Status Updated" else "Update Medication Status",
                 fontWeight = FontWeight.Bold
             )
+
         }
     }
 }
@@ -311,38 +316,58 @@ fun HorizontalProgressBar(
     maxValue: Float = 30f,
     modifier: Modifier = Modifier
 ) {
-    val prevFraction = previousValue / maxValue
-    val latestFraction = latestValue / maxValue
+    val difference = latestValue - previousValue
+    val isImproved = difference <= 0f
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(32.dp)
-            .background(Color.LightGray, RoundedCornerShape(8.dp))
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .fillMaxWidth(prevFraction)
-                .background(Color.Gray, RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp))
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .fillMaxWidth(latestFraction)
-                .background(Color(0xFF4CAF50), RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp))
-                .align(Alignment.CenterStart)
-                .offset(x = with(LocalDensity.current) { (prevFraction * (LocalConfiguration.current.screenWidthDp.dp.toPx())).toDp() })
-        )
+    val barColor = if (isImproved) Color(0xFF4CAF50) else Color(0xFFE53935)
+
+    val animatedNowFraction by animateFloatAsState(
+        targetValue = (latestValue / maxValue).coerceIn(0f, 1f),
+        label = "NowFractionAnimation"
+    )
+
+    val statusText = if (isImproved) {
+        "Improve by: ${"%.1f".format(kotlin.math.abs(difference))}s"
+    } else {
+        "Worsen by: ${"%.1f".format(kotlin.math.abs(difference))}s"
     }
 
-    Spacer(modifier = Modifier.height(8.dp))
+    Column(modifier = modifier) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(40.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(barColor),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = statusText,
+                color = Color.White,
+                fontSize = 16.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text("Prev: ${previousValue.toInt()}s", color = Color.Gray)
-        Text("Now: ${latestValue.toInt()}s", color = Color(0xFF4CAF50))
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Prev: ${"%.1f".format(previousValue)}s",
+                fontSize = 16.sp,
+                color = Color.Black
+            )
+            Text(
+                text = "Now: ${"%.1f".format(latestValue)}s",
+                fontSize = 16.sp,
+                color = Color.Black
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
     }
 }
