@@ -520,7 +520,7 @@ private fun recordVideo(
                         Toast.LENGTH_LONG
                     ).show()
                     if (patientViewModel.saveVideos.value) {
-                        val currentDateTime: String = SimpleDateFormat("yyyy-MM-dd HH:mm a", Locale.getDefault())
+                        val currentDateTime: String = SimpleDateFormat("yyyy-MM-dd hh:mm a", Locale.getDefault())
                             .format(Date())
                         patientViewModel.addRecording(recordingTimeState.value)
                         navController.navigate("loading_screen/${recordingTimeState.value}")
