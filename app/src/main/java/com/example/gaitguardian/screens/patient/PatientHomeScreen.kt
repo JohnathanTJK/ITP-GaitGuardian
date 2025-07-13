@@ -119,7 +119,7 @@ fun PatientHomeScreen(
                 medicationOn = null,
                 showDivider = false,
 //                medicationOn = (medicationStatus == "ON"),
-//                patientcomment = patientcomments,
+                showComments = false,
                 showMedicationToggle = false, // Set false for home screen
                 modifier = Modifier.fillMaxWidth()
             )

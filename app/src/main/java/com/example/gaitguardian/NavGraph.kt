@@ -162,12 +162,12 @@ fun NavGraph(
             modifier = Modifier.fillMaxSize(),
             topBar = {
 //            PatientTopBar()
-                if (currentDestination != null && currentDestination != "camera_screen" && currentDestination != "3m_screen" && currentDestination != "gpt_screen") {
+                if (currentDestination != null && currentDestination != "camera_screen" && currentDestination != "3m_screen" && currentDestination != "gpt_screen" && currentDestination != "start_screen") {
                     NavTopBar(navController, currentDestination)
                 }
             },
             bottomBar = {
-                if (currentDestination != "camera_screen" && currentDestination != "3m_screen" && currentDestination != "gpt_screen") {
+                if (currentDestination != "camera_screen" && currentDestination != "3m_screen" && currentDestination != "gpt_screen" && currentDestination != "start_screen") {
                     NavigationBar(
                         containerColor = Color.White,
                     ) {

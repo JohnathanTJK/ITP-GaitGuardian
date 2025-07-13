@@ -119,6 +119,7 @@ fun LatestAssessmentResultsCard(
     previousTiming: Float = 13f, // Updated to Float to match TUGAssessment videoDuration data type
     latestTiming: Float, // Updated to Float to match TUGAssessment videoDuration data type
     medicationOn: Boolean? = null,
+    showComments: Boolean = true,
 //    patientcomment: String,
     showDivider: Boolean = true,
     showMedicationToggle: Boolean = false,
@@ -140,20 +141,21 @@ fun LatestAssessmentResultsCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+//
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "Type: TUG",
+                    text = "Type: ${if (latestAssessment != null) "TUG" else "-"}",
                     color = Color.Black,
                     fontSize = body,
                     fontWeight = FontWeight.Medium
                 )
                 VerticalDivider()
                 Text(
-                    text = latestAssessment?.dateTime ?: "14 June 2025",
+                    text = "${latestAssessment?.dateTime ?: "-"}",
                     color = Color.Black,
                     fontSize = body,
                     fontWeight = FontWeight.Medium
@@ -162,35 +164,32 @@ fun LatestAssessmentResultsCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+//
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 4.dp)
             ) {
-                StatusBox(title = "Severity", value = "2", modifier = Modifier.weight(1f))
+                StatusBox(
+                    title = "Severity",
+                    value = if (latestAssessment != null) "2" else "-",
+                    modifier = Modifier.weight(1f)
+                )
 
                 if (!showMedicationToggle) {
-                    if(medicationOn != null) { // Shows in ResultScreen
-                        StatusBox(
-                            title = "Medication",
-//                        value = if (onMedication) "ON" else "OFF",
-                            value = if (medicationOn == true) "ON" else "OFF",
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    else { // Showing in PatientHomeScreen
-                        val isOn = latestAssessment?.onMedication == true
-                        val wasUpdated = latestAssessment?.updateMedication == true
-                        // If updated, flip the status
-                        val displayStatus = if (wasUpdated) !isOn else isOn
-                        StatusBox(
-                            title = "Medication",
-                            value =
-                            if (displayStatus) "ON" else "OFF",
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                    StatusBox(
+                        title = "Medication",
+                        value = if (latestAssessment != null) {
+                            val isOn = latestAssessment.onMedication
+                            val wasUpdated = latestAssessment.updateMedication
+                            val displayStatus = if (wasUpdated) !isOn else isOn
+                            if (displayStatus) "ON" else "OFF"
+                        } else {
+                            "-"
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
 
@@ -242,25 +241,26 @@ fun LatestAssessmentResultsCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            if (showComments) {
+                Spacer(modifier = Modifier.height(16.dp))
 
-            Text(
-                text = "Comments:",
-                fontSize = subheading1,
-                fontWeight = FontWeight.Bold,
-                color = DefaultColor
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            (if (latestAssessment?.patientComments?.isEmpty() == true) "No comment provided" else latestAssessment?.patientComments)?.let {
                 Text(
-        //                text = if (patientcomment.isEmpty()) "No comment provided" else patientcomment,
-                    text = it,
-                    color = Color.Black,
-                    fontSize = body
+                    text = "Comments:",
+                    fontSize = subheading1,
+                    fontWeight = FontWeight.Bold,
+                    color = DefaultColor
                 )
-            }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                (if (latestAssessment?.patientComments.isNullOrEmpty()) "No comment provided" else latestAssessment?.patientComments)?.let {
+                    Text(
+                        text = it,
+                        color = Color.Black,
+                        fontSize = body
+                    )
+                }
+             }
         }
     }
 }
@@ -311,63 +311,86 @@ fun StatusBox(title: String, value: String, modifier: Modifier = Modifier) {
 
 @Composable
 fun HorizontalProgressBar(
-    previousValue: Float,
-    latestValue: Float,
+    previousValue: Float?,
+    latestValue: Float?,
     maxValue: Float = 30f,
     modifier: Modifier = Modifier
 ) {
-    val difference = latestValue - previousValue
-    val isImproved = difference <= 0f
-
-    val barColor = if (isImproved) Color(0xFF4CAF50) else Color(0xFFE53935)
-
-    val animatedNowFraction by animateFloatAsState(
-        targetValue = (latestValue / maxValue).coerceIn(0f, 1f),
-        label = "NowFractionAnimation"
-    )
-
-    val statusText = if (isImproved) {
-        "Improve by: ${"%.1f".format(kotlin.math.abs(difference))}s"
-    } else {
-        "Worsen by: ${"%.1f".format(kotlin.math.abs(difference))}s"
-    }
-
-    Column(modifier = modifier) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(40.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(barColor),
+                .clip(RoundedCornerShape(8.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = statusText,
-                color = Color.White,
-                fontSize = 16.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            if (previousValue == null || latestValue == null || (previousValue == 0f && latestValue == 0f)) {
+                // No data found case
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Gray),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No data found",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            } else {
+                val difference = latestValue - previousValue
+                val (barColor, statusText) = when {
+                    difference < 0f -> {
+                        Color(0xFF4CAF50) to "Improve by: ${"%.1f".format(kotlin.math.abs(difference))}s"
+                    }
+                    difference > 0f -> {
+                        Color(0xFFE53935) to "Worsen by: ${"%.1f".format(kotlin.math.abs(difference))}s"
+                    }
+                    else -> {
+                        Color(0xFFFFCC80) to "Stable performance"
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(barColor),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = statusText,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        // Only show prev/now row if data is available
+        if (previousValue != null && latestValue != null && !(previousValue == 0f && latestValue == 0f)) {
+            Spacer(modifier = Modifier.height(4.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = "Prev: ${"%.1f".format(previousValue)}s",
-                fontSize = 16.sp,
-                color = Color.Black
-            )
-            Text(
-                text = "Now: ${"%.1f".format(latestValue)}s",
-                fontSize = 16.sp,
-                color = Color.Black
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Prev: ${"%.1f".format(previousValue)}s",
+                    fontSize = 16.sp,
+                    color = Color.Black
+                )
+                Text(
+                    text = "Now: ${"%.1f".format(latestValue)}s",
+                    fontSize = 16.sp,
+                    color = Color.Black
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
     }
 }

@@ -41,6 +41,7 @@ import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import com.example.gaitguardian.viewmodels.PatientViewModel
 import kotlinx.coroutines.delay
+import androidx.compose.foundation.layout.Arrangement
 
 @Composable
 fun StartScreen(
@@ -73,7 +74,8 @@ fun StartScreen(
             .fillMaxSize()
             .background(bgColor)
             .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
         Text(
             text = "Welcome to GaitGuardian",
