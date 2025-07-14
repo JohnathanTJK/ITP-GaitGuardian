@@ -78,6 +78,7 @@ fun PinEntryScreen(
         Text(
             text = "Enter PIN",
             style = MaterialTheme.typography.headlineMedium,
+            color = Color.Black,
             modifier = Modifier.padding(bottom = 32.dp)
         )
 
@@ -179,7 +180,7 @@ fun PinDigitBox(
                     },
                 textStyle = MaterialTheme.typography.headlineMedium.copy(
                     textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = Color.Black
                 ),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.NumberPassword,
@@ -225,23 +226,16 @@ fun PinEntryExample(navController: NavController) { // for testing now
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp)
-                .background(bgColor),
+                .background(bgColor)
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "CORRECT PIN !",
+                text = "Pin verified. Redirecting...",
                 style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.primary
+                color = Color.Black
             )
-
-            TextButton(
-                onClick = { showSuccess = false },
-                modifier = Modifier.padding(top = 16.dp)
-            ) {
-                Text("Try Again")
-            }
         }
     } else {
         Column {
@@ -272,7 +266,7 @@ fun PinEntryExample(navController: NavController) { // for testing now
             if (errorMessage.isNotEmpty()) {
                 Text(
                     text = errorMessage,
-                    color = MaterialTheme.colorScheme.error,
+                    color = Color.Black,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier
                         .fillMaxWidth()
