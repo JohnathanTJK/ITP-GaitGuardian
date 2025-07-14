@@ -535,7 +535,7 @@ fun VideoButton(videoTitle: String, videoDuration: Float) {
                 .padding(12.dp)
         ) {
             Text(
-                text = "No Video Available",
+                text = "No Video Available [${videoDuration}s]",
                 color = Color(0xFFE53E3E),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium

@@ -124,7 +124,12 @@ fun ClinicianHomeScreen(
                     pendingReviews = pendingReviews
                 )
             }
-
+//            item {
+//                Button(onClick = {navController.navigate("lateral_screen")})
+//                {
+//                    Text("Test here")
+//                }
+//            }
             item {
                 VideoReviewsSummaryCard(
 //                    totalTests = tugVideos.count(),

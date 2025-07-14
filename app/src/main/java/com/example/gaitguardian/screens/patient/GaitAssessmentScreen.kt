@@ -44,10 +44,14 @@ fun GaitAssessmentScreen(navController: NavController, modifier: Modifier = Modi
             )
 
             Spacer(modifier = Modifier.height(32.dp))
-
+            var assessmentChoice by remember { mutableStateOf("") }
             // First Button
             Button(
-                onClick = { navController.navigate("assessment_info_screen/Timed%20Up%20and%20Go") },
+                onClick = {
+                    assessmentChoice = "Timed Up and Go"
+                    navController.navigate("assessment_info_screen/${assessmentChoice}")
+                },
+//                    navController.navigate("assessment_info_screen/Timed%20Up%20and%20Go") },
                 colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier
@@ -60,7 +64,11 @@ fun GaitAssessmentScreen(navController: NavController, modifier: Modifier = Modi
 
             // Second Button
             Button(
-                onClick = { navController.navigate("assessment_info_screen/Five%20Times%20Sit%20to%20Stand") },
+                onClick = {
+                    assessmentChoice = "Five Times Sit to Stand"
+                    navController.navigate("assessment_info_screen/${assessmentChoice}")
+                },
+//                    navController.navigate("assessment_info_screen/Five%20Times%20Sit%20to%20Stand") },
                 colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier

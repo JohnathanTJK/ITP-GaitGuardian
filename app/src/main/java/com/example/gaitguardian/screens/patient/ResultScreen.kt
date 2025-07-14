@@ -35,6 +35,7 @@ fun ResultScreen(
 LaunchedEffect(Unit){ // fetch latest TUG assessment (aka the one that was just recorded)
     patientViewModel.getLatestTUGAssessment()
     patientViewModel.getLatestTwoDurations()
+    patientViewModel.setAssessmentComment("")
 }
 //    val medicationStatus by patientViewModel.medicationStatus.collectAsState()
 //    val previousTiming by patientViewModel.previousDuration.collectAsState()
