@@ -48,14 +48,20 @@ fun ManageVideoPrivacyScreen(navController: NavController, patientViewModel: Pat
         }
     }
     Column(modifier = Modifier.background(bgColor).fillMaxSize().padding(16.dp)) {
-        Text("Manage Video Privacy", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+        Text("Manage Video Privacy", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color.Black)
         Spacer(modifier = Modifier.padding(8.dp))
 
-        Text("Since it is your first time recording a video using this application, please indicate your video privacy preference. Would you like your videos to be saved in your device after each assessment?")
+        Text("Since it is your first time recording a video using this application, please indicate your video privacy preference.",
+            fontWeight = FontWeight.Medium, color = Color.Black)
+        Spacer(modifier = Modifier.padding(8.dp))
+
+        Text("Would you like your videos to be saved in your device after each assessment?",
+            fontWeight = FontWeight.Medium, color = Color.Black)
+
         Spacer(modifier = Modifier.padding(16.dp))
 
         // Privacy preference selection
-        Text("Select your preference:", fontWeight = FontWeight.Medium)
+        Text("Select your preference:", fontWeight = FontWeight.Medium, color = Color.Black)
         Spacer(modifier = Modifier.padding(8.dp))
 
         Row(
