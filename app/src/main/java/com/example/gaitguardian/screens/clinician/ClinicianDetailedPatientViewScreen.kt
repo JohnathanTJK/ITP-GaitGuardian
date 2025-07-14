@@ -107,8 +107,8 @@ fun ClinicianDetailedPatientViewScreen(
     LaunchedEffect(assessment?.testId) {
         assessment?.let {
             tugDateTime = it.dateTime
-            tugVideo = it.videoTitle
-            tugDuration = it.videoDuration
+            tugVideo = it.videoTitle.orEmpty()
+            tugDuration = it.videoDuration ?: 0f
             onMedication = it.onMedication
             medicationUpdated = it.updateMedication
             patientComments = it.patientComments

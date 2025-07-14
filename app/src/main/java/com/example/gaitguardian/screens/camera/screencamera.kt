@@ -509,8 +509,11 @@ private fun recordVideo(
 //                    recordingTimeState.value = event.recordingStats.recordedDurationNanos.toInt() / 1_000_000_000
 //                    Log.d("recordingTime", recordingTimeState.value.toString())
                     // difference between current and start time = video duration
+                    val currentDateTime: String = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
+                        .format(Date())
                     val durationSeconds =
                         ((System.nanoTime() - recordingStartTimeNanos) / 1_000_000_000).toInt()
+
                     recordingTimeState.value = durationSeconds
                     Log.d("recordingTime", recordingTimeState.value.toString())
                     onRecordingStateChange(false)
@@ -520,8 +523,6 @@ private fun recordVideo(
                         Toast.LENGTH_LONG
                     ).show()
                     if (patientViewModel.saveVideos.value) {
-                        val currentDateTime: String = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
-                            .format(Date())
                         patientViewModel.addRecording(recordingTimeState.value)
                         navController.navigate("loading_screen/${recordingTimeState.value}")
                         val newTug = TUGAssessment (
@@ -538,6 +539,12 @@ private fun recordVideo(
                         val videoUri = event.outputResults.outputUri
                         val file = File(videoUri.path ?: "")
                         if (file.exists()) file.delete()
+                        val newTugNoVideo = TUGAssessment (
+                            dateTime = currentDateTime,
+                            onMedication = patientViewModel.onMedication.value,
+                            patientComments = patientViewModel.assessmentComment.value
+                        )
+                        patientViewModel.insertNewAssessment(newTugNoVideo)
                         navController.navigate("loading_screen/${recordingTimeState.value}")
                     }
                 }
