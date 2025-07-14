@@ -227,7 +227,7 @@ fun ClinicianDetailedPatientViewScreen(
                             .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = if (medicationUpdated) "YES" else "NO",
+                            text = if (medicationUpdated) "YES" else "N/A",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (medicationUpdated) Color(0xFF1D4ED8) else Color.DarkGray

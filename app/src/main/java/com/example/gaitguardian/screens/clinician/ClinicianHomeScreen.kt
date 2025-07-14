@@ -119,7 +119,8 @@ fun ClinicianHomeScreen(
         ) {
             item {
                 ClinicianHeader(
-                    clinicianName = "Dr. ${clinicianInfo?.name ?: "Clinician"}",
+                    clinicianName = "${clinicianInfo?.name ?: "Clinician"}",
+//                    clinicianName = "Dr. ${clinicianInfo?.name ?: "Clinician"}",
                     patient = patientInfo ?: Patient(id = 2, name = "Benny", age = 18),
                     pendingReviews = pendingReviews
                 )
