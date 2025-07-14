@@ -35,15 +35,15 @@ import com.example.gaitguardian.viewmodels.PatientViewModel
 import kotlinx.coroutines.delay
 
 @Composable
-fun ManageVideoPrivacyScreen(navController: NavController, patientViewModel: PatientViewModel) {
+fun ManageVideoPrivacyScreen(navController: NavController, patientViewModel: PatientViewModel, assessmentTitle: String) {
     var selectedPreference by remember { mutableStateOf<Boolean?>(null) }
     var showConfirmation by remember { mutableStateOf(false) }
 
     LaunchedEffect(showConfirmation) {
         if (showConfirmation) {
             delay(2000)
-            navController.navigate("camera_screen") {
-                popUpTo("video_privacy_screen") { inclusive = true }
+            navController.navigate("camera_screen/${assessmentTitle}") {
+                popUpTo("video_privacy_screen/${assessmentTitle}") { inclusive = true }
             }
         }
     }

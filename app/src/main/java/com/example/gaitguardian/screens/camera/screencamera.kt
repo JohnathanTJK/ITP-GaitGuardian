@@ -147,6 +147,7 @@ fun rememberDeviceOrientation(): DeviceOrientation {
 fun NewCameraScreen(
     navController: NavController,
     patientViewModel: PatientViewModel,
+    assessmentTitle : String,
     modifier: Modifier = Modifier
 ) {
     val scaffoldState = rememberBottomSheetScaffoldState()
@@ -287,7 +288,8 @@ fun NewCameraScreen(
                                         recordingTimeState = recordingTime,
                                         onRecordingStateChange = { recording ->
                                             isRecording = recording
-                                        }
+                                        },
+                                        assessmentTitle = assessmentTitle
                                     )
                                 }
                             ) {
@@ -467,7 +469,8 @@ private fun recordVideo(
     navController: NavController,
     recordingTimeState: MutableState<Int>,
     patientViewModel: PatientViewModel,
-    onRecordingStateChange: (Boolean) -> Unit
+    onRecordingStateChange: (Boolean) -> Unit,
+    assessmentTitle: String
 ) {
     if (recording != null) {
         recording?.stop()
@@ -524,7 +527,7 @@ private fun recordVideo(
                     ).show()
                     if (patientViewModel.saveVideos.value) {
                         patientViewModel.addRecording(recordingTimeState.value)
-                        navController.navigate("loading_screen/${recordingTimeState.value}")
+                        navController.navigate("loading_screen/${assessmentTitle}")
                         val newTug = TUGAssessment (
                             // TODO: TO UPDATE WITH PATIENT'S MEDICATION STATUS + COMMENTS ETC.
                             dateTime = currentDateTime,
@@ -546,7 +549,7 @@ private fun recordVideo(
                             patientComments = patientViewModel.assessmentComment.value
                         )
                         patientViewModel.insertNewAssessment(newTugNoVideo)
-                        navController.navigate("loading_screen/${recordingTimeState.value}")
+                        navController.navigate("loading_screen/${assessmentTitle}")
                     }
                 }
             }

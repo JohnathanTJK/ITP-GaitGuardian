@@ -34,8 +34,10 @@ import kotlinx.coroutines.delay
 
 
 @Composable
-fun LoadingScreen(navController: NavController, recordingTime: Int) {
-    val motivationalQuotes = listOf(
+fun LoadingScreen(navController: NavController, assessmentTitle: String) {
+//fun LoadingScreen(navController: NavController, recordingTime: Int) {
+
+        val motivationalQuotes = listOf(
         "🌟 Keep going, you're doing amazing!",
         "💪 Every step matters. You’ve got this!",
         "🌈 You are stronger than you think.",
@@ -48,8 +50,12 @@ fun LoadingScreen(navController: NavController, recordingTime: Int) {
     // Navigate after delay
     LaunchedEffect(Unit) {
         delay(600)
-        navController.navigate("result_screen/$recordingTime") {
-            popUpTo("loading_screen") { inclusive = true }
+//        navController.navigate("result_screen/${assessmentTitle}")
+        navController.navigate("result_screen/${assessmentTitle}")
+        {
+            popUpTo("assessment_info_screen/$assessmentTitle") {
+                inclusive = false
+            }
         }
     }
 

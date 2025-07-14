@@ -27,7 +27,7 @@ import com.example.gaitguardian.viewmodels.PatientViewModel
 @Composable
 fun ResultScreen(
     navController: NavController,
-    recordingTime: Int,
+    assessmentTitle: String,
     patientViewModel: PatientViewModel,
     modifier: Modifier = Modifier
 ) {
@@ -98,13 +98,19 @@ LaunchedEffect(Unit){ // fetch latest TUG assessment (aka the one that was just 
                 }
             },
             enabled = !hasUpdatedMedication, // Use local state
+            colors = ButtonDefaults.buttonColors(
+                containerColor = buttonBackgroundColor,
+                contentColor = DefaultColor,
+                disabledContainerColor = Color(0xFFE0E0E0),
+                disabledContentColor = Color.DarkGray
+            ),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
             shape = RoundedCornerShape(12.dp)
         ) {
             Text(
-                text = if (hasBeenUpdated) "Medication Status Updated" else "Update Medication Status",
+                text = if (hasUpdatedMedication) "Medication Status Updated" else "Update Medication Status",
                 fontWeight = FontWeight.Bold
             )
 

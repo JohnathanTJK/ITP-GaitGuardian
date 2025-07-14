@@ -49,6 +49,7 @@ import com.example.gaitguardian.screens.camera.ARCoreDistanceCheckScreen
 import com.example.gaitguardian.screens.camera.NewCameraScreen
 //import com.example.gaitguardian.screens.camera.NewCameraScreen
 import com.example.gaitguardian.screens.camera.mergedsiti.CameraScreen
+import com.example.gaitguardian.screens.cameraTEST.LateralDistanceCameraScreen
 //import com.example.gaitguardian.screens.cameraTEST.WalkableDistanceScreen
 import com.example.gaitguardian.screens.clinician.ClinicianDetailedPatientViewScreen
 import com.example.gaitguardian.screens.clinician.ClinicianHomeScreen
@@ -162,12 +163,13 @@ fun NavGraph(
             modifier = Modifier.fillMaxSize(),
             topBar = {
 //            PatientTopBar()
-                if (currentDestination != null && currentDestination != "camera_screen" && currentDestination != "3m_screen" && currentDestination != "gpt_screen" && currentDestination != "start_screen") {
+                if (currentDestination != null && currentDestination != "camera_screen" && currentDestination != "3m_screen" && currentDestination != "gpt_screen" && currentDestination != "start_screen"
+                    && currentDestination != "lateral_screen") {
                     NavTopBar(navController, currentDestination)
                 }
             },
             bottomBar = {
-                if (currentDestination != "camera_screen" && currentDestination != "3m_screen" && currentDestination != "gpt_screen" && currentDestination != "start_screen") {
+                if (currentDestination != "camera_screen" && currentDestination != "3m_screen" && currentDestination != "gpt_screen" && currentDestination != "start_screen" && currentDestination != "lateral_screen") {
                     NavigationBar(
                         containerColor = Color.White,
                     ) {
@@ -228,13 +230,12 @@ fun NavGraph(
                 startDestination = "splash_screen",
                 modifier = Modifier.padding(innerPadding)
             ) {
-                composable("start_screen") {
-                    StartScreen(navController, patientViewModel, clinicianViewModel)
-                }
                 composable("splash_screen") {
                     SplashScreen(navController, clinicianViewModel)
                 }
-
+                composable("start_screen") {
+                    StartScreen(navController, patientViewModel, clinicianViewModel)
+                }
                 composable("settings_screen") {
                     SettingsScreen(
                         navController = navController,
@@ -276,19 +277,31 @@ fun NavGraph(
                     {
                         LateralCoverageScreen()
                     }
-                    composable("camera_screen")
-                    {
-//                    CameraScreen()
-                    NewCameraScreen(navController, patientViewModel)
-//                    CameraScreenWithDistanceDetection()
-//                    IntegratedCameraScreen(navController,patientViewModel)
-                }
+//                    composable("camera_screen")
+//                    {
+////                    CameraScreen()
+//                    NewCameraScreen(navController, patientViewModel)
+////                    CameraScreenWithDistanceDetection()
+////                    IntegratedCameraScreen(navController,patientViewModel)
+//                }
+                    composable("camera_screen/{assessmentTitle}") { backStackEntry ->
+                        val assessmentTitle = backStackEntry.arguments?.getString("assessmentTitle")
+                        if (assessmentTitle != null)
+                        {
+                            NewCameraScreen(navController, patientViewModel, assessmentTitle)
+                        }
+//                        ManageVideoPrivacyScreen(navController, patientViewModel)
+                    }
                 composable("ar_test")
                 {
                     ARCoreDistanceCheckScreen(
                         onDistanceMet = {navController.navigate("camera_screen")}
                     )
                 }
+                    composable("lateral_screen")
+                    {
+                        LateralDistanceCameraScreen()
+                    }
 //                composable("gpt_screen")
 //                {
 //                    WalkableDistanceScreen()
@@ -329,27 +342,45 @@ fun NavGraph(
                     composable("video_capture_screen") {
                         VideoCaptureScreen(navController, patientViewModel)
                     }
-                    composable("video_privacy_screen") {
-                        ManageVideoPrivacyScreen(navController, patientViewModel)
+                    composable("video_privacy_screen/{assessmentTitle}") { backStackEntry ->
+                        val assessmentTitle = backStackEntry.arguments?.getString("assessmentTitle")
+                        if (assessmentTitle != null)
+                        {
+                            ManageVideoPrivacyScreen(navController, patientViewModel, assessmentTitle)
+
+                        }
+//                        ManageVideoPrivacyScreen(navController, patientViewModel)
                     }
                     composable("view_videos_screen") {
                         ViewVideosScreen(navController)
                     }
-                    composable("loading_screen/{time}") { backStackEntry ->
-                        val time = backStackEntry.arguments?.getString("time")?.toIntOrNull() ?: 0
-                        LoadingScreen(navController, time)
+//                    composable("loading_screen/{time}") { backStackEntry ->
+//                        val time = backStackEntry.arguments?.getString("time")?.toIntOrNull() ?: 0
+//                        LoadingScreen(navController, time)
+//                    }
+                    composable("loading_screen/{assessmentTitle}") { backStackEntry ->
+                        val time = backStackEntry.arguments?.getString("assessmentTitle")
+                        if (time != null) {
+                            LoadingScreen(navController, time)
+                        }
                     }
-                    composable(
-                        route = "result_screen/{time}",
-                        arguments = listOf(navArgument("time") { type = NavType.IntType })
-                    ) { backStackEntry ->
-                        val time = backStackEntry.arguments?.getInt("time") ?: 0
-                        ResultScreen(
-                            navController = navController,
-                            recordingTime = time,
-                            patientViewModel = patientViewModel
-                        )
+                    composable("result_screen/{assessmentTitle}") { backStackEntry ->
+                        val time = backStackEntry.arguments?.getString("assessmentTitle")
+                        if (time != null) {
+                            ResultScreen(navController, time, patientViewModel)
+                        }
                     }
+//                    composable(
+//                        route = "result_screen/{time}",
+//                        arguments = listOf(navArgument("time") { type = NavType.IntType })
+//                    ) { backStackEntry ->
+//                        val time = backStackEntry.arguments?.getInt("time") ?: 0
+//                        ResultScreen(
+//                            navController = navController,
+//                            recordingTime = time,
+//                            patientViewModel = patientViewModel
+//                        )
+//                    }
                 }
             }
         }

@@ -95,10 +95,10 @@ fun AssessmentInfoScreen(
         Button(
             onClick = {
                 if(!firstPrivacyCheck){
-                    navController.navigate("video_privacy_screen")
+                    navController.navigate("video_privacy_screen/${assessmentTitle}")
                 }
                 else{
-                    navController.navigate("camera_screen")
+                    navController.navigate("camera_screen/${assessmentTitle}")
                 }
             },
             colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
