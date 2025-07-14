@@ -291,7 +291,7 @@ fun CameraPreview2(
     controller: LifecycleCameraController,
     modifier: Modifier = Modifier,
     onAnalysisResult: (luminance: Double, isTooDark: Boolean, isTooBright: Boolean, errorMessage: String?) -> Unit,
-    onDistanceDetectionResult: (personDistance: Float, personHorizontalCoverage: Float, lateralCoverage: Float, cover3Meters: Boolean, status: String, debugInfo: String, cameraTiltAngle: Float) -> Unit
+//    onDistanceDetectionResult: (personDistance: Float, personHorizontalCoverage: Float, lateralCoverage: Float, cover3Meters: Boolean, status: String, debugInfo: String, cameraTiltAngle: Float) -> Unit
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
@@ -379,92 +379,92 @@ fun CameraPreview2(
                 return@setImageAnalysisAnalyzer
             }
 
-            poseDetector.process(
-                InputImage.fromMediaImage(imageProxy.image!!, imageProxy.imageInfo.rotationDegrees)
-            ).addOnSuccessListener { pose ->
-                debugInfo = "Landmarks found: ${pose.allPoseLandmarks.size}"
-                debugInfo += " | Tilt: ${String.format("%.1f", cameraTiltAngle)}°"
-                Log.d("PoseDetection", "Pose detection success, landmarks: ${pose.allPoseLandmarks.size}")
-
-                if (pose.allPoseLandmarks.isNotEmpty()) {
-                    val landmarks = pose.allPoseLandmarks
-                    val xCoords = landmarks.map { it.position.x }
-                    val yCoords = landmarks.map { it.position.y }
-
-                    val left = (xCoords.minOrNull() ?: 0f).toInt()
-                    val right = (xCoords.maxOrNull() ?: 0f).toInt()
-                    val top = (yCoords.minOrNull() ?: 0f).toInt()
-                    val bottom = (yCoords.maxOrNull() ?: 0f).toInt()
-
-                    val boundingBox = if (right > left && bottom > top) {
-                        Rect(left, top, right, bottom)
-                    } else {
-                        val centerX = imageProxy.width / 2
-                        val centerY = imageProxy.height / 2
-                        Rect(centerX - 100, centerY - 200, centerX + 100, centerY + 200)
-                    }
-
-                    val rotationDegrees = imageProxy.imageInfo.rotationDegrees
-                    val correctedBoxHeight = if (rotationDegrees == 90 || rotationDegrees == 270) {
-                        boundingBox.width()
-                    } else boundingBox.height()
-
-                    val correctedImageWidth = if (rotationDegrees == 90 || rotationDegrees == 270) {
-                        imageProxy.height
-                    } else imageProxy.width
-
-                    Log.d("RotationFix", "rotationDegrees=$rotationDegrees, correctedBoxHeight=$correctedBoxHeight, correctedImageWidth=$correctedImageWidth")
-
-                    personDistance = estimateDistanceFromBoundingBox(
-                        correctedBoxHeight,
-                        focalLength
-                    ).also { estimatedDistance ->
-                        status ="Ground distance calculated"
-                        Log.d("DistanceEstimation", "Estimated distance: $estimatedDistance")
-                    }
-
-                    personDistance?.let { distance ->
-                        lateralCoverage = calculateGroundCoverage(
-                            focalLength,
-                            sensorSize.width,
-                            distance,
-                            cameraHeight,
-                            cameraTiltAngle
-                        )
-
-                        personHorizontalCoverage = calculatePersonGroundCoverage(
-                            boundingBox,
-                            correctedImageWidth,
-                            focalLength,
-                            sensorSize.width,
-                            distance,
-                            cameraHeight,
-                            cameraTiltAngle
-                        )
-
-                        covers3Meters = personHorizontalCoverage >= 3.0f
-                        debugInfo += " | Person: ${"%.2f".format(personHorizontalCoverage)}m | 3m: $covers3Meters"
-
-                        onDistanceDetectionResult(
-                            distance,
-                            personHorizontalCoverage,
-                            lateralCoverage,
-                            covers3Meters,
-                            status,
-                            debugInfo,
-                            cameraTiltAngle
-                        )
-                    }
-                }
-
-            }.addOnFailureListener { e ->
-                Log.e("PoseDetection", "Detection failed", e)
-                personDistance = null
-                personHorizontalCoverage = 0f
-                covers3Meters = false
-            }.addOnCompleteListener {
-                imageProxy.close()
-            }
+//            poseDetector.process(
+//                InputImage.fromMediaImage(imageProxy.image!!, imageProxy.imageInfo.rotationDegrees)
+//            ).addOnSuccessListener { pose ->
+//                debugInfo = "Landmarks found: ${pose.allPoseLandmarks.size}"
+//                debugInfo += " | Tilt: ${String.format("%.1f", cameraTiltAngle)}°"
+//                Log.d("PoseDetection", "Pose detection success, landmarks: ${pose.allPoseLandmarks.size}")
+//
+//                if (pose.allPoseLandmarks.isNotEmpty()) {
+//                    val landmarks = pose.allPoseLandmarks
+//                    val xCoords = landmarks.map { it.position.x }
+//                    val yCoords = landmarks.map { it.position.y }
+//
+//                    val left = (xCoords.minOrNull() ?: 0f).toInt()
+//                    val right = (xCoords.maxOrNull() ?: 0f).toInt()
+//                    val top = (yCoords.minOrNull() ?: 0f).toInt()
+//                    val bottom = (yCoords.maxOrNull() ?: 0f).toInt()
+//
+//                    val boundingBox = if (right > left && bottom > top) {
+//                        Rect(left, top, right, bottom)
+//                    } else {
+//                        val centerX = imageProxy.width / 2
+//                        val centerY = imageProxy.height / 2
+//                        Rect(centerX - 100, centerY - 200, centerX + 100, centerY + 200)
+//                    }
+//
+//                    val rotationDegrees = imageProxy.imageInfo.rotationDegrees
+//                    val correctedBoxHeight = if (rotationDegrees == 90 || rotationDegrees == 270) {
+//                        boundingBox.width()
+//                    } else boundingBox.height()
+//
+//                    val correctedImageWidth = if (rotationDegrees == 90 || rotationDegrees == 270) {
+//                        imageProxy.height
+//                    } else imageProxy.width
+//
+//                    Log.d("RotationFix", "rotationDegrees=$rotationDegrees, correctedBoxHeight=$correctedBoxHeight, correctedImageWidth=$correctedImageWidth")
+//
+//                    personDistance = estimateDistanceFromBoundingBox(
+//                        correctedBoxHeight,
+//                        focalLength
+//                    ).also { estimatedDistance ->
+//                        status ="Ground distance calculated"
+//                        Log.d("DistanceEstimation", "Estimated distance: $estimatedDistance")
+//                    }
+//
+//                    personDistance?.let { distance ->
+//                        lateralCoverage = calculateGroundCoverage(
+//                            focalLength,
+//                            sensorSize.width,
+//                            distance,
+//                            cameraHeight,
+//                            cameraTiltAngle
+//                        )
+//
+//                        personHorizontalCoverage = calculatePersonGroundCoverage(
+//                            boundingBox,
+//                            correctedImageWidth,
+//                            focalLength,
+//                            sensorSize.width,
+//                            distance,
+//                            cameraHeight,
+//                            cameraTiltAngle
+//                        )
+//
+//                        covers3Meters = personHorizontalCoverage >= 3.0f
+//                        debugInfo += " | Person: ${"%.2f".format(personHorizontalCoverage)}m | 3m: $covers3Meters"
+//
+//                        onDistanceDetectionResult(
+//                            distance,
+//                            personHorizontalCoverage,
+//                            lateralCoverage,
+//                            covers3Meters,
+//                            status,
+//                            debugInfo,
+//                            cameraTiltAngle
+//                        )
+//                    }
+//                }
+//
+//            }.addOnFailureListener { e ->
+//                Log.e("PoseDetection", "Detection failed", e)
+//                personDistance = null
+//                personHorizontalCoverage = 0f
+//                covers3Meters = false
+//            }.addOnCompleteListener {
+//                imageProxy.close()
+//            }
         }
     }
 

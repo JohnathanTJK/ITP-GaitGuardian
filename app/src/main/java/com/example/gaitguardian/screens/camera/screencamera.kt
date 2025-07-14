@@ -167,44 +167,44 @@ fun NewCameraScreen(
 
     // MY PART
     // State variables
-    var currentDistance by remember { mutableStateOf<Float?>(null) }
-    var currentHorizontalCoverage by remember { mutableStateOf<Float?>(null) }
-    var currentLateralCoverage by remember { mutableStateOf<Float?>(null) }
-    var covered3Meters by remember { mutableStateOf<Boolean?>(null) }
-    var status by remember { mutableStateOf<String?>(null) }
-    var debugInfo by remember { mutableStateOf<String?>(null) }
-    var cameraTiltAngle by remember { mutableStateOf<Float?>(null) }
+//    var currentDistance by remember { mutableStateOf<Float?>(null) }
+//    var currentHorizontalCoverage by remember { mutableStateOf<Float?>(null) }
+//    var currentLateralCoverage by remember { mutableStateOf<Float?>(null) }
+//    var covered3Meters by remember { mutableStateOf<Boolean?>(null) }
+//    var status by remember { mutableStateOf<String?>(null) }
+//    var debugInfo by remember { mutableStateOf<String?>(null) }
+//    var cameraTiltAngle by remember { mutableStateOf<Float?>(null) }
 
     // Show camera only when device is in landscape (either direction)
     val isDeviceLandscape = deviceOrientation == DeviceOrientation.LANDSCAPE_LEFT ||
             deviceOrientation == DeviceOrientation.LANDSCAPE_RIGHT
 
-    LaunchedEffect(
-        currentDistance,
-        currentHorizontalCoverage,
-        currentLateralCoverage,
-        cameraTiltAngle,
-        covered3Meters,
-        status,
-        debugInfo,
-        captureErrorMessage
-    ) {
-        val allReady = currentDistance != null &&
-                currentHorizontalCoverage != null &&
-                currentLateralCoverage != null &&
-                cameraTiltAngle != null &&
-                covered3Meters != null &&
-                status != null &&
-                debugInfo != null &&
-                captureErrorMessage == null
-
-        if (allReady) {
-            delay(3000) // Wait for 3 seconds
-            showRecordButton = true
-        } else {
-            showRecordButton = false // Reset when not ready
-        }
-    }
+//    LaunchedEffect(
+//        currentDistance,
+//        currentHorizontalCoverage,
+//        currentLateralCoverage,
+//        cameraTiltAngle,
+//        covered3Meters,
+//        status,
+//        debugInfo,
+//        captureErrorMessage
+//    ) {
+//        val allReady = currentDistance != null &&
+//                currentHorizontalCoverage != null &&
+//                currentLateralCoverage != null &&
+//                cameraTiltAngle != null &&
+//                covered3Meters != null &&
+//                status != null &&
+//                debugInfo != null &&
+//                captureErrorMessage == null
+//
+//        if (allReady) {
+//            delay(3000) // Wait for 3 seconds
+//            showRecordButton = true
+//        } else {
+//            showRecordButton = false // Reset when not ready
+//        }
+//    }
 
     val controller = remember {
         LifecycleCameraController(context).apply {
@@ -246,15 +246,15 @@ fun NewCameraScreen(
                         isTooBright = isBright
                         captureErrorMessage = errorMessage
                     },
-                    onDistanceDetectionResult = { distance, horizontal, lateral, covers3, getStatus, getDebugInfo, tiltAngle ->
-                        currentDistance = distance
-                        currentHorizontalCoverage = horizontal
-                        currentLateralCoverage = lateral
-                        covered3Meters = covers3
-                        status = getStatus
-                        debugInfo = getDebugInfo
-                        cameraTiltAngle = tiltAngle
-                    }
+//                    onDistanceDetectionResult = { distance, horizontal, lateral, covers3, getStatus, getDebugInfo, tiltAngle ->
+//                        currentDistance = distance
+//                        currentHorizontalCoverage = horizontal
+//                        currentLateralCoverage = lateral
+//                        covered3Meters = covers3
+//                        status = getStatus
+//                        debugInfo = getDebugInfo
+//                        cameraTiltAngle = tiltAngle
+//                    }
                 )
 
                 // Rotated UI
@@ -301,98 +301,98 @@ fun NewCameraScreen(
                             }
 //                        }
                     }
-                    if (currentLateralCoverage != null && currentHorizontalCoverage != null && currentDistance != null && cameraTiltAngle != null
-                        && covered3Meters != null && status != null && debugInfo != null
-                    ) {
-
-                        // Distance + Analysis Info
-                        Column(
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(16.dp)
-                                .background(Color.Black.copy(alpha = 0.7f))
-                                .padding(16.dp)
-                        ) {
-                            status?.let { status ->
-                                Text(text = status, color = Color.White, fontSize = 16.sp)
-                            }
-                            debugInfo?.let { debug ->
-                                Text(
-                                    text = debug,
-                                    color = Color.Yellow,
-                                    fontSize = 14.sp,
-                                    modifier = Modifier.padding(top = 4.dp)
-                                )
-                            }
-
-                            // Only show distance info when data is available
-                            currentDistance?.let { distance ->
-                                Text(
-                                    text = "Distance: ${"%.1f".format(distance)}m",
-                                    color = Color.White,
-                                    fontSize = 18.sp,
-                                    modifier = Modifier.padding(top = 8.dp)
-                                )
-                            }
-
-                            // Safe lateral coverage display
-                            currentLateralCoverage?.let { lateral ->
-                                Text(
-                                    text = "Ground Coverage: ${"%.1f".format(lateral)}m",
-                                    color = if (lateral >= 6f) Color.Green else Color.Red,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-
-                            // Safe horizontal coverage display
-                            currentHorizontalCoverage?.let { horizontal ->
-                                Text(
-                                    text = "Person Ground Width: ${"%.2f".format(horizontal)}m",
-                                    color = Color.Cyan,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(top = 4.dp)
-                                )
-                            }
-
-                            // Camera info - safe tilt angle display
-                            cameraTiltAngle?.let { tilt ->
-                                Text(
-                                    text = "Tilt: ${String.format("%.1f", tilt)}°",
-                                    color = Color.Gray,
-                                    fontSize = 12.sp,
-                                    modifier = Modifier.padding(top = 4.dp)
-                                )
-                            }
-
-                            // 3-meter coverage check - safe display
-                            currentLateralCoverage?.let { horizontal ->
-                                if (horizontal > 0f) {
-                                    Text(
-                                        text = if (covered3Meters == true) {
-                                            if (horizontal > 0.4f) {
-                                                "Too much, move camera closer"
-                                            } else {  // horizontal <= 0.4f AND covers 3m
-                                                "Covers 3m+ ground distance"
-                                            }
-                                        } else {
-                                            "Less than 3m coverage (${
-                                                String.format(
-                                                    "%.2f",
-                                                    horizontal
-                                                )
-                                            }m)"
-                                        },
-                                        color = if (covered3Meters == true) Color.Green else Color.Red,
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(top = 8.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
+//                    if (currentLateralCoverage != null && currentHorizontalCoverage != null && currentDistance != null && cameraTiltAngle != null
+//                        && covered3Meters != null && status != null && debugInfo != null
+//                    ) {
+//
+//                        // Distance + Analysis Info
+//                        Column(
+//                            modifier = Modifier
+//                                .align(Alignment.BottomCenter)
+//                                .padding(16.dp)
+//                                .background(Color.Black.copy(alpha = 0.7f))
+//                                .padding(16.dp)
+//                        ) {
+//                            status?.let { status ->
+//                                Text(text = status, color = Color.White, fontSize = 16.sp)
+//                            }
+//                            debugInfo?.let { debug ->
+//                                Text(
+//                                    text = debug,
+//                                    color = Color.Yellow,
+//                                    fontSize = 14.sp,
+//                                    modifier = Modifier.padding(top = 4.dp)
+//                                )
+//                            }
+//
+//                            // Only show distance info when data is available
+//                            currentDistance?.let { distance ->
+//                                Text(
+//                                    text = "Distance: ${"%.1f".format(distance)}m",
+//                                    color = Color.White,
+//                                    fontSize = 18.sp,
+//                                    modifier = Modifier.padding(top = 8.dp)
+//                                )
+//                            }
+//
+//                            // Safe lateral coverage display
+//                            currentLateralCoverage?.let { lateral ->
+//                                Text(
+//                                    text = "Ground Coverage: ${"%.1f".format(lateral)}m",
+//                                    color = if (lateral >= 6f) Color.Green else Color.Red,
+//                                    fontSize = 16.sp,
+//                                    fontWeight = FontWeight.Bold
+//                                )
+//                            }
+//
+//                            // Safe horizontal coverage display
+//                            currentHorizontalCoverage?.let { horizontal ->
+//                                Text(
+//                                    text = "Person Ground Width: ${"%.2f".format(horizontal)}m",
+//                                    color = Color.Cyan,
+//                                    fontSize = 16.sp,
+//                                    fontWeight = FontWeight.Bold,
+//                                    modifier = Modifier.padding(top = 4.dp)
+//                                )
+//                            }
+//
+//                            // Camera info - safe tilt angle display
+//                            cameraTiltAngle?.let { tilt ->
+//                                Text(
+//                                    text = "Tilt: ${String.format("%.1f", tilt)}°",
+//                                    color = Color.Gray,
+//                                    fontSize = 12.sp,
+//                                    modifier = Modifier.padding(top = 4.dp)
+//                                )
+//                            }
+//
+//                            // 3-meter coverage check - safe display
+//                            currentLateralCoverage?.let { horizontal ->
+//                                if (horizontal > 0f) {
+//                                    Text(
+//                                        text = if (covered3Meters == true) {
+//                                            if (horizontal > 0.4f) {
+//                                                "Too much, move camera closer"
+//                                            } else {  // horizontal <= 0.4f AND covers 3m
+//                                                "Covers 3m+ ground distance"
+//                                            }
+//                                        } else {
+//                                            "Less than 3m coverage (${
+//                                                String.format(
+//                                                    "%.2f",
+//                                                    horizontal
+//                                                )
+//                                            }m)"
+//                                        },
+//                                        color = if (covered3Meters == true) Color.Green else Color.Red,
+//                                        fontSize = 18.sp,
+//                                        fontWeight = FontWeight.Bold,
+//                                        modifier = Modifier.padding(top = 8.dp)
+//                                    )
+//                                }
+//                            }
+//                        }
+//                    }
                     // Capture Error for Blur / Brightness
                     captureErrorMessage?.let { message ->
                         Card(
