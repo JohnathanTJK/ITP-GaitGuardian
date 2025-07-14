@@ -11,7 +11,7 @@ data class TUGAssessment(
     @ColumnInfo(name = "dateTime")
     val dateTime: String,
     @ColumnInfo(name = "videoDuration")
-    val videoDuration: Float? = null,
+    val videoDuration: Float,
     @ColumnInfo(name ="videoTitle")
     val videoTitle: String? = null,
     @ColumnInfo(name = "onMedication")

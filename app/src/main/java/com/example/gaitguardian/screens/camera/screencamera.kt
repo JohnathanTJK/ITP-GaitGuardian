@@ -541,6 +541,7 @@ private fun recordVideo(
                         if (file.exists()) file.delete()
                         val newTugNoVideo = TUGAssessment (
                             dateTime = currentDateTime,
+                            videoDuration = recordingTimeState.value.toFloat(),
                             onMedication = patientViewModel.onMedication.value,
                             patientComments = patientViewModel.assessmentComment.value
                         )
