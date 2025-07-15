@@ -20,7 +20,9 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.SwitchAccount
+import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -185,7 +187,7 @@ fun SettingsScreen(
                             .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.AccountCircle, contentDescription = "Privacy", tint = Color.Black)
+                        Icon(Icons.Default.PrivacyTip, contentDescription = "Privacy", tint = Color.Black)
                         Spacer(modifier = Modifier.width(16.dp))
                         Text("Manage Video Privacy", fontSize = 18.sp, color = Color.Black)
                     }
@@ -208,7 +210,7 @@ fun SettingsScreen(
                                 .padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.Delete, contentDescription = "View Videos", tint = Color.Black)
+                            Icon(Icons.Default.VideoLibrary, contentDescription = "View Videos", tint = Color.Black)
                             Spacer(modifier = Modifier.width(16.dp))
                             Text("View Saved Videos", fontSize = 18.sp, color = Color.Black)
                         }
@@ -331,14 +333,16 @@ fun VideoPrivacyDialog(
                     Text("Cancel")
                 }
             },
-            title = { Text("Video Privacy") },
+            title = { Text("Video Privacy", fontWeight = FontWeight.Bold, fontSize =20.sp, color = Color.Black) },
             text = {
                 Text(
                     if (saveVideos)
                         "Your videos are currently being saved. Do you want to stop saving them?"
                     else
                         "Your videos are not saved. Do you want to allow saving recorded videos?"
-                )
+                ,
+                    fontSize = 16.sp,
+                    color = Color.Black)
             }
         )
     }
