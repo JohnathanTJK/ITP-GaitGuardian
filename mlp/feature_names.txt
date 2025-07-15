@@ -1,0 +1,8 @@
+stride_length
+cadence
+step_width
+walking_speed
+hip_movement
+knee_movement
+ankle_movement
+symmetry

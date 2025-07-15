@@ -1,0 +1,1 @@
+["step_count", "mean_step_length", "stride_time", "cadence", "step_symmetry", "left_knee_range", "right_knee_range", "upper_body_sway", "turn1_duration", "turn2_duration", "sit_to_stand_time", "walk_from_chair_time", "turn_first_time", "walk_to_chair_time", "turn_second_time", "stand_to_sit_time", "total_walking_time", "total_turning_time", "total_time", "turn_walk_ratio"]
