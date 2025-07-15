@@ -1,11 +1,15 @@
 package com.example.gaitguardian.screens.camera
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Environment
 import android.util.Log
 import android.view.OrientationEventListener
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.video.FileOutputOptions
 import androidx.camera.video.Quality
 import androidx.camera.video.QualitySelector
@@ -218,7 +222,34 @@ fun NewCameraScreen(
             )
         }
     }
+    // TODO: More comprehensive version , after a certain time the prompt will not appear anymore.
+    //  Need to do manually through 'App Settings'
+    // Track permission state
+    var hasPermissions by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        )
+    }
 
+    // Launcher for requesting permission
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        hasPermissions = permissions[Manifest.permission.CAMERA] == true &&
+                permissions[Manifest.permission.RECORD_AUDIO] == true
+    }
+
+    LaunchedEffect(Unit) {
+        // Automatically prompt if not granted
+        if (!hasPermissions) {
+            permissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.CAMERA,
+                    Manifest.permission.RECORD_AUDIO
+                )
+            )
+        }
+    }
     val configuration = LocalConfiguration.current
     val screenWidthDp = configuration.screenWidthDp
     val screenHeightDp = configuration.screenHeightDp
