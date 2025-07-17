@@ -22,6 +22,7 @@ poseDetectionCommon = "17.0.0"
 poseDetection = "17.0.0"
 core = "1.17.1"
 poseDetectionAccurate = "17.0.0"
+media3Ui = "1.7.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -56,6 +57,7 @@ pose-detection-common = { group = "com.google.mlkit", name = "pose-detection-com
 pose-detection = { group = "com.google.mlkit", name = "pose-detection", version.ref = "poseDetection" }
 core = { group = "com.google.ar.sceneform", name = "core", version.ref = "core" }
 pose-detection-accurate = { group = "com.google.mlkit", name = "pose-detection-accurate", version.ref = "poseDetectionAccurate" }
+androidx-media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "media3Ui" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

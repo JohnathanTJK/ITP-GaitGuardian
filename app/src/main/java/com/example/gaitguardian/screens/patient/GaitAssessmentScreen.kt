@@ -1,5 +1,6 @@
 package com.example.gaitguardian.screens.patient
 
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,10 +49,9 @@ fun GaitAssessmentScreen(navController: NavController, modifier: Modifier = Modi
             // First Button
             Button(
                 onClick = {
-                    assessmentChoice = "Timed Up and Go"
-                    navController.navigate("assessment_info_screen/${assessmentChoice}")
+                    val encoded = Uri.encode("Timed Up and Go")
+                    navController.navigate("assessment_instruction_screen/$encoded")
                 },
-//                    navController.navigate("assessment_info_screen/Timed%20Up%20and%20Go") },
                 colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier
@@ -59,16 +59,14 @@ fun GaitAssessmentScreen(navController: NavController, modifier: Modifier = Modi
                     .height(80.dp)
                     .padding(vertical = 16.dp)
             ) {
-                Text("Timed Up and Go", fontSize = 20.sp, color = Color.Black)
+                Text("Stand-Walk Test", fontSize = 20.sp, color = Color.Black)
             }
 
-            // Second Button
             Button(
                 onClick = {
-                    assessmentChoice = "Five Times Sit to Stand"
-                    navController.navigate("assessment_info_screen/${assessmentChoice}")
+                    val encoded = Uri.encode("Sit-to-Stand x5")
+                    navController.navigate("assessment_instruction_screen/$encoded")
                 },
-//                    navController.navigate("assessment_info_screen/Five%20Times%20Sit%20to%20Stand") },
                 colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier
@@ -78,19 +76,19 @@ fun GaitAssessmentScreen(navController: NavController, modifier: Modifier = Modi
             ) {
                 Text("Five Times Sit to Stand", fontSize = 20.sp, color = Color.Black)
             }
-        }
 
-        // Third Button (Go Back) with same height & padding as above
-        Button(
-            onClick = { navController.popBackStack() },
-            colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(80.dp)
-                .padding(vertical = 16.dp)
-        ) {
-            Text("Go Back", fontSize = 20.sp, color = Color.Black)
+            // Third Button (Go Back) with same height & padding as above
+            Button(
+                onClick = { navController.popBackStack() },
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(80.dp)
+                    .padding(vertical = 16.dp)
+            ) {
+                Text("Go Back", fontSize = 20.sp, color = Color.Black)
+            }
         }
     }
 }
