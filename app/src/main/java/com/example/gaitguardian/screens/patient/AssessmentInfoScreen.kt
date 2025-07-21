@@ -14,17 +14,21 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.gaitguardian.ui.theme.*
 import com.example.gaitguardian.viewmodels.PatientViewModel
+import com.example.gaitguardian.viewmodels.TugDataViewModel
 
 @Composable
 fun AssessmentInfoScreen(
     navController: NavController,
     assessmentTitle: String,
     modifier: Modifier = Modifier,
-    patientViewModel: PatientViewModel
+    patientViewModel: PatientViewModel,
+    tugViewModel: TugDataViewModel
 ) {
     val firstPrivacyCheck by patientViewModel.firstPrivacyCheck.collectAsState()
-    val comments by patientViewModel.assessmentComment.collectAsState()
-    val onMedication by patientViewModel.onMedication.collectAsState()
+//    val comments by patientViewModel.assessmentComment.collectAsState()
+//    val onMedication by patientViewModel.onMedication.collectAsState()
+    val comments by tugViewModel.assessmentComment.collectAsState()
+    val onMedication by tugViewModel.onMedication.collectAsState()
 
     Column(
         modifier = modifier
@@ -66,7 +70,10 @@ fun AssessmentInfoScreen(
 //                    isSelected = medicationStatus == "ON",
 //                    onClick = { patientViewModel.setMedicationStatus("ON") },
                     isSelected = onMedication,
-                    onClick = { patientViewModel.setOnMedication(true) },
+                    onClick = {
+//                        patientViewModel.setOnMedication(true)
+                              tugViewModel.setOnMedication(true)
+                              },
                     modifier = Modifier.weight(1f)
                 )
                 MedicationStatusButton(
@@ -74,7 +81,10 @@ fun AssessmentInfoScreen(
 //                    isSelected = medicationStatus == "OFF",
 //                    onClick = { patientViewModel.setMedicationStatus("OFF") },
                     isSelected = !onMedication,
-                    onClick = { patientViewModel.setOnMedication(false) },
+                    onClick = {
+//                        patientViewModel.setOnMedication(false)
+                        tugViewModel.setOnMedication(false)
+                              },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -83,7 +93,10 @@ fun AssessmentInfoScreen(
 
             OutlinedTextField(
                 value = comments,
-                onValueChange = { patientViewModel.setAssessmentComment(it) },
+                onValueChange = {
+//                    patientViewModel.setAssessmentComment(it)
+                    tugViewModel.setAssessmentComment(it)
+                                },
                 placeholder = { Text("Additional comments", color = Color.Black.copy(alpha = 0.5f)) },
                 modifier = Modifier
                     .fillMaxWidth()

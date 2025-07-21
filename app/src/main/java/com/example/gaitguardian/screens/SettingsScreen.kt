@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import com.example.gaitguardian.ui.theme.bgColor
+import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import com.example.gaitguardian.viewmodels.PatientViewModel
 
 @Composable
@@ -56,7 +57,8 @@ fun SettingsScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
     isClinician: Boolean = false,
-    patientViewModel: PatientViewModel
+    patientViewModel: PatientViewModel,
+    clinicianViewModel: ClinicianViewModel
 ) {
     
     fun switchViewAndNavigate(isClinician: Boolean) {
@@ -67,7 +69,7 @@ fun SettingsScreen(
                 launchSingleTop = true
             }
         } else {
-            patientViewModel.saveCurrentUserView("clinician")
+            clinicianViewModel.saveCurrentUserView("clinician")
             navController.navigate("clinician_graph") {
                 popUpTo("patient_graph") { inclusive = true }
                 launchSingleTop = true

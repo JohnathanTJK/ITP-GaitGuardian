@@ -51,6 +51,7 @@ import com.example.gaitguardian.data.roomDatabase.patient.Patient
 import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.ui.theme.buttonBackgroundColor
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
+import com.example.gaitguardian.viewmodels.TugDataViewModel
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
@@ -74,16 +75,19 @@ import java.io.File
 fun ClinicianDetailedPatientViewScreen(
     navController: NavController,
     clinicianViewModel: ClinicianViewModel,
+    tugViewModel: TugDataViewModel,
     testId: Int,
     modifier: Modifier = Modifier
 ) {
 
     LaunchedEffect(testId) { // pre-load with the testId from backStackEntry
-        clinicianViewModel.loadAssessmentById(testId)
+//        clinicianViewModel.loadAssessmentById(testId)
+        tugViewModel.loadAssessmentById(testId)
     }
 
 
-    val assessment by clinicianViewModel.selectedTUGAssessment.collectAsState()
+//    val assessment by clinicianViewModel.selectedTUGAssessment.collectAsState()
+    val assessment by tugViewModel.selectedTUGAssessment.collectAsState()
 
 
     val patient = Patient(2, "Benny", 18)
@@ -357,17 +361,23 @@ fun ClinicianDetailedPatientViewScreen(
                             statusUpdateMsg = ""
                             scope.launch {
                                 try {
-                                    val success = clinicianViewModel.updateTUGReview(
+                                    val success = tugViewModel.updateTUGReview(
                                         testId,
                                         finalReviewed,
                                         clinicianComments
                                     )
+//                                    val success = clinicianViewModel.updateTUGReview(
+//                                        testId,
+//                                        finalReviewed,
+//                                        clinicianComments
+//                                    )
 
                                     if (success) {
                                         isReviewed = finalReviewed
                                         statusUpdateMsg = "Status Updated Successfully."
                                         // Reload fresh data
-                                        clinicianViewModel.loadAssessmentById(testId)
+//                                        clinicianViewModel.loadAssessmentById(testId)
+                                        tugViewModel.loadAssessmentById(testId)
                                     } else {
                                         statusUpdateMsg = "Update failed. Please try again."
                                     }

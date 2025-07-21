@@ -53,12 +53,14 @@ import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.ui.theme.buttonBackgroundColor
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import com.example.gaitguardian.viewmodels.PatientViewModel
+import com.example.gaitguardian.viewmodels.TugDataViewModel
 
 @Composable
 fun ClinicianHomeScreen(
     navController: NavController,
     clinicianViewModel: ClinicianViewModel,
     patientViewModel: PatientViewModel,
+    tugViewModel: TugDataViewModel,
     modifier: Modifier = Modifier
 ) {
 
@@ -82,7 +84,8 @@ fun ClinicianHomeScreen(
     // End: Patient ViewModel testing
     // Start: Clinician ViewModel testing
     val clinicianInfo by clinicianViewModel.clinician.collectAsState()
-    val uploadedAssesssments by clinicianViewModel.allTUGAssessments.collectAsState()
+//    val uploadedAssesssments by clinicianViewModel.allTUGAssessments.collectAsState()
+        val uploadedAssesssments by tugViewModel.allTUGAssessments.collectAsState()
 
     val pendingReviews =
         uploadedAssesssments.count { !it.watchStatus } // Calculate number of videos that are not watched
@@ -200,7 +203,8 @@ fun ClinicianHomeScreen(
 //                    // TODO: To update the database
                     // TODO: something likeclinicianViewModel.markVideoAsWatched(videoId)
                     selectedVideoIds.forEach { videoId ->
-                        clinicianViewModel.markMultiAsReviewed(videoId)
+//                        clinicianViewModel.markMultiAsReviewed(videoId)
+                        tugViewModel.markMultiAsReviewed(videoId)
                     }
                     // For Testing Only
 //                    tugVideos = tugVideos.map { video ->
