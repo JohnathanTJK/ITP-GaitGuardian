@@ -97,6 +97,12 @@ dependencies {
     implementation ("androidx.camera:camera-camera2:1.3.0")
     implementation ("com.google.mlkit:object-detection:17.0.0")
 
+    // Add these for API communication
+    implementation ("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation ("com.squareup.okhttp3:logging-interceptor:4.11.0")
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+
 
     // Material3 Icons
     implementation(libs.androidx.material.icons.extended)

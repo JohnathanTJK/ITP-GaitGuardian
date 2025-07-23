@@ -212,9 +212,18 @@ fun MissedAssessmentCard(navController: NavController) {
 
         }
     }
+    Button(
+        onClick = {
+            navController.navigate("tug_assessment_screen")
+        }
 
+    ) {
+        Text("Test TUG Assessment")
+    }
 
 }
+
+
 
 
 

@@ -346,9 +346,12 @@ fun NavGraph(
                         VideoInstructionScreen(navController, type)
                     }
 
-                    composable("tug_assessment_screen") {
-                        TugAssessmentScreen(navController)
-                    }
+                    composable ("tug_assessment_screen") {
+                    TugAssessmentScreen (
+                        navController = navController,
+                        patientId = "test_patient_123" // Temporary test value
+                    ) }
+
                     composable("ftfs_assessment_screen") {
                         FtfsAssessmentScreen(navController)
                     }
