@@ -19,6 +19,10 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.background
 
 // Coroutines
 import kotlinx.coroutines.launch
@@ -36,8 +40,10 @@ sealed class AnalysisState {
     data class Error(val message: String) : AnalysisState()
 }
 
+// Updated TugAssessmentScreen.kt with patient-friendly design
+
 @Composable
-fun TugAssessmentScreen(
+fun PatientFriendlyTugAssessmentScreen(
     navController: NavController,
     patientId: String
 ) {
@@ -55,133 +61,140 @@ fun TugAssessmentScreen(
     var analysisState by remember { mutableStateOf<AnalysisState>(AnalysisState.Idle) }
     var analysisResult by remember { mutableStateOf<GaitAnalysisResponse?>(null) }
 
+    // Patient-friendly color scheme
+    val patientOrange = Color(0xFFFF9800)
+    val patientYellow = Color(0xFFFFF3E0)
+    val softGray = Color(0xFFF5F5F5)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),  // Add this line!
+            .background(patientYellow) // Warm yellow background
+            .padding(20.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Header
         Text(
-            text = "TUG Assessment",
+            text = "Movement Assessment",
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF333333)
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Instructions Card
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            )
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "Instructions",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "1. Sit in the chair with back against backrest\n" +
-                            "2. Stand up and walk 3 meters\n" +
-                            "3. Turn around and walk back\n" +
-                            "4. Sit down with back against backrest",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Video Recording Section (keep your existing implementation)
-        VideoRecordingSection(
+        // Simple Instructions Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "📋 Simple Steps",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = patientOrange
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Simplified instructions with bigger text
+                listOf(
+                    "1. 🪑 Sit in chair",
+                    "2. 🚶 Stand and walk 3 meters",
+                    "3. 🔄 Turn around",
+                    "4. 🚶 Walk back to chair",
+                    "5. 🪑 Sit down"
+                ).forEach { instruction ->
+                    Text(
+                        text = instruction,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(vertical = 4.dp),
+                        fontSize = 18.sp
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Video Recording Section - Patient Friendly
+        PatientVideoRecordingSection(
             onVideoRecorded = { videoFile ->
                 recordedVideoFile = videoFile
                 analysisState = AnalysisState.Idle
                 analysisResult = null
             },
-            isEnabled = analysisState != AnalysisState.Analyzing
+            isEnabled = analysisState != AnalysisState.Analyzing,
+            patientOrange = patientOrange
         )
 
         // Show video recorded confirmation
         recordedVideoFile?.let { videoFile ->
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
+            // Big confirmation card
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                )
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E8))
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(20.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Default.CheckCircle,
                         contentDescription = "Video recorded",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = Color(0xFF4CAF50),
+                        modifier = Modifier.size(40.dp)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column(modifier = Modifier.weight(1f)) {
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
                         Text(
-                            text = "Video Recorded",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Medium
+                            text = "✅ Video Recorded",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF2E7D32)
                         )
                         Text(
-                            text = "File: ${videoFile.name}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = "Ready for analysis",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color(0xFF558B2F)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // Medication State Selection
-            MedicationStateCard(
+            // Simple Medication State Selection
+            PatientMedicationCard(
                 selectedState = medicationState,
                 onStateSelected = { medicationState = it },
-                onShowDialog = { showMedicationDialog = true }
+                patientOrange = patientOrange
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Comments Section
-            OutlinedTextField(
-                value = comments,
-                onValueChange = { comments = it },
-                label = { Text("Comments (Optional)") },
-                placeholder = { Text("Any additional observations...") },
-                modifier = Modifier.fillMaxWidth(),
-                maxLines = 3,
-                enabled = analysisState != AnalysisState.Analyzing
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
         }
 
-        // Analysis Section
+        // Analysis Section - Patient Friendly
         when (analysisState) {
             is AnalysisState.Idle -> {
                 if (recordedVideoFile != null) {
+                    // Big Analysis Button
                     Button(
                         onClick = {
                             scope.launch {
                                 analysisState = AnalysisState.Analyzing
-
                                 try {
                                     val result = gaitClient.analyzeVideo(recordedVideoFile!!)
-
                                     result.fold(
                                         onSuccess = { response ->
                                             analysisResult = response
@@ -202,76 +215,56 @@ fun TugAssessmentScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp)
+                            .height(70.dp), // Bigger button
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = patientOrange
+                        ),
+                        shape = RoundedCornerShape(16.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Analytics,
-                            contentDescription = null
+                            contentDescription = null,
+                            modifier = Modifier.size(28.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = "Analyze Movement",
-                            style = MaterialTheme.typography.titleMedium
+                            text = "Start Analysis",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp
                         )
                     }
                 }
             }
 
             is AnalysisState.Analyzing -> {
-                AnalysisProgressCard()
+                PatientAnalysisProgressCard(patientOrange)
             }
 
             is AnalysisState.Success -> {
                 analysisResult?.let { result ->
-                    AnalysisResultsCard(
+                    PatientFriendlyResultsCard(
                         result = result,
-                        onSaveResults = {
-                            // TODO: Save to your existing database
-                            // Navigate to results screen or back to patient list
-                            navController.popBackStack()
-                        },
-                        onAnalyzeAgain = {
+                        patientOrange = patientOrange,
+                        onTakeNew = {
                             analysisState = AnalysisState.Idle
                             analysisResult = null
                             recordedVideoFile = null
                             medicationState = "N/A"
-                            comments = ""
+                        },
+                        onGoHome = {
+                            navController.popBackStack()
                         }
                     )
                 }
             }
 
             is AnalysisState.Error -> {
-                val errorState = analysisState as AnalysisState.Error  // Extract the error state
-                AnalysisErrorCard(
-                    error = errorState.message,  // Now we can access the message
-                    onRetry = {
-                        // Retry analysis
-                        scope.launch {
-                            analysisState = AnalysisState.Analyzing
-
-                            try {
-                                val result = gaitClient.analyzeVideo(recordedVideoFile!!)
-
-                                result.fold(
-                                    onSuccess = { response ->
-                                        analysisResult = response
-                                        analysisState = AnalysisState.Success
-                                    },
-                                    onFailure = { exception ->
-                                        analysisState = AnalysisState.Error(
-                                            exception.message ?: "Analysis failed"
-                                        )
-                                    }
-                                )
-                            } catch (e: Exception) {
-                                analysisState = AnalysisState.Error(
-                                    "Unexpected error: ${e.message}"
-                                )
-                            }
-                        }
-                    },
-                    onStartNew = {
+                val errorState = analysisState as AnalysisState.Error
+                PatientErrorCard(
+                    error = errorState.message,
+                    patientOrange = patientOrange,
+                    onTryAgain = {
                         analysisState = AnalysisState.Idle
                         analysisResult = null
                         recordedVideoFile = null
@@ -280,26 +273,190 @@ fun TugAssessmentScreen(
             }
         }
     }
+}
 
-    // Medication State Dialog
-    if (showMedicationDialog) {
-        MedicationStateDialog(
-            onDismiss = { showMedicationDialog = false },
-            onStateSelected = { state ->
-                medicationState = state
-                showMedicationDialog = false
+@Composable
+fun PatientVideoRecordingSection(
+    onVideoRecorded: (File) -> Unit,
+    isEnabled: Boolean,
+    patientOrange: Color
+) {
+    val context = LocalContext.current
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Big camera icon
+            Icon(
+                imageVector = Icons.Default.Videocam,
+                contentDescription = "Video Recording",
+                modifier = Modifier.size(64.dp),
+                tint = patientOrange
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Record Your Movement",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                fontSize = 22.sp
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Big Record Button
+            Button(
+                onClick = {
+                    // Your existing video recording logic
+                },
+                enabled = isEnabled,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = patientOrange
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Videocam,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Start Recording",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontSize = 18.sp
+                )
             }
-        )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Test Video Button (for development)
+            OutlinedButton(
+                onClick = {
+                    try {
+                        val inputStream = context.assets.open("001_color.mp4")
+                        val testFile = File(context.cacheDir, "test_video_${System.currentTimeMillis()}.mp4")
+                        testFile.outputStream().use { outputStream ->
+                            inputStream.copyTo(outputStream)
+                        }
+                        onVideoRecorded(testFile)
+                    } catch (e: Exception) {
+                        println("Error loading test video: ${e.message}")
+                    }
+                },
+                enabled = isEnabled,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                border = BorderStroke(2.dp, patientOrange),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.BugReport,
+                    contentDescription = null,
+                    tint = patientOrange
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Use Test Video",
+                    color = patientOrange,
+                    fontSize = 16.sp
+                )
+            }
+        }
     }
 }
 
 @Composable
-fun AnalysisProgressCard() {
+fun PatientMedicationCard(
+    selectedState: String,
+    onStateSelected: (String) -> Unit,
+    patientOrange: Color
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "💊 Medication Status",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Have you taken your medication today?",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                fontSize = 16.sp
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Big medication buttons
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                listOf(
+                    "On" to "✅ Yes, I took my medication",
+                    "Off" to "❌ No, I haven't taken it",
+                    "N/A" to "🚫 I don't take medication"
+                ).forEach { (state, description) ->
+                    Button(
+                        onClick = { onStateSelected(state) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(60.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (selectedState == state) patientOrange else Color(0xFFF5F5F5),
+                            contentColor = if (selectedState == state) Color.White else Color.Black
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = state,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+                            Text(
+                                text = description,
+                                fontSize = 12.sp,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PatientAnalysisProgressCard(patientOrange: Color) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(
             modifier = Modifier
@@ -307,190 +464,252 @@ fun AnalysisProgressCard() {
                 .padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Big loading indicator
             CircularProgressIndicator(
-                modifier = Modifier.size(64.dp),
-                strokeWidth = 6.dp
+                modifier = Modifier.size(80.dp),
+                strokeWidth = 8.dp,
+                color = patientOrange
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Analyzing Movement",
+                text = "🤖 Analyzing Your Movement",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                fontSize = 22.sp,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "Please wait while our AI reviews your video.\nThis will take about 1-2 minutes.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                fontSize = 16.sp,
+                lineHeight = 24.sp
+            )
+        }
+    }
+}
+
+@Composable
+fun PatientFriendlyResultsCard(
+    result: GaitAnalysisResponse,
+    patientOrange: Color,
+    onTakeNew: () -> Unit,
+    onGoHome: () -> Unit
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Main Results Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "🎉 Your Results",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 24.sp
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Big Severity Display
+                PatientSeverityCard(
+                    severity = result.severity ?: "Unknown",
+                    patientOrange = patientOrange
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Simple metrics in big cards
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    PatientMetricCard(
+                        icon = "⏱️",
+                        label = "Time",
+                        value = "${String.format("%.0f", result.tugMetrics?.totalTime ?: 0.0)}s",
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    PatientMetricCard(
+                        icon = "👣",
+                        label = "Steps",
+                        value = "${result.gaitMetrics?.stepCount ?: 0}",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+
+
+
+        // Big action buttons
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Button(
+                onClick = onGoHome,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF4CAF50)
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Home,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Go to Home",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            OutlinedButton(
+                onClick = onTakeNew,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(55.dp),
+                border = BorderStroke(2.dp, patientOrange),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = null,
+                    tint = patientOrange,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Take New Test",
+                    color = patientOrange,
+                    fontSize = 16.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun PatientSeverityCard(
+    severity: String,
+    patientOrange: Color
+) {
+    val (emoji, color, message) = when (severity.lowercase()) {
+        "normal" -> Triple("😊", Color(0xFF4CAF50), "Great job! Your movement looks good.")
+        "slight" -> Triple("🙂", Color(0xFFFFB74D), "Good movement with minor concerns.")
+        "mild" -> Triple("😐", Color(0xFFFF9800), "Some movement difficulties noticed.")
+        "moderate" -> Triple("😟", Color(0xFFFF7043), "Movement needs attention.")
+        "severe" -> Triple("😰", Color(0xFFF44336), "Please see your doctor soon.")
+        else -> Triple("🤔", Color.Gray, "Results analyzed.")
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = color.copy(alpha = 0.1f)
+        ),
+        border = BorderStroke(3.dp, color)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = emoji,
+                fontSize = 48.sp
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "AI is processing your video...\nThis may take 1-2 minutes",
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Composable
-fun AnalysisResultsCard(
-    result: GaitAnalysisResponse,
-    onSaveResults: () -> Unit,
-    onAnalyzeAgain: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(24.dp)
-        ) {
-            // Header
-            Text(
-                text = "Assessment Results",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Severity Rating
-            SeverityRatingCard(severity = result.severity ?: "Unknown")
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Key Metrics
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                MetricItem(
-                    label = "Total Time",
-                    value = "${String.format("%.1f", result.tugMetrics?.totalTime ?: 0.0)}s",
-                    modifier = Modifier.weight(1f)
-                )
-
-                MetricItem(
-                    label = "Steps",
-                    value = "${result.gaitMetrics?.stepCount ?: 0}",
-                    modifier = Modifier.weight(1f)
-                )
-
-                MetricItem(
-                    label = "Cadence",
-                    value = "${String.format("%.0f", result.gaitMetrics?.cadence ?: 0.0)}/min",
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Action Buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Button(
-                    onClick = onSaveResults,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Save,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Save Results")
-                }
-
-                OutlinedButton(
-                    onClick = onAnalyzeAgain,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("New Test")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun SeverityRatingCard(severity: String) {
-    val severityColor = when (severity.lowercase()) {
-        "normal" -> Color.Green
-        "slight" -> Color(0xFFFFB74D) // Orange
-        "mild" -> Color(0xFFFF8A65) // Light red
-        "moderate" -> Color(0xFFFF7043) // Red orange
-        "severe" -> Color.Red
-        else -> Color.Gray
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = severityColor.copy(alpha = 0.1f)
-        ),
-        border = BorderStroke(2.dp, severityColor)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Severity Level",
-                style = MaterialTheme.typography.titleSmall
-            )
-            Text(
                 text = severity,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = severityColor
+                color = color,
+                fontSize = 28.sp
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                fontSize = 16.sp
             )
         }
     }
 }
 
 @Composable
-fun MetricItem(
+fun PatientMetricCard(
+    icon: String,
     label: String,
     value: String,
     modifier: Modifier = Modifier
 ) {
-    Column(
+    Card(
         modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFF8F9FA)
+        )
     ) {
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = icon,
+                fontSize = 24.sp
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                fontSize = 14.sp
+            )
+        }
     }
 }
 
+
 @Composable
-fun AnalysisErrorCard(
+fun PatientErrorCard(
     error: String,
-    onRetry: () -> Unit,
-    onStartNew: () -> Unit
+    patientOrange: Color,
+    onTryAgain: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer
+            containerColor = Color(0xFFFFEBEE)
         )
     ) {
         Column(
@@ -499,237 +718,46 @@ fun AnalysisErrorCard(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                imageVector = Icons.Default.Error,
-                contentDescription = "Error",
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(48.dp)
+            Text(
+                text = "😔",
+                fontSize = 48.sp
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Analysis Failed",
-                style = MaterialTheme.typography.titleMedium,
+                text = "Oops! Something went wrong",
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.error
+                fontSize = 20.sp
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = error,
-                style = MaterialTheme.typography.bodyMedium,
+                text = "Don't worry, let's try again!",
+                style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onErrorContainer
+                fontSize = 16.sp
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = onRetry,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Retry")
-                }
-
-                OutlinedButton(
-                    onClick = onStartNew,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("New Video")
-                }
-            }
-        }
-    }
-}
-
-
-@Composable
-fun MedicationStateCard(
-    selectedState: String,
-    onStateSelected: (String) -> Unit,
-    onShowDialog: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "Medication State",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                listOf("On", "Off", "N/A").forEach { state ->
-                    FilterChip(
-                        onClick = { onStateSelected(state) },
-                        label = { Text(state) },
-                        selected = selectedState == state,
-                        modifier = Modifier.padding(horizontal = 4.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            TextButton(
-                onClick = onShowDialog,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Info,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("What does this mean?")
-            }
-        }
-    }
-}
-
-@Composable
-fun MedicationStateDialog(
-    onDismiss: () -> Unit,
-    onStateSelected: (String) -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text("Medication State")
-        },
-        text = {
-            Column {
-                Text(
-                    text = "Select the patient's current medication state:",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = "• ON: Patient has taken their Parkinson's medication",
-                    style = MaterialTheme.typography.bodySmall
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = "• OFF: Patient has not taken medication or it has worn off",
-                    style = MaterialTheme.typography.bodySmall
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = "• N/A: Not applicable (no Parkinson's medication)",
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Got it")
-            }
-        }
-    )
-}
-
-// Keep your existing VideoRecordingSection component
-// This is just a placeholder - use your actual implementation
-@Composable
-fun VideoRecordingSection(
-    onVideoRecorded: (File) -> Unit,
-    isEnabled: Boolean
-) {
-    val context = LocalContext.current
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                imageVector = Icons.Default.Videocam,
-                contentDescription = "Video Recording",
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Video Recording",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Your existing camera/recording button
             Button(
-                onClick = {
-                    // Your existing video recording logic
-                },
-                enabled = isEnabled,
-                modifier = Modifier.fillMaxWidth()
+                onClick = onTryAgain,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(55.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = patientOrange
+                ),
+                shape = RoundedCornerShape(16.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Videocam,
-                    contentDescription = null
+                Text(
+                    text = "Try Again",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Start Recording")
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // ADD THIS TEST BUTTON FOR DEVELOPMENT
-            OutlinedButton(
-                onClick = {
-                    try {
-                        // Copy test video from assets to cache directory
-                        val inputStream = context.assets.open("001_color.mp4")
-                        val testFile = File(context.cacheDir, "test_video_${System.currentTimeMillis()}.mp4")
-
-                        testFile.outputStream().use { outputStream ->
-                            inputStream.copyTo(outputStream)
-                        }
-
-                        onVideoRecorded(testFile)
-                    } catch (e: Exception) {
-                        // Handle error
-                        println("Error loading test video: ${e.message}")
-                    }
-                },
-                enabled = isEnabled,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    imageVector = Icons.Default.BugReport,
-                    contentDescription = null
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Use Test Video")
             }
         }
     }

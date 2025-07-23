@@ -63,7 +63,7 @@ import com.example.gaitguardian.screens.patient.LateralCoverageScreen
 import com.example.gaitguardian.screens.patient.ManageVideoPrivacyScreen
 import com.example.gaitguardian.screens.patient.PatientHomeScreen
 import com.example.gaitguardian.screens.patient.ResultScreen
-import com.example.gaitguardian.screens.patient.TugAssessmentScreen
+import com.example.gaitguardian.screens.patient.PatientFriendlyTugAssessmentScreen
 import com.example.gaitguardian.screens.patient.VideoCaptureScreen
 import com.example.gaitguardian.screens.patient.VideoInstructionScreen
 import com.example.gaitguardian.screens.patient.ViewVideosScreen
@@ -347,7 +347,7 @@ fun NavGraph(
                     }
 
                     composable ("tug_assessment_screen") {
-                    TugAssessmentScreen (
+                        PatientFriendlyTugAssessmentScreen (
                         navController = navController,
                         patientId = "test_patient_123" // Temporary test value
                     ) }
