@@ -53,12 +53,14 @@ import java.time.LocalDate
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import com.example.gaitguardian.screens.patient.LatestAssessmentResultsCard
+import com.example.gaitguardian.viewmodels.TugDataViewModel
 
 
 @Composable
 fun PatientHomeScreen(
     navController: NavController,
     patientViewModel: PatientViewModel,
+    tugViewModel: TugDataViewModel,
     modifier: Modifier = Modifier
 ) {
     val patientInfo by patientViewModel.patient.collectAsState()
@@ -70,13 +72,18 @@ fun PatientHomeScreen(
     var latestTiming by remember { mutableFloatStateOf(0f) }
     LaunchedEffect(Unit)
     {
-        patientViewModel.getLatestTwoDurations()
-        patientViewModel.getLatestTUGAssessment()
+//        patientViewModel.getLatestTwoDurations()
+//        patientViewModel.getLatestTUGAssessment()
+        tugViewModel.getLatestTwoDurations()
+        tugViewModel.getLatestTUGAssessment()
     }
 
-    val latestTwoDurations by patientViewModel.latestTwoDurations.collectAsState()
+//    val latestTwoDurations by patientViewModel.latestTwoDurations.collectAsState()
+//
+//    val latestAssessment by patientViewModel.latestAssessment.collectAsState()
+    val latestTwoDurations by tugViewModel.latestTwoDurations.collectAsState()
 
-    val latestAssessment by patientViewModel.latestAssessment.collectAsState()
+    val latestAssessment by tugViewModel.latestAssessment.collectAsState()
 
     if (latestTwoDurations.size >= 2) { // Ensure there are at least two values fetched
         latestTiming = latestTwoDurations[0] // Sorted by testId DESC

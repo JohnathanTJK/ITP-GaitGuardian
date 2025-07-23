@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class PatientViewModel(private val patientRepository: PatientRepository,private val tugRepository: TUGAssessmentRepository,  private val appPreferencesRepository: AppPreferencesRepository) : ViewModel() {
+class PatientViewModel(private val patientRepository: PatientRepository, private val appPreferencesRepository: AppPreferencesRepository) : ViewModel() {
 
 //    val patient: StateFlow<Patient?> = repository.getPatient
 //        .stateIn(viewModelScope, SharingStarted.Lazily, null)
@@ -32,44 +32,11 @@ class PatientViewModel(private val patientRepository: PatientRepository,private 
             }
         }
     }
-    val previousDuration: StateFlow<Int> = appPreferencesRepository.getPreviousDuration()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
-    val latestDuration: StateFlow<Int> = appPreferencesRepository.getLatestDuration()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
-
-    // Using RoomDb data to get the latest and previous timing
-    private val _latestTwoDurations = MutableStateFlow<List<Float>>(emptyList())
-    val latestTwoDurations: StateFlow<List<Float>> = _latestTwoDurations
-
-    fun getLatestTwoDurations()
-    {
-        viewModelScope.launch(Dispatchers.IO) {
-            _latestTwoDurations.value = tugRepository.getLatestTwoDuration()
-        }
-    }
-    // function to insert patient into RoomDB,
-//    fun insertFirstPatient() {
-//        val patient = Patient( // to edit these before adding :D
-//            id = 1,
-//            name = "Sophia Tan",
-//            age = 45
-//        )
-//        viewModelScope.launch(Dispatchers.IO) {
-//            patientRepository.insert(patient)
-//        }
-//    }
     // function to insert patient into RoomDB,
     fun insertPatient(patient: Patient) {
         viewModelScope.launch(Dispatchers.IO) {
             patientRepository.insert(patient)
-        }
-    }
-
-    //TODO: Add the function to upload the TUG assessment into RoomDb
-    fun insertNewAssessment(assessment: TUGAssessment){
-        viewModelScope.launch(Dispatchers.IO) {
-            tugRepository.insert(assessment)
         }
     }
 
@@ -80,37 +47,6 @@ class PatientViewModel(private val patientRepository: PatientRepository,private 
         }
     }
 
-    //
-//    fun getCurrentUserView(): StateFlow<String> {
-//        return appPreferencesRepository.getCurrentUserView()
-//            .stateIn(viewModelScope, SharingStarted.Lazily, "")
-//    }
-
-    // Medication status
-    private val _onMedication = MutableStateFlow(true)
-    val onMedication: StateFlow<Boolean> = _onMedication
-
-    private val _latestAssessment = MutableStateFlow<TUGAssessment?>(null)
-    val latestAssessment: StateFlow<TUGAssessment?> = _latestAssessment
-
-    fun setOnMedication(status: Boolean) {
-        _onMedication.value = status
-        Log.d("PatientViewModel", "Medication status set to: $status")
-    }
-
-    fun updatePostAssessmentOnMedicationStatus(medication: Boolean) {
-        viewModelScope.launch {
-            tugRepository.updateOnMedicationStatus(medication)
-        }
-    }
-
-    fun getLatestTUGAssessment()
-    {
-        viewModelScope.launch(Dispatchers.IO) {
-            _latestAssessment.value = tugRepository.getLatestAssessment()
-        }
-    }
-
     // Track First Time Privacy
     val firstPrivacyCheck: StateFlow<Boolean> = appPreferencesRepository.getFirstPrivacyCheck()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
@@ -118,19 +54,6 @@ class PatientViewModel(private val patientRepository: PatientRepository,private 
     fun setFirstPrivacyCheck(shouldSave: Boolean) {
         viewModelScope.launch {
             appPreferencesRepository.setFirstPrivacyCheck(shouldSave)
-        }
-    }
-    // Assessment comment
-    private val _assessmentComment = MutableStateFlow("")
-    val assessmentComment: StateFlow<String> = _assessmentComment
-
-    fun setAssessmentComment(comment: String) {
-        _assessmentComment.value = comment
-    }
-
-    fun addRecording(duration: Int) {
-        viewModelScope.launch {
-            appPreferencesRepository.updateDurations(duration)
         }
     }
 
@@ -149,12 +72,11 @@ class PatientViewModel(private val patientRepository: PatientRepository,private 
 
     // For creating the VM in MainActivity
     class PatientViewModelFactory(private val patientRepository: PatientRepository,
-                                  private val tugRepository: TUGAssessmentRepository,
                                   private val appPreferencesRepository: AppPreferencesRepository) :
         ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(PatientViewModel::class.java)) {
-                @Suppress("UNCHECKED_CAST") return PatientViewModel(patientRepository, tugRepository, appPreferencesRepository) as T
+                @Suppress("UNCHECKED_CAST") return PatientViewModel(patientRepository, appPreferencesRepository) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }

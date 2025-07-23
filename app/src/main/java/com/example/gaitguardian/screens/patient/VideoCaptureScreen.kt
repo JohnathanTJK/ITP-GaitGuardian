@@ -115,7 +115,7 @@ fun VideoCaptureScreen(
                                                     isRecording = false
                                                     recording = null
                                                     if (patientViewModel.saveVideos.value) {
-                                                        patientViewModel.addRecording(recordingTime)
+//                                                        patientViewModel.addRecording(recordingTime)
                                                         navController.navigate("loading_screen/$recordingTime")
                                                     } else {
                                                         val videoUri = recordEvent.outputResults.outputUri

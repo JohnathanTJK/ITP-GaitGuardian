@@ -66,6 +66,7 @@ import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessment
 import com.example.gaitguardian.viewmodels.PatientViewModel
+import com.example.gaitguardian.viewmodels.TugDataViewModel
 import kotlinx.coroutines.delay
 import java.io.File
 import java.text.SimpleDateFormat
@@ -151,6 +152,7 @@ fun rememberDeviceOrientation(): DeviceOrientation {
 fun NewCameraScreen(
     navController: NavController,
     patientViewModel: PatientViewModel,
+    tugViewModel: TugDataViewModel,
     assessmentTitle : String,
     modifier: Modifier = Modifier
 ) {
@@ -316,6 +318,7 @@ fun NewCameraScreen(
                                         controller = controller,
                                         navController = navController,
                                         patientViewModel = patientViewModel,
+                                        tugViewModel = tugViewModel,
                                         recordingTimeState = recordingTime,
                                         onRecordingStateChange = { recording ->
                                             isRecording = recording
@@ -500,6 +503,7 @@ private fun recordVideo(
     navController: NavController,
     recordingTimeState: MutableState<Int>,
     patientViewModel: PatientViewModel,
+    tugViewModel: TugDataViewModel,
     onRecordingStateChange: (Boolean) -> Unit,
     assessmentTitle: String
 ) {
@@ -557,17 +561,20 @@ private fun recordVideo(
                         Toast.LENGTH_LONG
                     ).show()
                     if (patientViewModel.saveVideos.value) {
-                        patientViewModel.addRecording(recordingTimeState.value)
+//                        patientViewModel.addRecording(recordingTimeState.value)
                         navController.navigate("loading_screen/${assessmentTitle}")
                         val newTug = TUGAssessment (
                             // TODO: TO UPDATE WITH PATIENT'S MEDICATION STATUS + COMMENTS ETC.
                             dateTime = currentDateTime,
                             videoDuration = recordingTimeState.value.toFloat(),
                             videoTitle = outputFile.name,
-                            onMedication = patientViewModel.onMedication.value,
-                            patientComments = patientViewModel.assessmentComment.value,
+//                            onMedication = patientViewModel.onMedication.value,
+//                            patientComments = patientViewModel.assessmentComment.value,
+                            onMedication = tugViewModel.onMedication.value,
+                            patientComments = tugViewModel.assessmentComment.value,
                         )
-                        patientViewModel.insertNewAssessment(newTug)
+//                        patientViewModel.insertNewAssessment(newTug)
+                        tugViewModel.insertNewAssessment(newTug)
                         Log.d("tug", "tug inserted into db")
                     } else {
                         val videoUri = event.outputResults.outputUri
@@ -576,10 +583,13 @@ private fun recordVideo(
                         val newTugNoVideo = TUGAssessment (
                             dateTime = currentDateTime,
                             videoDuration = recordingTimeState.value.toFloat(),
-                            onMedication = patientViewModel.onMedication.value,
-                            patientComments = patientViewModel.assessmentComment.value
+//                            onMedication = patientViewModel.onMedication.value,
+//                            patientComments = patientViewModel.assessmentComment.value
+                            onMedication = tugViewModel.onMedication.value,
+                            patientComments = tugViewModel.assessmentComment.value
                         )
-                        patientViewModel.insertNewAssessment(newTugNoVideo)
+//                        patientViewModel.insertNewAssessment(newTugNoVideo)
+                        tugViewModel.insertNewAssessment(newTugNoVideo)
                         navController.navigate("loading_screen/${assessmentTitle}")
                     }
                 }

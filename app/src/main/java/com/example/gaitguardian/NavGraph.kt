@@ -65,9 +65,11 @@ import com.example.gaitguardian.screens.patient.PatientHomeScreen
 import com.example.gaitguardian.screens.patient.ResultScreen
 import com.example.gaitguardian.screens.patient.TugAssessmentScreen
 import com.example.gaitguardian.screens.patient.VideoCaptureScreen
+import com.example.gaitguardian.screens.patient.VideoInstructionScreen
 import com.example.gaitguardian.screens.patient.ViewVideosScreen
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import com.example.gaitguardian.viewmodels.PatientViewModel
+import com.example.gaitguardian.viewmodels.TugDataViewModel
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -119,7 +121,8 @@ fun NavGraph(
     navController: NavHostController,
 //    modifier: Modifier = Modifier,
     patientViewModel: PatientViewModel,
-    clinicianViewModel: ClinicianViewModel
+    clinicianViewModel: ClinicianViewModel,
+    tugDataViewModel: TugDataViewModel
 ) {
     val saveVideos by patientViewModel.saveVideos.collectAsState()
     var showPrivacyDialog by remember { mutableStateOf(false) }
@@ -240,7 +243,8 @@ fun NavGraph(
                     SettingsScreen(
                         navController = navController,
                         patientViewModel = patientViewModel,
-                        isClinician = currentUserView == "clinician"
+                        isClinician = currentUserView == "clinician",
+                        clinicianViewModel = clinicianViewModel
                     )
                 }
                 // Clinician-Specific Screens here
@@ -254,7 +258,7 @@ fun NavGraph(
                         PinEntryExample(navController)
                     }
                     composable("clinician_home_screen") {
-                        ClinicianHomeScreen(navController, clinicianViewModel, patientViewModel)
+                        ClinicianHomeScreen(navController, clinicianViewModel, patientViewModel, tugDataViewModel)
                     }
 //                    composable("clinician_detailed_patient_view_screen") {
 //                        ClinicianDetailedPatientViewScreen(navController)
@@ -262,7 +266,7 @@ fun NavGraph(
                     composable("clinician_detailed_patient_view_screen/{testId}") { backStackEntry ->
                         val testId = backStackEntry.arguments?.getString("testId")?.toIntOrNull()
                         if (testId != null) {
-                            ClinicianDetailedPatientViewScreen(navController, clinicianViewModel,testId)
+                            ClinicianDetailedPatientViewScreen(navController, clinicianViewModel, tugDataViewModel, testId)
                         }
                     }
 //                    composable("clinician_detailed_patient_view_screen") {
@@ -288,7 +292,7 @@ fun NavGraph(
                         val assessmentTitle = backStackEntry.arguments?.getString("assessmentTitle")
                         if (assessmentTitle != null)
                         {
-                            NewCameraScreen(navController, patientViewModel, assessmentTitle)
+                            NewCameraScreen(navController, patientViewModel,tugDataViewModel, assessmentTitle)
                         }
 //                        ManageVideoPrivacyScreen(navController, patientViewModel)
                     }
@@ -314,7 +318,7 @@ fun NavGraph(
                 )
                 {
                     composable("patient_home_screen") {
-                        PatientHomeScreen(navController, patientViewModel)
+                        PatientHomeScreen(navController, patientViewModel, tugDataViewModel)
                     }
                     composable(
                         route = "assessment_info_screen/{assessmentTitle}",
@@ -326,6 +330,7 @@ fun NavGraph(
                             navController = navController,
                             modifier = Modifier,
                             patientViewModel = patientViewModel,
+                            tugViewModel = tugDataViewModel,
                             assessmentTitle = backStackEntry.arguments?.getString("assessmentTitle")
                                 ?: "Assessment"
                         )
@@ -333,6 +338,14 @@ fun NavGraph(
                     composable("gait_assessment_screen") {
                         GaitAssessmentScreen(navController)
                     }
+                    composable(
+                        route = "assessment_instruction_screen/{assessmentType}",
+                        arguments = listOf(navArgument("assessmentType") { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        val type = backStackEntry.arguments?.getString("assessmentType") ?: ""
+                        VideoInstructionScreen(navController, type)
+                    }
+
                     composable("tug_assessment_screen") {
                         TugAssessmentScreen(navController)
                     }
@@ -367,7 +380,7 @@ fun NavGraph(
                     composable("result_screen/{assessmentTitle}") { backStackEntry ->
                         val time = backStackEntry.arguments?.getString("assessmentTitle")
                         if (time != null) {
-                            ResultScreen(navController, time, patientViewModel)
+                            ResultScreen(navController, time, patientViewModel, tugDataViewModel)
                         }
                     }
 //                    composable(

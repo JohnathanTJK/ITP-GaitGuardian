@@ -13,6 +13,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.gaitguardian.ui.theme.GaitGuardianTheme
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import com.example.gaitguardian.viewmodels.PatientViewModel
+import com.example.gaitguardian.viewmodels.TugDataViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,7 +28,6 @@ class MainActivity : ComponentActivity() {
         // Initialize ViewModel with the Factory
         val patientViewModelFactory = PatientViewModel.PatientViewModelFactory(
             (application as GaitGuardian).patientRepository,
-            (application as GaitGuardian).tugRepository,
             (application as GaitGuardian).appPreferencesRepository
         )
         val patientViewModel =
@@ -35,11 +35,16 @@ class MainActivity : ComponentActivity() {
         //TODO: Clinician ViewModel
         val clinicianViewModelFactory = ClinicianViewModel.ClinicianViewModelFactory(
             (application as GaitGuardian).clinicianRepository,
-            (application as GaitGuardian).tugRepository,
             (application as GaitGuardian).appPreferencesRepository
         )
         val clinicianViewModel =
             ViewModelProvider(this, clinicianViewModelFactory)[ClinicianViewModel::class.java]
+        // TUG ViewModel
+        val TugViewModelFactory = TugDataViewModel.TugDataViewModelFactory(
+            (application as GaitGuardian).tugRepository
+        )
+        val tugDataViewModel =
+            ViewModelProvider(this, TugViewModelFactory)[TugDataViewModel::class.java]
         setContent {
             GaitGuardianTheme {
 //                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -48,7 +53,8 @@ class MainActivity : ComponentActivity() {
                     navController = navController,
 //                        modifier = Modifier.padding(innerPadding),
                     patientViewModel = patientViewModel,
-                    clinicianViewModel = clinicianViewModel
+                    clinicianViewModel = clinicianViewModel,
+                    tugDataViewModel = tugDataViewModel
                 )
 //                }
             }

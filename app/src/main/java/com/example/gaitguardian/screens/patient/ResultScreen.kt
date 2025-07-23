@@ -23,33 +23,41 @@ import androidx.navigation.NavController
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessment
 import com.example.gaitguardian.ui.theme.*
 import com.example.gaitguardian.viewmodels.PatientViewModel
+import com.example.gaitguardian.viewmodels.TugDataViewModel
 
 @Composable
 fun ResultScreen(
     navController: NavController,
     assessmentTitle: String,
     patientViewModel: PatientViewModel,
+    tugViewModel: TugDataViewModel,
     modifier: Modifier = Modifier
 ) {
 
 LaunchedEffect(Unit){ // fetch latest TUG assessment (aka the one that was just recorded)
-    patientViewModel.getLatestTUGAssessment()
-    patientViewModel.getLatestTwoDurations()
-    patientViewModel.setAssessmentComment("")
+//    patientViewModel.getLatestTUGAssessment()
+//    patientViewModel.getLatestTwoDurations()
+//    patientViewModel.setAssessmentComment("")
+    tugViewModel.getLatestTUGAssessment()
+    tugViewModel.getLatestTwoDurations()
+    tugViewModel.setAssessmentComment("")
 }
 //    val medicationStatus by patientViewModel.medicationStatus.collectAsState()
 //    val previousTiming by patientViewModel.previousDuration.collectAsState()
 //    val latestTiming by patientViewModel.latestDuration.collectAsState()
     var previousTiming by remember { mutableFloatStateOf(0f) }
     var latestTiming by remember { mutableFloatStateOf(0f) }
-    val comment by patientViewModel.assessmentComment.collectAsState()
+//    val comment by patientViewModel.assessmentComment.collectAsState()
 
     // Local state for toggle, initialized from ViewModel medicationStatus
 //    var isMedicationOn by remember { mutableStateOf(medicationStatus == "ON") }
 
-    val onMedication by patientViewModel.onMedication.collectAsState()
-    val latestTugAssessment by patientViewModel.latestAssessment.collectAsState()
-    val latestTwoDurations by patientViewModel.latestTwoDurations.collectAsState()
+//    val onMedication by patientViewModel.onMedication.collectAsState()
+//    val latestTugAssessment by patientViewModel.latestAssessment.collectAsState()
+//    val latestTwoDurations by patientViewModel.latestTwoDurations.collectAsState()
+    val onMedication by tugViewModel.onMedication.collectAsState()
+    val latestTugAssessment by tugViewModel.latestAssessment.collectAsState()
+    val latestTwoDurations by tugViewModel.latestTwoDurations.collectAsState()
 
     if (latestTwoDurations.size >= 2) { // Ensure there are at least two values fetched
         latestTiming = latestTwoDurations[0]
@@ -93,9 +101,12 @@ LaunchedEffect(Unit){ // fetch latest TUG assessment (aka the one that was just 
                     hasUpdatedMedication = true
 
                     // Update database
-                    patientViewModel.setOnMedication(!onMedication)
-                    patientViewModel.updatePostAssessmentOnMedicationStatus(true)
-                    patientViewModel.getLatestTUGAssessment()
+//                    patientViewModel.setOnMedication(!onMedication)
+//                    patientViewModel.updatePostAssessmentOnMedicationStatus(true)
+//                    patientViewModel.getLatestTUGAssessment()
+                    tugViewModel.setOnMedication(!onMedication)
+                    tugViewModel.updatePostAssessmentOnMedicationStatus(true)
+                    tugViewModel.getLatestTUGAssessment()
                 }
             },
             enabled = !hasUpdatedMedication, // Use local state
