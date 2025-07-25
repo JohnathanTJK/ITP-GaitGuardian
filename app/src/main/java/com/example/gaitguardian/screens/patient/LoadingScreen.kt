@@ -35,13 +35,16 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.gaitguardian.api.GaitAnalysisClient
 import com.example.gaitguardian.api.GaitAnalysisResponse
+import com.example.gaitguardian.data.roomDatabase.tug.TUGAnalysis
+import com.example.gaitguardian.viewmodels.TugDataViewModel
 import kotlinx.coroutines.delay
 import java.io.File
 
 
 @Composable
 //fun LoadingScreen(navController: NavController, assessmentTitle: String) {
-fun LoadingScreen(navController: NavController, assessmentTitle: String, outputPath: String) {
+//fun LoadingScreen(navController: NavController, assessmentTitle: String, outputPath: String) {
+fun LoadingScreen(navController: NavController, assessmentTitle: String, outputPath: String, tugDataViewModel: TugDataViewModel) {
 //fun LoadingScreen(navController: NavController, recordingTime: Int) {
 
         val motivationalQuotes = listOf(
@@ -82,7 +85,25 @@ fun LoadingScreen(navController: NavController, assessmentTitle: String, outputP
             result.fold(
                 onSuccess = { response ->
                     analysisResult = response
+                    analysisResult?.severity?.let { severity ->
+                        val tugMetrics = analysisResult!!.tugMetrics
+                        if (tugMetrics != null) {
+                            val analysis = TUGAnalysis(
+                                severity = severity,
+                                timeTaken = tugMetrics.totalTime,
+                                stepCount = analysisResult!!.gaitMetrics?.stepCount ?: 0,
+                                sitToStand = tugMetrics.sitToStandTime,
+                                walkFromChair = tugMetrics.walkFromChairTime,
+                                turnFirst = tugMetrics.turnFirstTime,
+                                walkToChair = tugMetrics.walkToChairTime,
+                                turnSecond = tugMetrics.turnSecondTime,
+                                standToSit = tugMetrics.standToSitTime
+                            )
+                            tugDataViewModel.insertTugAnalysis(analysis)
+                        }
+                    }
 
+                    tugDataViewModel.setResponse(response)
                     analysisState = AnalysisState.Success
                     // Optionally navigate to results screen here
                 },
@@ -94,13 +115,23 @@ fun LoadingScreen(navController: NavController, assessmentTitle: String, outputP
             analysisState = AnalysisState.Error("Unexpected: ${e.message}")
         }
     }
-
-    when (analysisState) {
-        AnalysisState.Idle -> Text("Waiting...")
-        AnalysisState.Analyzing -> CircularProgressIndicator()
-        is AnalysisState.Error -> Text("Error: ${(analysisState as AnalysisState.Error).message}")
-        AnalysisState.Success -> Text("Analysis Complete! Severity: ${analysisResult?.severity}")
+// 🔒 Trigger navigation only once
+    LaunchedEffect(analysisState) {
+        if (analysisState == AnalysisState.Success) {
+            navController.navigate("result_screen/${assessmentTitle}") {
+                popUpTo("loading_screen/${assessmentTitle}/${outputPath}") {
+                    inclusive = true
+                }
+            }
+        }
     }
+//    when (analysisState) {
+//        AnalysisState.Idle -> Text("Waiting...")
+//        AnalysisState.Analyzing -> CircularProgressIndicator()
+//        is AnalysisState.Error -> Text("Error: ${(analysisState as AnalysisState.Error).message}")
+////        AnalysisState.Success -> Text("Analysis Complete! Severity: ${analysisResult?.severity}")
+//    AnalysisState.Success -> navController.navigate("result_screen/${assessmentTitle}")
+//    }
     Box(
         modifier = Modifier
             .fillMaxSize()

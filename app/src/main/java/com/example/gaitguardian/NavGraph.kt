@@ -394,7 +394,9 @@ fun NavGraph(
                         val decodedPath = encodedPath?.let { Uri.decode(it) }
 
                         if (title != null && decodedPath != null) {
-                            LoadingScreen(navController, title, decodedPath)
+//                            LoadingScreen(navController, title, decodedPath)
+                            LoadingScreen(navController, title, decodedPath, tugDataViewModel)
+
                         }
                     }
                     composable("result_screen/{assessmentTitle}") { backStackEntry ->
