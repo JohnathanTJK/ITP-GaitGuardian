@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.navigation.NavController
 import com.example.gaitguardian.data.roomDatabase.patient.Patient
+import com.example.gaitguardian.data.roomDatabase.tug.subtaskDuration
 import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.ui.theme.buttonBackgroundColor
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
@@ -83,12 +84,13 @@ fun ClinicianDetailedPatientViewScreen(
     LaunchedEffect(testId) { // pre-load with the testId from backStackEntry
 //        clinicianViewModel.loadAssessmentById(testId)
         tugViewModel.loadAssessmentById(testId)
+        tugViewModel.getSubtaskById(testId)
     }
 
 
 //    val assessment by clinicianViewModel.selectedTUGAssessment.collectAsState()
     val assessment by tugViewModel.selectedTUGAssessment.collectAsState()
-
+    val subtaskDuration by tugViewModel.subtaskDuration.collectAsState()
 
     val patient = Patient(2, "Benny", 18)
 
@@ -294,7 +296,7 @@ fun ClinicianDetailedPatientViewScreen(
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
-        TUGsubTasksList()
+        TUGsubTasksList(subtaskDuration = subtaskDuration)
         Spacer(modifier = Modifier.height(16.dp))
 
         Column {
@@ -461,18 +463,25 @@ private fun JetpackComposeBasicLineChart(
     )
 }
 
-val tugSubTasks = listOf(
-    "Sit-To-Stand", "Walk-From-Chair", "Turn-First", "Walk-To-Chair", "Turn-Second", "Stand-To-Sit"
-)
-
 @Composable
-fun TUGsubTasksList(modifier: Modifier = Modifier) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-
+fun TUGsubTasksList(
+    modifier: Modifier = Modifier,
+    subtaskDuration: subtaskDuration?
+) {
+    val tugSubTasks = listOf(
+        "Sit-To-Stand" to subtaskDuration?.sitToStand,
+        "Walk-From-Chair" to subtaskDuration?.walkFromChair,
+        "Turn-First" to subtaskDuration?.turnFirst,
+        "Walk-To-Chair" to subtaskDuration?.walkToChair,
+        "Turn-Second" to subtaskDuration?.turnSecond,
+        "Stand-To-Sit" to subtaskDuration?.standToSit
     )
-    {
-        tugSubTasks.forEach { task ->
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = modifier
+    ) {
+        tugSubTasks.forEach { (task, duration) ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -486,13 +495,12 @@ fun TUGsubTasksList(modifier: Modifier = Modifier) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
-                    )
-                    {
+                    ) {
                         Text(task, color = Color.Black)
                         Card(
                             modifier = Modifier
                                 .height(24.dp)
-                                .width(40.dp),
+                                .width(56.dp),
                             shape = RoundedCornerShape(18.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = Color.DarkGray
@@ -502,7 +510,11 @@ fun TUGsubTasksList(modifier: Modifier = Modifier) {
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text("15s", color = Color.White, fontSize = 12.sp)
+                                Text(
+                                    text = duration?.let { "%.2fs".format(it) } ?: "--",
+                                    color = Color.White,
+                                    fontSize = 12.sp
+                                )
                             }
                         }
                     }
@@ -511,6 +523,7 @@ fun TUGsubTasksList(modifier: Modifier = Modifier) {
         }
     }
 }
+
 
 @Composable
 fun JetpackComposeBasicLineChart(modifier: Modifier = Modifier) {
