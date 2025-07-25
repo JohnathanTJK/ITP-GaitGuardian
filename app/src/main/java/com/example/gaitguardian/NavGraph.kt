@@ -1,5 +1,6 @@
 package com.example.gaitguardian
 
+import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -374,10 +375,26 @@ fun NavGraph(
 //                        val time = backStackEntry.arguments?.getString("time")?.toIntOrNull() ?: 0
 //                        LoadingScreen(navController, time)
 //                    }
-                    composable("loading_screen/{assessmentTitle}") { backStackEntry ->
-                        val time = backStackEntry.arguments?.getString("assessmentTitle")
-                        if (time != null) {
-                            LoadingScreen(navController, time)
+//                    composable("loading_screen/{assessmentTitle}") { backStackEntry ->
+//                        val title = backStackEntry.arguments?.getString("assessmentTitle")
+//                        if (title != null) {
+//                            LoadingScreen(navController, title)
+//                        }
+//                    }
+//                    composable("loading_screen/{assessmentTitle}/{outputPath}") { backStackEntry ->
+//                        val title = backStackEntry.arguments?.getString("assessmentTitle")
+//                        val outputPath = backStackEntry.arguments?.getString("outputPath")
+//                        if (title != null && outputPath != null) {
+//                            LoadingScreen(navController, title, outputPath)
+//                        }
+//                    }
+                    composable("loading_screen/{assessmentTitle}/{outputPath}") { backStackEntry ->
+                        val title = backStackEntry.arguments?.getString("assessmentTitle")
+                        val encodedPath = backStackEntry.arguments?.getString("outputPath")
+                        val decodedPath = encodedPath?.let { Uri.decode(it) }
+
+                        if (title != null && decodedPath != null) {
+                            LoadingScreen(navController, title, decodedPath)
                         }
                     }
                     composable("result_screen/{assessmentTitle}") { backStackEntry ->

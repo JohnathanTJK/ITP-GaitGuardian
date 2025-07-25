@@ -19,7 +19,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -29,12 +33,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.gaitguardian.api.GaitAnalysisClient
+import com.example.gaitguardian.api.GaitAnalysisResponse
 import kotlinx.coroutines.delay
-
+import java.io.File
 
 
 @Composable
-fun LoadingScreen(navController: NavController, assessmentTitle: String) {
+//fun LoadingScreen(navController: NavController, assessmentTitle: String) {
+fun LoadingScreen(navController: NavController, assessmentTitle: String, outputPath: String) {
 //fun LoadingScreen(navController: NavController, recordingTime: Int) {
 
         val motivationalQuotes = listOf(
@@ -46,19 +53,54 @@ fun LoadingScreen(navController: NavController, assessmentTitle: String) {
     )
 
     val randomQuote = remember { motivationalQuotes.random() }
-
     // Navigate after delay
-    LaunchedEffect(Unit) {
-        delay(600)
+//    LaunchedEffect(Unit) {
+//        delay(600)
+////        navController.navigate("result_screen/${assessmentTitle}")
 //        navController.navigate("result_screen/${assessmentTitle}")
-        navController.navigate("result_screen/${assessmentTitle}")
-        {
-            popUpTo("assessment_info_screen/$assessmentTitle") {
-                inclusive = false
-            }
+//        {
+//            popUpTo("assessment_info_screen/$assessmentTitle") {
+//                inclusive = false
+//            }
+//        }
+//    }
+
+//    // For ML Processing
+    val videoFile = File(outputPath)
+    if(videoFile.exists())
+    {
+        Text("OK")
+    }
+    val scope = rememberCoroutineScope()
+    var analysisState by remember { mutableStateOf<AnalysisState>(AnalysisState.Idle) }
+    var analysisResult by remember { mutableStateOf<GaitAnalysisResponse?>(null) }
+    val gaitClient = remember { GaitAnalysisClient() } // your API client
+    LaunchedEffect(key1 = videoFile) {
+        analysisState = AnalysisState.Analyzing
+        try {
+            val result = gaitClient.analyzeVideo(videoFile)
+            result.fold(
+                onSuccess = { response ->
+                    analysisResult = response
+
+                    analysisState = AnalysisState.Success
+                    // Optionally navigate to results screen here
+                },
+                onFailure = { error ->
+                    analysisState = AnalysisState.Error(error.message ?: "Failed")
+                }
+            )
+        } catch (e: Exception) {
+            analysisState = AnalysisState.Error("Unexpected: ${e.message}")
         }
     }
 
+    when (analysisState) {
+        AnalysisState.Idle -> Text("Waiting...")
+        AnalysisState.Analyzing -> CircularProgressIndicator()
+        is AnalysisState.Error -> Text("Error: ${(analysisState as AnalysisState.Error).message}")
+        AnalysisState.Success -> Text("Analysis Complete! Severity: ${analysisResult?.severity}")
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()

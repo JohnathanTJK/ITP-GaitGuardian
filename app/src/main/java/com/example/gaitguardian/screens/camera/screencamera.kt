@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Environment
 import android.util.Log
 import android.view.OrientationEventListener
@@ -551,7 +552,9 @@ private fun recordVideo(
                         .format(Date())
                     val durationSeconds =
                         ((System.nanoTime() - recordingStartTimeNanos) / 1_000_000_000).toInt()
-
+                    Log.d("outputfile", " this is ${outputFile.absolutePath}")
+                    val encodedPath = Uri.encode(outputFile.absolutePath)
+                    Log.d("encodedPath", " this is $encodedPath")
                     recordingTimeState.value = durationSeconds
                     Log.d("recordingTime", recordingTimeState.value.toString())
                     onRecordingStateChange(false)
@@ -561,8 +564,13 @@ private fun recordVideo(
                         Toast.LENGTH_LONG
                     ).show()
                     if (patientViewModel.saveVideos.value) {
+                        Log.d("outputfile", " this is ${outputFile.name}")
 //                        patientViewModel.addRecording(recordingTimeState.value)
-                        navController.navigate("loading_screen/${assessmentTitle}")
+//                        navController.navigate("loading_screen/${assessmentTitle}")
+                        val encodedPath = Uri.encode(outputFile.absolutePath)
+                        Log.d("encodedPath", " this is $encodedPath")
+                        navController.navigate("loading_screen/${assessmentTitle}/${encodedPath}")
+
                         val newTug = TUGAssessment (
                             // TODO: TO UPDATE WITH PATIENT'S MEDICATION STATUS + COMMENTS ETC.
                             dateTime = currentDateTime,
