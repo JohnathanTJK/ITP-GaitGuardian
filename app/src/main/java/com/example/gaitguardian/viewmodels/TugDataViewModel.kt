@@ -4,8 +4,11 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.gaitguardian.api.GaitAnalysisResponse
+import com.example.gaitguardian.data.roomDatabase.tug.TUGAnalysis
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessment
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessmentRepository
+import com.example.gaitguardian.data.roomDatabase.tug.subtaskDuration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,6 +20,12 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository) : Vie
             tugRepository.allTUGAssessments.collect { tugList ->
                 _allTUGAssessments.value = tugList
                 Log.d("TugVM", "Loaded ${tugList.size} assessments: $tugList")
+            }
+        }
+        viewModelScope.launch {
+            tugRepository.allTUGAnalysis.collect { tugAnalysisList ->
+                _allTUGAnalysis.value = tugAnalysisList
+                Log.d("TugVM", "Loaded ${tugAnalysisList.size} assessments: $tugAnalysisList")
             }
         }
     }
@@ -104,7 +113,36 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository) : Vie
         }
     }
 
+    // ML Analysis
+    private val _response = MutableStateFlow<GaitAnalysisResponse?>(null)
+    val response: StateFlow<GaitAnalysisResponse?> = _response
 
+    private val _allTUGAnalysis = MutableStateFlow<List<TUGAnalysis>>(emptyList())
+    val allTUGAnalysis: StateFlow<List<TUGAnalysis>> = _allTUGAnalysis
+
+    suspend fun insertTugAnalysis(tugAnalysis: TUGAnalysis) {
+        tugRepository.insertTugAnalysis(tugAnalysis)
+    }
+
+    private val _subtaskDuration = MutableStateFlow<subtaskDuration?>(null)
+    val subtaskDuration: StateFlow<subtaskDuration?> = _subtaskDuration
+
+    fun getSubtaskById(testId: Int) {
+        viewModelScope.launch {
+            _subtaskDuration.value = tugRepository.getSubtaskById(testId)
+        }
+    }
+
+    //TODO: Replace this for Result Card , it should work , similar logic as before
+    suspend fun getLatestTwoTimes(): List<Double> {
+        return tugRepository.getLatestTwoTimes()
+    }
+    fun setResponse(response: GaitAnalysisResponse) {
+        _response.value = response
+    }
+    suspend fun getLatestTugAnalysis(): TUGAnalysis? {
+        return tugRepository.getLatestTugAnalysis()
+    }
     // For creating the VM in MainActivity
     class TugDataViewModelFactory(private val tugRepository: TUGAssessmentRepository,
     ) :

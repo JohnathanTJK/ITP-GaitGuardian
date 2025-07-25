@@ -3,8 +3,9 @@ package com.example.gaitguardian.data.roomDatabase.tug
 import androidx.annotation.WorkerThread
 import kotlinx.coroutines.flow.Flow
 
-class TUGAssessmentRepository(private val tugDao: TugDao) {
+class TUGAssessmentRepository(private val tugDao: TugDao, private val tugAnalysisDao: TugAnalysisDao) {
     val allTUGAssessments: Flow<List<TUGAssessment>> = tugDao.getAllTUGVideos()
+    val allTUGAnalysis: Flow<List<TUGAnalysis>> = tugAnalysisDao.getAllAnalysis()
 
     @WorkerThread
     suspend fun insert(tugAssessment: TUGAssessment) {
@@ -39,6 +40,24 @@ class TUGAssessmentRepository(private val tugDao: TugDao) {
     @WorkerThread
     suspend fun getLatestAssessment(): TUGAssessment? {
         return tugDao.getLatestAssessment()
+    }
+
+    // ML Analysis
+    @WorkerThread
+    suspend fun insertTugAnalysis(tugAnalysis: TUGAnalysis) {
+        tugAnalysisDao.insertNewTUGAnalysis(tugAnalysis)
+    }
+    @WorkerThread
+    suspend fun getSubtaskById(id: Int): subtaskDuration {
+        return tugAnalysisDao.getSubtaskById(id)
+    }
+    @WorkerThread
+    suspend fun getLatestTugAnalysis(): TUGAnalysis? {
+        return tugAnalysisDao.getLatestTugAnalysis()
+    }
+    @WorkerThread
+    suspend fun getLatestTwoTimes(): List<Double> {
+        return tugAnalysisDao.getLatestTwoTimes()
     }
 
 
