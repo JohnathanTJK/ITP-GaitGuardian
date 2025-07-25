@@ -548,13 +548,11 @@ private fun recordVideo(
 //                    recordingTimeState.value = event.recordingStats.recordedDurationNanos.toInt() / 1_000_000_000
 //                    Log.d("recordingTime", recordingTimeState.value.toString())
                     // difference between current and start time = video duration
-                    val currentDateTime: String = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
-                        .format(Date())
+                    val currentDateTime: String =
+                        SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
+                            .format(Date())
                     val durationSeconds =
                         ((System.nanoTime() - recordingStartTimeNanos) / 1_000_000_000).toInt()
-                    Log.d("outputfile", " this is ${outputFile.absolutePath}")
-                    val encodedPath = Uri.encode(outputFile.absolutePath)
-                    Log.d("encodedPath", " this is $encodedPath")
                     recordingTimeState.value = durationSeconds
                     Log.d("recordingTime", recordingTimeState.value.toString())
                     onRecordingStateChange(false)
@@ -563,42 +561,71 @@ private fun recordVideo(
                         "Video capture succeeded",
                         Toast.LENGTH_LONG
                     ).show()
+//                    if (patientViewModel.saveVideos.value) {
+//                        Log.d("outputfile", " this is ${outputFile.name}")
+////                        patientViewModel.addRecording(recordingTimeState.value)
+////                        navController.navigate("loading_screen/${assessmentTitle}")
+//                        val encodedPath = Uri.encode(outputFile.absolutePath)
+//                        Log.d("encodedPath", " this is $encodedPath")
+//                        navController.navigate("loading_screen/${assessmentTitle}/${encodedPath}")
+//
+//                        val newTug = TUGAssessment (
+//                            // TODO: TO UPDATE WITH PATIENT'S MEDICATION STATUS + COMMENTS ETC.
+//                            dateTime = currentDateTime,
+//                            videoDuration = recordingTimeState.value.toFloat(),
+//                            videoTitle = outputFile.name,
+////                            onMedication = patientViewModel.onMedication.value,
+////                            patientComments = patientViewModel.assessmentComment.value,
+//                            onMedication = tugViewModel.onMedication.value,
+//                            patientComments = tugViewModel.assessmentComment.value,
+//                        )
+////                        patientViewModel.insertNewAssessment(newTug)
+//                        tugViewModel.insertNewAssessment(newTug)
+//                        Log.d("tug", "tug inserted into db")
+//                    } else {
+//                        val videoUri = event.outputResults.outputUri
+//                        val file = File(videoUri.path ?: "")
+//                        if (file.exists()) file.delete()
+//                        val newTugNoVideo = TUGAssessment (
+//                            dateTime = currentDateTime,
+//                            videoDuration = recordingTimeState.value.toFloat(),
+////                            onMedication = patientViewModel.onMedication.value,
+////                            patientComments = patientViewModel.assessmentComment.value
+//                            onMedication = tugViewModel.onMedication.value,
+//                            patientComments = tugViewModel.assessmentComment.value
+//                        )
+////                        patientViewModel.insertNewAssessment(newTugNoVideo)
+//                        tugViewModel.insertNewAssessment(newTugNoVideo)
+//                        navController.navigate("loading_screen/${assessmentTitle}")
+//                    }
+//                }
+                    val encodedPath = Uri.encode(outputFile.absolutePath)
+
                     if (patientViewModel.saveVideos.value) {
                         Log.d("outputfile", " this is ${outputFile.name}")
-//                        patientViewModel.addRecording(recordingTimeState.value)
-//                        navController.navigate("loading_screen/${assessmentTitle}")
-                        val encodedPath = Uri.encode(outputFile.absolutePath)
                         Log.d("encodedPath", " this is $encodedPath")
+
                         navController.navigate("loading_screen/${assessmentTitle}/${encodedPath}")
 
-                        val newTug = TUGAssessment (
-                            // TODO: TO UPDATE WITH PATIENT'S MEDICATION STATUS + COMMENTS ETC.
+                        val newTug = TUGAssessment(
                             dateTime = currentDateTime,
                             videoDuration = recordingTimeState.value.toFloat(),
                             videoTitle = outputFile.name,
-//                            onMedication = patientViewModel.onMedication.value,
-//                            patientComments = patientViewModel.assessmentComment.value,
                             onMedication = tugViewModel.onMedication.value,
                             patientComments = tugViewModel.assessmentComment.value,
                         )
-//                        patientViewModel.insertNewAssessment(newTug)
                         tugViewModel.insertNewAssessment(newTug)
-                        Log.d("tug", "tug inserted into db")
+                        Log.d("tug", "tug inserted into db with video")
                     } else {
-                        val videoUri = event.outputResults.outputUri
-                        val file = File(videoUri.path ?: "")
-                        if (file.exists()) file.delete()
-                        val newTugNoVideo = TUGAssessment (
+                        navController.navigate("loading_screen/${assessmentTitle}/${encodedPath}")
+
+                        val newTugNoVideo = TUGAssessment(
                             dateTime = currentDateTime,
                             videoDuration = recordingTimeState.value.toFloat(),
-//                            onMedication = patientViewModel.onMedication.value,
-//                            patientComments = patientViewModel.assessmentComment.value
                             onMedication = tugViewModel.onMedication.value,
                             patientComments = tugViewModel.assessmentComment.value
                         )
-//                        patientViewModel.insertNewAssessment(newTugNoVideo)
                         tugViewModel.insertNewAssessment(newTugNoVideo)
-                        navController.navigate("loading_screen/${assessmentTitle}")
                     }
                 }
             }

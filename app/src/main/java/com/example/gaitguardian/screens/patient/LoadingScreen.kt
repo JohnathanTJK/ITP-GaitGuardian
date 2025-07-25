@@ -36,6 +36,7 @@ import androidx.navigation.NavController
 import com.example.gaitguardian.api.GaitAnalysisClient
 import com.example.gaitguardian.api.GaitAnalysisResponse
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAnalysis
+import com.example.gaitguardian.viewmodels.PatientViewModel
 import com.example.gaitguardian.viewmodels.TugDataViewModel
 import kotlinx.coroutines.delay
 import java.io.File
@@ -44,7 +45,7 @@ import java.io.File
 @Composable
 //fun LoadingScreen(navController: NavController, assessmentTitle: String) {
 //fun LoadingScreen(navController: NavController, assessmentTitle: String, outputPath: String) {
-fun LoadingScreen(navController: NavController, assessmentTitle: String, outputPath: String, tugDataViewModel: TugDataViewModel) {
+fun LoadingScreen(navController: NavController, assessmentTitle: String, outputPath: String, tugDataViewModel: TugDataViewModel, patientViewModel: PatientViewModel) {
 //fun LoadingScreen(navController: NavController, recordingTime: Int) {
 
         val motivationalQuotes = listOf(
@@ -102,7 +103,12 @@ fun LoadingScreen(navController: NavController, assessmentTitle: String, outputP
                             tugDataViewModel.insertTugAnalysis(analysis)
                         }
                     }
-
+                    if (!patientViewModel.saveVideos.value)
+                    {
+                        if (videoFile.exists()) {
+                            videoFile.delete()
+                        }
+                    }
                     tugDataViewModel.setResponse(response)
                     analysisState = AnalysisState.Success
                     // Optionally navigate to results screen here

@@ -395,7 +395,7 @@ fun NavGraph(
 
                         if (title != null && decodedPath != null) {
 //                            LoadingScreen(navController, title, decodedPath)
-                            LoadingScreen(navController, title, decodedPath, tugDataViewModel)
+                            LoadingScreen(navController, title, decodedPath, tugDataViewModel, patientViewModel)
 
                         }
                     }
