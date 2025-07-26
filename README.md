@@ -15,6 +15,8 @@ GaitGuardian is a mobile application designed to make tracking the progression o
 - Clinician can use GaitGuardian to access Patient's past assessments and review them.
 ---
 ## 🛠️ How to Run GaitGuardian
+_Please ensure that the Flask server and mobile application is connected to the **same** network._
+
 ### Install Requirements and Run Flask Server
 
 ```bash
@@ -24,6 +26,13 @@ python -m venv .venv
 pip install -r requirements.txt
 python app.py
 ```
+### Change the IP Address in GaitGuardianAnalysis.kt (line 19)
+```bash
+// REPLACE THIS IP WITH YOUR COMPUTER'S IP ADDRESS
+private const val BASE_URL = "http://<<YOUR IP HERE>>:5001/"  // Change this IP!
+```
+
+Make sure to rebuild the GaitGuardian app after updating the IP address so the changes take effect.
 
 
 ## 🗂️ Project Structure
