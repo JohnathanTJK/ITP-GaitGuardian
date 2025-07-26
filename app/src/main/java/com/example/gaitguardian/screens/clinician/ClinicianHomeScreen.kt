@@ -69,12 +69,10 @@ fun ClinicianHomeScreen(
     // End: Patient ViewModel testing
     // Start: Clinician ViewModel testing
     val clinicianInfo by clinicianViewModel.clinician.collectAsState()
-//    val uploadedAssesssments by clinicianViewModel.allTUGAssessments.collectAsState()
         val uploadedAssesssments by tugViewModel.allTUGAssessments.collectAsState()
         val allTugAnalysis by tugViewModel.allTUGAnalysis.collectAsState()
     val pendingReviews =
         uploadedAssesssments.count { !it.watchStatus } // Calculate number of videos that are not watched
-    // tugVideos.count { !it.watchStatus } // Calculate number of videos that are not watched
 
 
     // For the multiple mark-as-reviewed functionality
@@ -85,7 +83,6 @@ fun ClinicianHomeScreen(
 
     val filteredVideos = if (showPendingVideos) {
         uploadedAssesssments.filter { !it.watchStatus }
-//        tugVideos.filter { !it.watchStatus }
     } else {
         uploadedAssesssments
     }
@@ -108,20 +105,12 @@ fun ClinicianHomeScreen(
             item {
                 ClinicianHeader(
                     clinicianName = "${clinicianInfo?.name ?: "Clinician"}",
-//                    clinicianName = "Dr. ${clinicianInfo?.name ?: "Clinician"}",
                     patient = patientInfo ?: Patient(id = 2, name = "Benny", age = 18),
                     pendingReviews = pendingReviews
                 )
             }
-//            item {
-//                Button(onClick = {navController.navigate("lateral_screen")})
-//                {
-//                    Text("Test here")
-//                }
-//            }
             item {
                 VideoReviewsSummaryCard(
-//                    totalTests = tugVideos.count(),
                     totalTests = uploadedAssesssments.count(),
                     pendingTests = pendingReviews,
                     showOnlyPending = showPendingVideos,
@@ -136,7 +125,6 @@ fun ClinicianHomeScreen(
                 }
             }
 
-//            items(tugVideos) { video ->
             if(filteredVideos.isEmpty()){
                 item {
                     Box(
@@ -183,8 +171,6 @@ fun ClinicianHomeScreen(
             MultiSelectControls(
                 selectedCount = selectedVideoIds.size,
                 onMarkAsWatched = {
-//                    // TODO: To update the database
-                    // TODO: something likeclinicianViewModel.markVideoAsWatched(videoId)
                     selectedVideoIds.forEach { videoId ->
                         tugViewModel.markMultiAsReviewed(videoId)
                     }
@@ -346,7 +332,6 @@ fun TUGVideoItem(
     onSelectionChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    Log.d("tugtest", "mediciation value: ${medication}")
     Card(
         modifier = modifier
             .fillMaxWidth(),
@@ -394,7 +379,7 @@ fun TUGVideoItem(
                 text = dateTime,
                 fontSize = 12.sp,
                 color = Color(0xFF2D3748),
-                modifier = Modifier.padding(start = 48.dp) // Align with text above (checkbox width + spacer)
+                modifier = Modifier.padding(start = 48.dp)
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -408,7 +393,7 @@ fun TUGVideoItem(
                 },
                 fontSize = 14.sp,
                 color = Color.Black,
-                modifier = Modifier.padding(start = 48.dp) // Align with text above
+                modifier = Modifier.padding(start = 48.dp)
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -422,7 +407,7 @@ fun TUGVideoItem(
                 },
                 fontSize = 14.sp,
                 color = Color.Black,
-                modifier = Modifier.padding(start = 48.dp) // Align with text above
+                modifier = Modifier.padding(start = 48.dp)
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -431,14 +416,13 @@ fun TUGVideoItem(
             if (!isSelected) {
                 Button(
                     onClick = {
-//                        navController.navigate("clinician_detailed_patient_view_screen")
                         navController.navigate("clinician_detailed_patient_view_screen/${testId}")
 
                     },
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 48.dp), // Align with text above
+                        .padding(start = 48.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = buttonBackgroundColor
                     )

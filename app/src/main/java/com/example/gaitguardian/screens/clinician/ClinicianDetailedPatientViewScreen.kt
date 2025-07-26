@@ -82,13 +82,11 @@ fun ClinicianDetailedPatientViewScreen(
 ) {
 
     LaunchedEffect(testId) { // pre-load with the testId from backStackEntry
-//        clinicianViewModel.loadAssessmentById(testId)
         tugViewModel.loadAssessmentById(testId)
         tugViewModel.getSubtaskById(testId)
     }
 
 
-//    val assessment by clinicianViewModel.selectedTUGAssessment.collectAsState()
     val assessment by tugViewModel.selectedTUGAssessment.collectAsState()
     val subtaskDuration by tugViewModel.subtaskDuration.collectAsState()
 
@@ -128,7 +126,6 @@ fun ClinicianDetailedPatientViewScreen(
             .background(bgColor)
             .padding(16.dp)
             .verticalScroll(scrollState),
-//        verticalArrangement = Arrangement.spacedBy(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Column(
@@ -344,10 +341,6 @@ fun ClinicianDetailedPatientViewScreen(
                     }
                 } else {
                     if (!isReviewed) {
-//                            Checkbox(
-//                                checked = isReviewed,
-//                                onCheckedChange = { isReviewed = it }
-//                            )
                         Checkbox(
                             checked = markAsReviewed,
                             onCheckedChange = { markAsReviewed = it }
@@ -368,17 +361,10 @@ fun ClinicianDetailedPatientViewScreen(
                                         finalReviewed,
                                         clinicianComments
                                     )
-//                                    val success = clinicianViewModel.updateTUGReview(
-//                                        testId,
-//                                        finalReviewed,
-//                                        clinicianComments
-//                                    )
-
                                     if (success) {
                                         isReviewed = finalReviewed
                                         statusUpdateMsg = "Status Updated Successfully."
                                         // Reload fresh data
-//                                        clinicianViewModel.loadAssessmentById(testId)
                                         tugViewModel.loadAssessmentById(testId)
                                     } else {
                                         statusUpdateMsg = "Update failed. Please try again."
