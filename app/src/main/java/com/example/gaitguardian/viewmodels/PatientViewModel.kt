@@ -1,15 +1,11 @@
 package com.example.gaitguardian.viewmodels
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.gaitguardian.data.roomDatabase.AppPreferencesRepository
+import com.example.gaitguardian.data.sharedPreferences.AppPreferencesRepository
 import com.example.gaitguardian.data.roomDatabase.patient.Patient
 import com.example.gaitguardian.data.roomDatabase.patient.PatientRepository
-import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessment
-import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessmentRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -72,7 +68,8 @@ class PatientViewModel(private val patientRepository: PatientRepository, private
 
     // For creating the VM in MainActivity
     class PatientViewModelFactory(private val patientRepository: PatientRepository,
-                                  private val appPreferencesRepository: AppPreferencesRepository) :
+                                  private val appPreferencesRepository: AppPreferencesRepository
+    ) :
         ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(PatientViewModel::class.java)) {

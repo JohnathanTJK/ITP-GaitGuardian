@@ -5,7 +5,7 @@ import com.example.gaitguardian.data.roomDatabase.GaitGuardianRoomDatabase
 import com.example.gaitguardian.data.roomDatabase.patient.PatientRepository
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessmentRepository
 import androidx.datastore.preferences.preferencesDataStore
-import com.example.gaitguardian.data.roomDatabase.AppPreferencesRepository
+import com.example.gaitguardian.data.sharedPreferences.AppPreferencesRepository
 import com.example.gaitguardian.data.roomDatabase.clinician.ClinicianRepository
 
 class GaitGuardian: Application() {

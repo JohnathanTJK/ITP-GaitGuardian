@@ -1,4 +1,4 @@
-package com.example.gaitguardian.data.roomDatabase
+package com.example.gaitguardian.data.sharedPreferences
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
