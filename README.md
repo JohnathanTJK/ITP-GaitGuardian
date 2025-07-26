@@ -41,8 +41,8 @@ app/src/main/java/com/example/gaitguardian
 │   ├── GaitAnalysisModels.kt           ← Data models for gait analysis API
 │   └── TestApiConnection.kt            ← API connection testing utility
 │
-├── data/
-│   ├── roomDatabase/                   ← Room database layer
+├── data/                               ← Data Layer
+│   ├── roomDatabase/                  
 │   │   ├── clinician/                  ← Clinician entity, Clinician DAO, and repository
 │   │   ├── patient/                    ← Patient entity, Patient DAO, and repository
 │   │   └── tug/                        ← TUG entity DAO, TUG Analysis entity DAO, and repository
@@ -50,7 +50,7 @@ app/src/main/java/com/example/gaitguardian
 │   └── sharedPreferences/             
 │       └── AppPreferencesRepository.kt ← SharedPreferences handler
 │
-├── screens/
+├── screens/                            ← View Layer
 │   ├── camera/                         ← Camera capture and preview screens
 │   ├── clinician/                      ← Home, PIN entry, assessment details, performance graphs
 │   └── patient/                        ← Home, recording, loading, results
@@ -59,7 +59,7 @@ app/src/main/java/com/example/gaitguardian
 ├── SplashScreen.kt                     ← Initial loading/splash screen
 ├── StartScreen.kt                      ← Welcome screen for new users
 │
-├── viewmodels/                         ← ViewModels for UI state management
+├── viewmodels/                         ← ViewModel Layer
 │   ├── ClinicianViewModel.kt           ← Manages clinician-related UI state
 │   ├── PatientViewModel.kt             ← Manages patient-related UI state
 │   └── TugDataViewModel.kt             ← Manages TUG assessment data
@@ -77,4 +77,4 @@ app/src/main/java/com/example/gaitguardian
 - **BOO YAN CONG** - 2302238@sit.singaporetech.edu.sg
 - **CHNG YU QI BERNICE** - 2302020@sit.singaporetech.edu.sg
 - **SITI NURHASYIMAH BINTE MOHD EBRAHIM** - 2302151@sit.singaporetech.edu.sg
-- **TOH JUN KUAN JOHNATHAN** - 2301915@sit.sinaporetech.edu.sg
+- **TOH JUN KUAN JOHNATHAN** - 2301915@sit.singaporetech.edu.sg
