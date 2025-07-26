@@ -177,7 +177,7 @@ for filename in os.listdir(input_dir):
 
         csv_path = os.path.join(output_csv_dir, f"{filename}_labelled.csv")
         df_features_only.to_csv(csv_path, index=False)
-        print(f"✅ Saved: {csv_path}")
+        print(f"Saved: {csv_path}")
 
         durations = df_features_only['tug_subtask'].value_counts().to_dict()
         durations_sec = {k: round(v / fps, 2) for k, v in durations.items()}
@@ -199,19 +199,7 @@ for filename in os.listdir(input_dir):
             updated = pd.DataFrame([gait_metrics])
 
         updated.to_csv(gait_summary_path, index=False)
-        print(f"🦶 Gait features updated in: {gait_summary_path}")
-
-        # # Delete original video
-        # original_path = os.path.join(input_dir, filename)
-        # if os.path.exists(original_path):
-        #     os.remove(original_path)
-        #     print(f"🗑️ Deleted original video: {filename}")
-
-        # # Delete pose-rendered video
-        # posed_path = os.path.join(output_video_dir, filename)
-        # if os.path.exists(posed_path):
-        #     os.remove(posed_path)
-        #     print(f"🗑️ Deleted rendered video: {filename}")
+        print(f" Gait features updated in: {gait_summary_path}")
 
 
     except Exception as e:
