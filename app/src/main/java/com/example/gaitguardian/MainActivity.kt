@@ -8,7 +8,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
-//import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.example.gaitguardian.ui.theme.GaitGuardianTheme
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
@@ -52,16 +51,13 @@ class MainActivity : ComponentActivity() {
             ViewModelProvider(this, TugViewModelFactory)[TugDataViewModel::class.java]
         setContent {
             GaitGuardianTheme {
-//                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                 val navController = rememberNavController()
                 NavGraph(
                     navController = navController,
-//                        modifier = Modifier.padding(innerPadding),
                     patientViewModel = patientViewModel,
                     clinicianViewModel = clinicianViewModel,
                     tugDataViewModel = tugDataViewModel
                 )
-//                }
             }
         }
     }
