@@ -58,6 +58,9 @@ LaunchedEffect(Unit){ // fetch latest TUG assessment (aka the one that was just 
     val onMedication by tugViewModel.onMedication.collectAsState()
     val latestTugAssessment by tugViewModel.latestAssessment.collectAsState()
     val latestTwoDurations by tugViewModel.latestTwoDurations.collectAsState()
+    val analysisResult by tugViewModel.response.collectAsState()
+    val severity = analysisResult?.severity ?: "-"
+    val totalTime = analysisResult?.tugMetrics?.totalTime ?: 0.0
 
     if (latestTwoDurations.size >= 2) { // Ensure there are at least two values fetched
         latestTiming = latestTwoDurations[0]
@@ -78,7 +81,9 @@ LaunchedEffect(Unit){ // fetch latest TUG assessment (aka the one that was just 
             latestTiming = latestTiming,
             medicationOn = onMedication,
             showMedicationToggle = true,
-//            patientcomment = comment,
+            severity = severity,
+
+            totalTime = totalTime.toFloat(), // cast to Float if needed
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
@@ -134,11 +139,12 @@ LaunchedEffect(Unit){ // fetch latest TUG assessment (aka the one that was just 
 fun LatestAssessmentResultsCard(
     modifier: Modifier = Modifier,
     latestAssessment: TUGAssessment?,
-    previousTiming: Float = 13f, // Updated to Float to match TUGAssessment videoDuration data type
-    latestTiming: Float, // Updated to Float to match TUGAssessment videoDuration data type
+    previousTiming: Float = 13f,
+    latestTiming: Float,
+    severity: String,
+    totalTime: Float,
     medicationOn: Boolean? = null,
     showComments: Boolean = true,
-//    patientcomment: String,
     showDivider: Boolean = true,
     showMedicationToggle: Boolean = false,
 ) {
@@ -191,8 +197,10 @@ fun LatestAssessmentResultsCard(
             ) {
                 StatusBox(
                     title = "Severity",
-                    value = if (latestAssessment != null) "2" else "-",
-                    modifier = Modifier.weight(1f)
+                    value = severity,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp)
                 )
 
                 if (!showMedicationToggle) {
@@ -215,7 +223,7 @@ fun LatestAssessmentResultsCard(
 
             HorizontalProgressBar(
                 previousValue = previousTiming,
-                latestValue = latestTiming,
+                latestValue = totalTime.toFloat(),
                 maxValue = maxVal,
                 modifier = Modifier.padding(horizontal = 4.dp)
             )

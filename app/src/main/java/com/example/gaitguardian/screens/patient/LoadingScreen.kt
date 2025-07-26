@@ -43,42 +43,29 @@ import java.io.File
 
 
 @Composable
-//fun LoadingScreen(navController: NavController, assessmentTitle: String) {
-//fun LoadingScreen(navController: NavController, assessmentTitle: String, outputPath: String) {
-fun LoadingScreen(navController: NavController, assessmentTitle: String, outputPath: String, tugDataViewModel: TugDataViewModel, patientViewModel: PatientViewModel) {
-//fun LoadingScreen(navController: NavController, recordingTime: Int) {
+fun LoadingScreen(
+    navController: NavController,
+    assessmentTitle: String,
+    outputPath: String,
+    tugDataViewModel: TugDataViewModel,
+    patientViewModel: PatientViewModel
+) {
+    val videoFile = File(outputPath)
+    val scope = rememberCoroutineScope()
+    var analysisState by remember { mutableStateOf<AnalysisState>(AnalysisState.Idle) }
+    var analysisResult by remember { mutableStateOf<GaitAnalysisResponse?>(null) }
+    val gaitClient = remember { GaitAnalysisClient() }
 
-        val motivationalQuotes = listOf(
+    val motivationalQuotes = listOf(
         "🌟 Keep going, you're doing amazing!",
         "💪 Every step matters. You’ve got this!",
         "🌈 You are stronger than you think.",
         "🕊️ Small progress is still progress.",
         "🧠 Courage doesn’t always roar.\nSometimes it’s the quiet voice that says,\n‘I’ll try again tomorrow.’"
     )
-
     val randomQuote = remember { motivationalQuotes.random() }
-    // Navigate after delay
-//    LaunchedEffect(Unit) {
-//        delay(600)
-////        navController.navigate("result_screen/${assessmentTitle}")
-//        navController.navigate("result_screen/${assessmentTitle}")
-//        {
-//            popUpTo("assessment_info_screen/$assessmentTitle") {
-//                inclusive = false
-//            }
-//        }
-//    }
 
-//    // For ML Processing
-    val videoFile = File(outputPath)
-    if(videoFile.exists())
-    {
-        Text("OK")
-    }
-    val scope = rememberCoroutineScope()
-    var analysisState by remember { mutableStateOf<AnalysisState>(AnalysisState.Idle) }
-    var analysisResult by remember { mutableStateOf<GaitAnalysisResponse?>(null) }
-    val gaitClient = remember { GaitAnalysisClient() } // your API client
+    // 🔁 Start ML analysis
     LaunchedEffect(key1 = videoFile) {
         analysisState = AnalysisState.Analyzing
         try {
@@ -86,58 +73,47 @@ fun LoadingScreen(navController: NavController, assessmentTitle: String, outputP
             result.fold(
                 onSuccess = { response ->
                     analysisResult = response
-                    analysisResult?.severity?.let { severity ->
-                        val tugMetrics = analysisResult!!.tugMetrics
-                        if (tugMetrics != null) {
-                            val analysis = TUGAnalysis(
-                                severity = severity,
-                                timeTaken = tugMetrics.totalTime,
-                                stepCount = analysisResult!!.gaitMetrics?.stepCount ?: 0,
-                                sitToStand = tugMetrics.sitToStandTime,
-                                walkFromChair = tugMetrics.walkFromChairTime,
-                                turnFirst = tugMetrics.turnFirstTime,
-                                walkToChair = tugMetrics.walkToChairTime,
-                                turnSecond = tugMetrics.turnSecondTime,
-                                standToSit = tugMetrics.standToSitTime
-                            )
-                            tugDataViewModel.insertTugAnalysis(analysis)
-                        }
-                    }
-                    if (!patientViewModel.saveVideos.value)
-                    {
-                        if (videoFile.exists()) {
-                            videoFile.delete()
-                        }
-                    }
                     tugDataViewModel.setResponse(response)
+
+                    val tugMetrics = response.tugMetrics
+                    val analysis = TUGAnalysis(
+                        severity = response.severity ?: "Unknown",
+                        timeTaken = tugMetrics?.totalTime ?: 0.0,
+                        stepCount = response.gaitMetrics?.stepCount ?: 0,
+                        sitToStand = tugMetrics?.sitToStandTime ?: 0.0,
+                        walkFromChair = tugMetrics?.walkFromChairTime ?: 0.0,
+                        turnFirst = tugMetrics?.turnFirstTime ?: 0.0,
+                        walkToChair = tugMetrics?.walkToChairTime ?: 0.0,
+                        turnSecond = tugMetrics?.turnSecondTime ?: 0.0,
+                        standToSit = tugMetrics?.standToSitTime ?: 0.0
+                    )
+                    tugDataViewModel.insertTugAnalysis(analysis)
+
+                    if (!patientViewModel.saveVideos.value && videoFile.exists()) {
+                        videoFile.delete()
+                    }
+
                     analysisState = AnalysisState.Success
-                    // Optionally navigate to results screen here
                 },
                 onFailure = { error ->
-                    analysisState = AnalysisState.Error(error.message ?: "Failed")
+                    analysisState = AnalysisState.Error(error.message ?: "Analysis failed.")
                 }
             )
         } catch (e: Exception) {
-            analysisState = AnalysisState.Error("Unexpected: ${e.message}")
+            analysisState = AnalysisState.Error("Unexpected error: ${e.message}")
         }
     }
-// 🔒 Trigger navigation only once
+
+    // ✅ Navigate on success
     LaunchedEffect(analysisState) {
         if (analysisState == AnalysisState.Success) {
             navController.navigate("result_screen/${assessmentTitle}") {
-                popUpTo("loading_screen/${assessmentTitle}/${outputPath}") {
-                    inclusive = true
-                }
+                popUpTo("loading_screen") { inclusive = true }
             }
         }
     }
-//    when (analysisState) {
-//        AnalysisState.Idle -> Text("Waiting...")
-//        AnalysisState.Analyzing -> CircularProgressIndicator()
-//        is AnalysisState.Error -> Text("Error: ${(analysisState as AnalysisState.Error).message}")
-////        AnalysisState.Success -> Text("Analysis Complete! Severity: ${analysisResult?.severity}")
-//    AnalysisState.Success -> navController.navigate("result_screen/${assessmentTitle}")
-//    }
+
+    // 🧠 UI
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -149,9 +125,6 @@ fun LoadingScreen(navController: NavController, assessmentTitle: String, outputP
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.padding(24.dp)
         ) {
-
-            Spacer(modifier = Modifier.height(32.dp))
-
             Text(
                 text = "Processing your results...",
                 style = MaterialTheme.typography.titleLarge.copy(
@@ -160,7 +133,21 @@ fun LoadingScreen(navController: NavController, assessmentTitle: String, outputP
                 )
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            if (analysisState is AnalysisState.Analyzing) {
+                CircularProgressIndicator(color = Color(0xFF6A1B9A))
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            if (analysisState is AnalysisState.Error) {
+                Text(
+                    text = "❌ ${(analysisState as AnalysisState.Error).message}",
+                    color = Color.Red,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
             Card(
                 shape = RoundedCornerShape(16.dp),
@@ -188,4 +175,3 @@ fun LoadingScreen(navController: NavController, assessmentTitle: String, outputP
         }
     }
 }
-

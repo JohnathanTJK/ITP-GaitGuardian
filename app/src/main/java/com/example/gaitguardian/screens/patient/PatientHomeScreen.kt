@@ -70,6 +70,9 @@ fun PatientHomeScreen(
     // Recreated previousTiming and latestTiming to track state from database fetch instead
     var previousTiming by remember { mutableFloatStateOf(0f) }
     var latestTiming by remember { mutableFloatStateOf(0f) }
+    val analysisResult by tugViewModel.response.collectAsState()
+    val severity = analysisResult?.severity ?: "-"
+    val totalTime = analysisResult?.tugMetrics?.totalTime?.toFloat() ?: 0f
     LaunchedEffect(Unit)
     {
 //        patientViewModel.getLatestTwoDurations()
@@ -118,18 +121,20 @@ fun PatientHomeScreen(
             }
 
             MissedAssessmentCard(navController)
-            
+
             LatestAssessmentResultsCard(
                 latestAssessment = latestAssessment,
                 previousTiming = previousTiming,
                 latestTiming = latestTiming,
-                medicationOn = null,
-                showDivider = false,
-//                medicationOn = (medicationStatus == "ON"),
-                showComments = false,
-                showMedicationToggle = false, // Set false for home screen
-                modifier = Modifier.fillMaxWidth()
+                medicationOn = true, // or from ViewModel if you want
+                showMedicationToggle = true,
+                severity = severity,
+                totalTime = totalTime,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
             )
+
         }
 
         // Optional: HomeIcon(navController)
@@ -212,14 +217,14 @@ fun MissedAssessmentCard(navController: NavController) {
 
         }
     }
-    Button(
-        onClick = {
-            navController.navigate("tug_assessment_screen")
-        }
-
-    ) {
-        Text("Test TUG Assessment")
-    }
+//    Button(
+//        onClick = {
+//            navController.navigate("tug_assessment_screen")
+//        }
+//
+//    ) {
+//        Text("Test TUG Assessment")
+//    }
 
 }
 
