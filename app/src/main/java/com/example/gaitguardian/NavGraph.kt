@@ -43,9 +43,7 @@ import androidx.navigation.navArgument
 import com.example.gaitguardian.screens.SettingsScreen
 import com.example.gaitguardian.screens.SplashScreen
 import com.example.gaitguardian.screens.StartScreen
-import com.example.gaitguardian.screens.camera.ARCoreDistanceCheckScreen
 import com.example.gaitguardian.screens.camera.NewCameraScreen
-import com.example.gaitguardian.screens.cameraTEST.LateralDistanceCameraScreen
 import com.example.gaitguardian.screens.clinician.ClinicianDetailedPatientViewScreen
 import com.example.gaitguardian.screens.clinician.ClinicianHomeScreen
 import com.example.gaitguardian.screens.clinician.PerformanceScreen
@@ -284,16 +282,6 @@ fun NavGraph(
                                 assessmentTitle
                             )
                         }
-                    }
-                    composable("ar_test")
-                    {
-                        ARCoreDistanceCheckScreen(
-                            onDistanceMet = { navController.navigate("camera_screen") }
-                        )
-                    }
-                    composable("lateral_screen")
-                    {
-                        LateralDistanceCameraScreen()
                     }
                 }
 
