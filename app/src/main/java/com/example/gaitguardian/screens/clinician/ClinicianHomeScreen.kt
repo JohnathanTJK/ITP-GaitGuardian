@@ -63,21 +63,6 @@ fun ClinicianHomeScreen(
     tugViewModel: TugDataViewModel,
     modifier: Modifier = Modifier
 ) {
-
-//    var tugVideos by remember { mutableStateOf(listOf(
-//        //TODO: Replace with actual data
-//        TUGVideo(1, "Today, 1:30PM", "ON", "High", true),
-//        TUGVideo(2, "Today, 2:00PM", "OFF", "Low", true),
-//        TUGVideo(3, "Yesterday, 10:15AM", "ON", "Medium", false),
-//        TUGVideo(4, "May 5, 3:45PM", "OFF", "High", true),
-//        TUGVideo(5, "April 30, 9:00AM", "ON", "Low", false),
-//        TUGVideo(6, "April 28, 11:20AM", "OFF", "High", false),
-//        TUGVideo(7, "April 25, 12:15PM", "ON", "Medium", true),
-//        TUGVideo(8, "April 20, 4:45PM", "OFF", "Low", true),
-//        TUGVideo(9, "April 18, 2:30PM", "ON", "High", true),
-//        TUGVideo(10, "April 15, 1:00PM", "OFF", "Medium", false),
-//    )) }
-
     // Start: Patient ViewModel testing
     val patientInfo by patientViewModel.patient.collectAsState()
 
@@ -86,7 +71,7 @@ fun ClinicianHomeScreen(
     val clinicianInfo by clinicianViewModel.clinician.collectAsState()
 //    val uploadedAssesssments by clinicianViewModel.allTUGAssessments.collectAsState()
         val uploadedAssesssments by tugViewModel.allTUGAssessments.collectAsState()
-
+        val allTugAnalysis by tugViewModel.allTUGAnalysis.collectAsState()
     val pendingReviews =
         uploadedAssesssments.count { !it.watchStatus } // Calculate number of videos that are not watched
     // tugVideos.count { !it.watchStatus } // Calculate number of videos that are not watched
@@ -171,16 +156,14 @@ fun ClinicianHomeScreen(
             else{
                 items(filteredVideos.reversed()) { video -> // show latest first
                     val finalMedicationState = video.onMedication != video.updateMedication
-
+                    val matchedAnalysis = allTugAnalysis.find { it.testId == video.testId }
+                    val finalSeverity = matchedAnalysis?.severity ?: "N/A"
                     TUGVideoItem(
                         navController = navController,
                         testId = video.testId,
                         dateTime = video.dateTime,
-//                    medication = video.medication,
-//                    severity = video.severity,
                         medication = finalMedicationState,
-                        patientcomments = video.patientComments,
-                        severity = "2",
+                        severity = finalSeverity,
                         watchStatus = if (video.watchStatus) "Reviewed" else "Pending",
                         isSelected = selectedVideoIds.contains(video.testId),
                         onSelectionChanged = { isSelected ->
@@ -203,17 +186,8 @@ fun ClinicianHomeScreen(
 //                    // TODO: To update the database
                     // TODO: something likeclinicianViewModel.markVideoAsWatched(videoId)
                     selectedVideoIds.forEach { videoId ->
-//                        clinicianViewModel.markMultiAsReviewed(videoId)
                         tugViewModel.markMultiAsReviewed(videoId)
                     }
-                    // For Testing Only
-//                    tugVideos = tugVideos.map { video ->
-//                        if (video.testId in selectedVideoIds) {
-//                            video.copy(watchStatus = true)
-//                        } else {
-//                            video
-//                        }
-//                    }
 
                     // After update then clear the selection
                     selectedVideoIds = setOf()
@@ -367,7 +341,6 @@ fun TUGVideoItem(
     dateTime: String,
     medication: Boolean,
     severity: String,
-    patientcomments: String,
     watchStatus: String,
     isSelected: Boolean = false,
     onSelectionChanged: (Boolean) -> Unit = {},
