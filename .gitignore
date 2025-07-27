@@ -16,3 +16,4 @@
 local.properties
 /computervision_test/videos
 /computervision_test/venv
+/computervision_test/.venv
