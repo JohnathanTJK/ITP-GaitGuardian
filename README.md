@@ -1,32 +1,33 @@
 # GaitGuardian
 
-🗂️ Project Structure
-File Structure of Pose Detection and Machine Learning
+## 🗂️ Project Structure
+### File Structure of Pose Detection and Machine Learning
+```
+computervision/
+├── keypoints_and_durations/         # Labelled pose landmark CSVs and duration JSONs
+├── video_results/                   # Videos with pose landmark annotations
+├── videos/                          # Sample SAIL-TUG videos
+├── frame.py                         # Frame-by-frame video viewer (OpenCV)
+├── pose_and_subtask.py              # Pose estimation, subtask classification, and gait feature extraction (MediaPipe + XGBoost)
+├── pose_est_mlp.py                  # MLP-based classification for TUG subtask & severity prediction (TensorFlow, sklearn, Optuna)
+├── test2.py                         # Miscellaneous testing script
+├── train_xgb.py                     # Train XGBoost model for subtask prediction
+├── tug_analyzer.py                  # General-purpose TUG analysis
+├── xgb_features.json                # Pose feature columns used by XGBoost
+├── xgb_label_encoder.pkl            # LabelEncoder for subtask labels
+└── xgb_model.pkl                    # Pretrained XGBoost model
 
-computervision
-├── keypoints_and_durations/            ← Labelled Pose landmark coordinates CSVs and Duration Json
-├── video_results/                      ← Videos with Pose landmarks
-├── videos/                             ← Some SAIL-TUG Videos
-├── frame.py                            ← Frame-by-frame video viewer
-├── pose_and_subtask.py                 ← # Video pose estimation, Subtask classification, and Gait feature extraction (MediaPipe, XGBoost)
-├── pose_est_mlp.py                     ← # MLP-based classification for TUG subtask and severity prediction (TensorFlow, sklearn, Optuna)
-├── test2.py                            ← 
-├── train_xgb.py                        ← Train XGBoost classifier for TUG subtask prediction
-├── tug_analyzer.py                     ← 
-├── xgb_features.json                   ← Pose Feature columns for XGBoost model input
-├── xgb_label_encoder.pkl               ← LabelEncoder for TUG subtask labels
-└── xgb_model.pkl                       ← XGBoost model
-
-computervision_test
-├── data/                               ← Labelled Pose landmark coordinates CSVs
+computervision_test/
+├── data/                            # Labelled pose landmark CSVs
 ├── model/
-│   ├── xgb_features.json               ← Pose Feature columns for XGBoost model input
-│   ├── xgb_label_encoder.pkl           ← LabelEncoder for TUG subtask labels
-│   └── xgb_model.pkl                   ← XGBoost model
+│   ├── xgb_features.json            # Pose feature columns used by XGBoost
+│   ├── xgb_label_encoder.pkl        # LabelEncoder for subtask labels
+│   └── xgb_model.pkl                # Pretrained XGBoost model
 │
-├── ml_analysis.py/                     ← SHAP analysis of MLP model
-├── testing.py/                         ← Training MLP model for Severity Classification using Gait Features and keypoints
-├── testing2.py/                        ← Gait Feature Extraction
-├── testing3.py/                        ← Training MLP model for Severity Classification using Extracted Gait Features
-├── testingml.py/                       ← MLP Model testing
-└── tug_analyzer.py/                    ← General Use model analysis code.
+├── ml_analysis.py                   # SHAP explainability analysis of MLP model
+├── testing.py                       # Train MLP model for severity classification using gait features & keypoints
+├── testing2.py                      # Gait feature extraction from pose data
+├── testing3.py                      # Train MLP using extracted gait features
+├── testingml.py                     # Test MLP model performance
+└── tug_analyzer.py                  # General-purpose model analysis and visualization
+```
