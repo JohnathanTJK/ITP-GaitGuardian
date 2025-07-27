@@ -14,16 +14,21 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.gaitguardian.ui.theme.*
 import com.example.gaitguardian.viewmodels.PatientViewModel
+import com.example.gaitguardian.viewmodels.TugDataViewModel
 
 @Composable
 fun AssessmentInfoScreen(
     navController: NavController,
     assessmentTitle: String,
     modifier: Modifier = Modifier,
-    patientViewModel: PatientViewModel
+    patientViewModel: PatientViewModel,
+    tugViewModel: TugDataViewModel
 ) {
-    val medicationStatus by patientViewModel.medicationStatus.collectAsState()  // Observe ViewModel state
-    val comments by patientViewModel.assessmentComment.collectAsState()
+    val firstPrivacyCheck by patientViewModel.firstPrivacyCheck.collectAsState()
+//    val comments by patientViewModel.assessmentComment.collectAsState()
+//    val onMedication by patientViewModel.onMedication.collectAsState()
+    val comments by tugViewModel.assessmentComment.collectAsState()
+    val onMedication by tugViewModel.onMedication.collectAsState()
 
     Column(
         modifier = modifier
@@ -62,14 +67,24 @@ fun AssessmentInfoScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 MedicationStatusButton(
                     text = "ON",
-                    isSelected = medicationStatus == "ON",
-                    onClick = { patientViewModel.setMedicationStatus("ON") },
+//                    isSelected = medicationStatus == "ON",
+//                    onClick = { patientViewModel.setMedicationStatus("ON") },
+                    isSelected = onMedication,
+                    onClick = {
+//                        patientViewModel.setOnMedication(true)
+                              tugViewModel.setOnMedication(true)
+                              },
                     modifier = Modifier.weight(1f)
                 )
                 MedicationStatusButton(
                     text = "OFF",
-                    isSelected = medicationStatus == "OFF",
-                    onClick = { patientViewModel.setMedicationStatus("OFF") },
+//                    isSelected = medicationStatus == "OFF",
+//                    onClick = { patientViewModel.setMedicationStatus("OFF") },
+                    isSelected = !onMedication,
+                    onClick = {
+//                        patientViewModel.setOnMedication(false)
+                        tugViewModel.setOnMedication(false)
+                              },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -78,7 +93,10 @@ fun AssessmentInfoScreen(
 
             OutlinedTextField(
                 value = comments,
-                onValueChange = { patientViewModel.setAssessmentComment(it) },
+                onValueChange = {
+//                    patientViewModel.setAssessmentComment(it)
+                    tugViewModel.setAssessmentComment(it)
+                                },
                 placeholder = { Text("Additional comments", color = Color.Black.copy(alpha = 0.5f)) },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -89,8 +107,12 @@ fun AssessmentInfoScreen(
 
         Button(
             onClick = {
-//                navController.navigate("video_capture_screen")
-                navController.navigate("camera_screen")
+                if(!firstPrivacyCheck){
+                    navController.navigate("video_privacy_screen/${assessmentTitle}")
+                }
+                else{
+                    navController.navigate("camera_screen/${assessmentTitle}")
+                }
             },
             colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
             shape = RoundedCornerShape(16.dp),

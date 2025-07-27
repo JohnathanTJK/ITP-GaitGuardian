@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.gaitguardian"
-        minSdk = 26
+        minSdk = 24
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -61,6 +61,7 @@ dependencies {
     implementation(libs.pose.detection)
     implementation(libs.core)
     implementation(libs.pose.detection.accurate)
+    implementation(libs.androidx.media3.ui)
 //    implementation(libs.androidx.room.compiler)
 //    implementation(libs.androidx.room.common.jvm)
 //    implementation(libs.androidx.room.runtime.android)
@@ -95,6 +96,12 @@ dependencies {
 //    implementation("io.github.sceneview:arsceneview:2.3.0")
     implementation ("androidx.camera:camera-camera2:1.3.0")
     implementation ("com.google.mlkit:object-detection:17.0.0")
+
+    // Add these for API communication
+    implementation ("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation ("com.squareup.okhttp3:logging-interceptor:4.11.0")
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
 
     // Material3 Icons

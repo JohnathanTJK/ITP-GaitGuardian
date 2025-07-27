@@ -1,5 +1,6 @@
 package com.example.gaitguardian.screens
 
+import android.os.Environment
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,9 +20,12 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.SwitchAccount
+import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -38,12 +42,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import com.example.gaitguardian.ui.theme.bgColor
+import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import com.example.gaitguardian.viewmodels.PatientViewModel
 
 @Composable
@@ -51,8 +57,26 @@ fun SettingsScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
     isClinician: Boolean = false,
-    patientViewModel: PatientViewModel
+    patientViewModel: PatientViewModel,
+    clinicianViewModel: ClinicianViewModel
 ) {
+    
+    fun switchViewAndNavigate(isClinician: Boolean) {
+        if (isClinician) {
+            patientViewModel.saveCurrentUserView("patient")
+            navController.navigate("patient_graph") {
+                popUpTo("clinician_graph") { inclusive = true }
+                launchSingleTop = true
+            }
+        } else {
+            clinicianViewModel.saveCurrentUserView("clinician")
+            navController.navigate("clinician_graph") {
+                popUpTo("patient_graph") { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
+
     val saveVideos by patientViewModel.saveVideos.collectAsState()
     var showPrivacyDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
@@ -92,7 +116,7 @@ fun SettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { navController.navigate("start_screen") }
+                        .clickable { switchViewAndNavigate(isClinician) }
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -165,7 +189,7 @@ fun SettingsScreen(
                             .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.AccountCircle, contentDescription = "Privacy", tint = Color.Black)
+                        Icon(Icons.Default.PrivacyTip, contentDescription = "Privacy", tint = Color.Black)
                         Spacer(modifier = Modifier.width(16.dp))
                         Text("Manage Video Privacy", fontSize = 18.sp, color = Color.Black)
                     }
@@ -188,7 +212,7 @@ fun SettingsScreen(
                                 .padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.Delete, contentDescription = "View Videos", tint = Color.Black)
+                            Icon(Icons.Default.VideoLibrary, contentDescription = "View Videos", tint = Color.Black)
                             Spacer(modifier = Modifier.width(16.dp))
                             Text("View Saved Videos", fontSize = 18.sp, color = Color.Black)
                         }
@@ -257,28 +281,121 @@ fun VideoPrivacyDialog(
     onConfirm: (Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(onClick = { onConfirm(!saveVideos) }) {
-                Text(if (saveVideos) "Turn OFF Saving" else "Allow Saving")
+    val context = LocalContext.current
+    var showClearVideosDialog by remember { mutableStateOf(false) }
+
+    // Function to check if videos exist
+    fun hasExistingVideos(): Boolean {
+        val videoFolder = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
+        val videoFiles = videoFolder?.listFiles()?.filter { it.extension == "mp4" }
+        return !videoFiles.isNullOrEmpty()
+    }
+
+    // Function to clear videos
+    fun clearExistingVideos() {
+        val videoFolder = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
+        val videoFiles = videoFolder?.listFiles()?.filter { it.extension == "mp4" }
+        videoFiles?.forEach { it.delete() }
+    }
+
+    // Main privacy dialog
+    if (!showClearVideosDialog) {
+        AlertDialog(
+            containerColor = Color.White,
+            titleContentColor = Color.Black,
+            textContentColor = Color.Gray,
+            tonalElevation = 8.dp,
+            shape = RoundedCornerShape(16.dp),
+            onDismissRequest = onDismiss,
+            confirmButton = {
+                TextButton(onClick = {
+                    if (saveVideos && hasExistingVideos()) {
+                        // User is turning OFF saving and has existing videos
+                        showClearVideosDialog = true
+                    } else {
+                        // No existing videos or user is turning ON saving
+                        onConfirm(!saveVideos)
+                    }
+                },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFF44336),
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(8.dp)) {
+                    Text(if (saveVideos) "Turn OFF Saving" else "Allow Saving")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF4CAF50),
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(8.dp)) {
+                    Text("Cancel")
+                }
+            },
+            title = { Text("Video Privacy", fontWeight = FontWeight.Bold, fontSize =20.sp, color = Color.Black) },
+            text = {
+                Text(
+                    if (saveVideos)
+                        "Your videos are currently being saved. Do you want to stop saving them?"
+                    else
+                        "Your videos are not saved. Do you want to allow saving recorded videos?"
+                ,
+                    fontSize = 16.sp,
+                    color = Color.Black)
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
+        )
+    }
+
+    // Clear existing videos dialog
+    if (showClearVideosDialog) {
+        AlertDialog(
+            containerColor = Color.White,
+            titleContentColor = Color.Black,
+            textContentColor = Color.Gray,
+            tonalElevation = 8.dp,
+            shape = RoundedCornerShape(16.dp),
+            onDismissRequest = {
+                showClearVideosDialog = false
+                onDismiss()
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    clearExistingVideos()
+                    onConfirm(false) // Turn off saving
+                    showClearVideosDialog = false
+                },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFF44336),
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                    ) {
+                    Text("Yes, Clear Videos", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    onConfirm(false) // Turn off saving but keep videos
+                    showClearVideosDialog = false
+                },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF4CAF50),
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("No, Keep Videos", color = Color.White)
+                }
+            },
+            title = { Text("Clear Existing Videos?", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black) },
+            text = {
+                Text("You have existing saved videos. Do you want to clear them when turning off video saving?", fontSize = 16.sp, color = Color.Black)
             }
-        },
-        title = { Text("Video Privacy") },
-        text = {
-            Text(
-                if (saveVideos)
-                    "Your videos are currently being saved. Do you want to stop saving them?"
-                else
-                    "Your videos are not saved. Do you want to allow saving recorded videos?"
-            )
-        }
-    )
+        )
+    }
 }
 
 

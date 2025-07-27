@@ -25,8 +25,13 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,20 +53,47 @@ import com.example.gaitguardian.viewmodels.PatientViewModel
 import java.time.LocalDate
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import com.example.gaitguardian.data.roomDatabase.tug.TUGAnalysis
 import com.example.gaitguardian.screens.patient.LatestAssessmentResultsCard
+import com.example.gaitguardian.viewmodels.TugDataViewModel
 
 
 @Composable
 fun PatientHomeScreen(
     navController: NavController,
     patientViewModel: PatientViewModel,
+    tugViewModel: TugDataViewModel,
     modifier: Modifier = Modifier
 ) {
     val patientInfo by patientViewModel.patient.collectAsState()
-    val previousTiming by patientViewModel.previousDuration.collectAsState()
-    val latestTiming by patientViewModel.latestDuration.collectAsState()
-    val medicationStatus by patientViewModel.medicationStatus.collectAsState()
-    val comment by patientViewModel.assessmentComment.collectAsState()
+//    val previousTiming by patientViewModel.previousDuration.collectAsState()
+//    val latestTiming by patientViewModel.latestDuration.collectAsState()
+
+    // Recreated previousTiming and latestTiming to track state from database fetch instead
+    var latestAnalysis by remember { mutableStateOf<TUGAnalysis?>(null) }
+    var previousTiming by remember { mutableFloatStateOf(0f) }
+    var latestTiming by remember { mutableFloatStateOf(0f) }
+    val severity = latestAnalysis?.severity ?: "-"
+    val totalTime = latestAnalysis?.timeTaken?.toFloat() ?: 0f
+
+
+    LaunchedEffect(Unit) {
+        tugViewModel.getLatestTwoDurations()
+        tugViewModel.getLatestTUGAssessment()
+        latestAnalysis = tugViewModel.getLatestTugAnalysis()  // ← NEW
+    }
+
+//    val latestTwoDurations by patientViewModel.latestTwoDurations.collectAsState()
+//
+//    val latestAssessment by patientViewModel.latestAssessment.collectAsState()
+    val latestTwoDurations by tugViewModel.latestTwoDurations.collectAsState()
+
+    val latestAssessment by tugViewModel.latestAssessment.collectAsState()
+
+    if (latestTwoDurations.size >= 2) { // Ensure there are at least two values fetched
+        latestTiming = latestTwoDurations[0] // Sorted by testId DESC
+        previousTiming = latestTwoDurations[1]
+    }
 
     Column(
         modifier = modifier
@@ -92,15 +124,19 @@ fun PatientHomeScreen(
 
             MissedAssessmentCard(navController)
 
-            // ✅ Display the latest result card below
             LatestAssessmentResultsCard(
+                latestAssessment = latestAssessment,
                 previousTiming = previousTiming,
                 latestTiming = latestTiming,
-                medicationOn = (medicationStatus == "ON"),
-                comment = comment,
-                showMedicationToggle = false, // Set false for home screen
-                modifier = Modifier.fillMaxWidth()
+                medicationOn = true, // or from ViewModel if you want
+                showMedicationToggle = true,
+                severity = severity,
+                totalTime = totalTime,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
             )
+
         }
 
         // Optional: HomeIcon(navController)
@@ -183,9 +219,18 @@ fun MissedAssessmentCard(navController: NavController) {
 
         }
     }
-
+//    Button(
+//        onClick = {
+//            navController.navigate("tug_assessment_screen")
+//        }
+//
+//    ) {
+//        Text("Test TUG Assessment")
+//    }
 
 }
+
+
 
 
 

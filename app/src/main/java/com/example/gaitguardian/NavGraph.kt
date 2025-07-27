@@ -1,6 +1,6 @@
 package com.example.gaitguardian
 
-import ManageVideoPrivacyScreen
+import android.net.Uri
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -43,27 +43,23 @@ import androidx.navigation.navArgument
 import com.example.gaitguardian.screens.SettingsScreen
 import com.example.gaitguardian.screens.SplashScreen
 import com.example.gaitguardian.screens.StartScreen
-import com.example.gaitguardian.screens.camera.ARCoreDistanceCheckScreen
-//import com.example.gaitguardian.screens.camera.CameraScreenWithDistanceDetection
-//import com.example.gaitguardian.screens.camera.IntegratedCameraScreen
 import com.example.gaitguardian.screens.camera.NewCameraScreen
-//import com.example.gaitguardian.screens.camera.NewCameraScreen
-import com.example.gaitguardian.screens.camera.mergedsiti.CameraScreen
 import com.example.gaitguardian.screens.clinician.ClinicianDetailedPatientViewScreen
 import com.example.gaitguardian.screens.clinician.ClinicianHomeScreen
 import com.example.gaitguardian.screens.clinician.PerformanceScreen
+import com.example.gaitguardian.screens.clinician.PinEntryExample
 import com.example.gaitguardian.screens.patient.AssessmentInfoScreen
-import com.example.gaitguardian.screens.patient.FtfsAssessmentScreen
 import com.example.gaitguardian.screens.patient.GaitAssessmentScreen
 import com.example.gaitguardian.screens.patient.LoadingScreen
-import com.example.gaitguardian.screens.patient.LateralCoverageScreen
+import com.example.gaitguardian.screens.patient.ManageVideoPrivacyScreen
+import com.example.gaitguardian.screens.patient.PatientFriendlyTugAssessmentScreen
 import com.example.gaitguardian.screens.patient.PatientHomeScreen
 import com.example.gaitguardian.screens.patient.ResultScreen
-import com.example.gaitguardian.screens.patient.TugAssessmentScreen
-import com.example.gaitguardian.screens.patient.VideoCaptureScreen
+import com.example.gaitguardian.screens.patient.VideoInstructionScreen
 import com.example.gaitguardian.screens.patient.ViewVideosScreen
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import com.example.gaitguardian.viewmodels.PatientViewModel
+import com.example.gaitguardian.viewmodels.TugDataViewModel
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -81,8 +77,7 @@ fun NavTopBar(navController: NavHostController, currentDestination: String) {
             )
         },
         navigationIcon = {
-            if (currentDestination != "start_screen" &&
-                currentDestination != "patient_home_screen" &&
+            if (currentDestination != "patient_home_screen" &&
                 currentDestination != "clinician_home_screen"
             ) {
                 IconButton(onClick = { navController.popBackStack() }) {
@@ -110,13 +105,13 @@ fun NavTopBar(navController: NavHostController, currentDestination: String) {
 }
 
 
-
 @Composable
 fun NavGraph(
     navController: NavHostController,
 //    modifier: Modifier = Modifier,
     patientViewModel: PatientViewModel,
-    clinicianViewModel: ClinicianViewModel
+    clinicianViewModel: ClinicianViewModel,
+    tugDataViewModel: TugDataViewModel
 ) {
     val saveVideos by patientViewModel.saveVideos.collectAsState()
     var showPrivacyDialog by remember { mutableStateOf(false) }
@@ -124,7 +119,7 @@ fun NavGraph(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination?.route
 
-    val currentUserView by clinicianViewModel.getCurrentUserView.collectAsState(initial = "")
+    val currentUserView by clinicianViewModel.getCurrentUserView.collectAsState()
     // to track if the initial navigation already happened
     var hasNavigated by rememberSaveable { mutableStateOf(false) }
 
@@ -133,20 +128,25 @@ fun NavGraph(
     LaunchedEffect(currentUserView) {
         if (!hasNavigated) {
             when (currentUserView) {
+                null -> {
+                    navController.navigate("start_screen") {
+                        popUpTo("splash_screen") { inclusive = true }
+                    }
+                }
+
                 "clinician" -> {
                     navController.navigate("clinician_graph") {
-                        popUpTo("start_screen") { inclusive = true }
+                        popUpTo("splash_screen") { inclusive = true }
                     }
-                    hasNavigated = true
                 }
 
                 "patient" -> {
                     navController.navigate("patient_graph") {
-                        popUpTo("start_screen") { inclusive = true }
+                        popUpTo("splash_screen") { inclusive = true }
                     }
-                    hasNavigated = true
                 }
             }
+            hasNavigated = true
         }
     }
     if (currentDestination == "splash_screen") {
@@ -156,18 +156,20 @@ fun NavGraph(
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             topBar = {
-//            PatientTopBar()
-                if (currentDestination != null && currentDestination != "camera_screen" && currentDestination != "3m_screen") {
+                if (currentDestination != null && currentDestination != "camera_screen/{assessmentTitle}" && currentDestination != "3m_screen" && currentDestination != "gpt_screen" && currentDestination != "start_screen"
+                    && currentDestination != "lateral_screen"
+                ) {
                     NavTopBar(navController, currentDestination)
                 }
             },
             bottomBar = {
-                if (currentDestination != "camera_screen" && currentDestination != "3m_screen") {
+                if (currentDestination != "camera_screen/{assessmentTitle}" && currentDestination != "3m_screen" && currentDestination != "gpt_screen" && currentDestination != "start_screen" && currentDestination != "lateral_screen") {
                     NavigationBar(
                         containerColor = Color.White,
                     ) {
                         // Dynamically assign home route based on user view
-                        val homeRoute = if (currentUserView == "clinician") "clinician_home_screen" else "patient_home_screen"
+                        val homeRoute =
+                            if (currentUserView == "clinician") "clinician_home_screen" else "patient_home_screen"
 
                         val bottomNavItems = listOf(
                             Triple(
@@ -226,51 +228,62 @@ fun NavGraph(
                 composable("splash_screen") {
                     SplashScreen(navController, clinicianViewModel)
                 }
-                // General Screens here
-                composable("start_screen")
-                {
+                composable("start_screen") {
                     StartScreen(navController, patientViewModel, clinicianViewModel)
                 }
                 composable("settings_screen") {
                     SettingsScreen(
                         navController = navController,
                         patientViewModel = patientViewModel,
-                        isClinician = currentUserView == "clinician"
+                        isClinician = currentUserView == "clinician",
+                        clinicianViewModel = clinicianViewModel
                     )
                 }
                 // Clinician-Specific Screens here
                 navigation(
-                    startDestination = "clinician_home_screen", route = "clinician_graph"
+                    startDestination = "clinician_pin_verification_screen",
+                    route = "clinician_graph"
+
                 )
                 {
-                    composable("clinician_home_screen") {
-                        ClinicianHomeScreen(navController, clinicianViewModel, patientViewModel)
+                    composable("clinician_pin_verification_screen") {
+                        PinEntryExample(navController)
                     }
-                    composable("clinician_detailed_patient_view_screen") {
-                        ClinicianDetailedPatientViewScreen(navController)
+                    composable("clinician_home_screen") {
+                        ClinicianHomeScreen(
+                            navController,
+                            clinicianViewModel,
+                            patientViewModel,
+                            tugDataViewModel
+                        )
+                    }
+                    composable("clinician_detailed_patient_view_screen/{testId}") { backStackEntry ->
+                        val testId = backStackEntry.arguments?.getString("testId")?.toIntOrNull()
+                        if (testId != null) {
+                            ClinicianDetailedPatientViewScreen(
+                                navController,
+                                clinicianViewModel,
+                                tugDataViewModel,
+                                testId
+                            )
+                        }
                     }
                     composable("performance_screen")
                     {
                         PerformanceScreen()
                     }
-                    composable("3m_screen")
-                    {
-                        LateralCoverageScreen()
+                    composable("camera_screen/{assessmentTitle}") { backStackEntry ->
+                        val assessmentTitle = backStackEntry.arguments?.getString("assessmentTitle")
+                        if (assessmentTitle != null) {
+                            NewCameraScreen(
+                                navController,
+                                patientViewModel,
+                                tugDataViewModel,
+                                assessmentTitle
+                            )
+                        }
                     }
-                    composable("camera_screen")
-                    {
-//                    CameraScreen()
-                    NewCameraScreen(navController, patientViewModel)
-//                    CameraScreenWithDistanceDetection()
-//                    IntegratedCameraScreen(navController,patientViewModel)
                 }
-                composable("ar_test")
-                {
-                    ARCoreDistanceCheckScreen(
-                        onDistanceMet = {navController.navigate("camera_screen")}
-                    )
-                }
-            }
 
                 // Patient-Specific Screens here
                 navigation(
@@ -278,7 +291,7 @@ fun NavGraph(
                 )
                 {
                     composable("patient_home_screen") {
-                        PatientHomeScreen(navController, patientViewModel)
+                        PatientHomeScreen(navController, patientViewModel, tugDataViewModel)
                     }
                     composable(
                         route = "assessment_info_screen/{assessmentTitle}",
@@ -290,6 +303,7 @@ fun NavGraph(
                             navController = navController,
                             modifier = Modifier,
                             patientViewModel = patientViewModel,
+                            tugViewModel = tugDataViewModel,
                             assessmentTitle = backStackEntry.arguments?.getString("assessmentTitle")
                                 ?: "Assessment"
                         )
@@ -297,35 +311,57 @@ fun NavGraph(
                     composable("gait_assessment_screen") {
                         GaitAssessmentScreen(navController)
                     }
+                    composable(
+                        route = "assessment_instruction_screen/{assessmentType}",
+                        arguments = listOf(navArgument("assessmentType") {
+                            type = NavType.StringType
+                        })
+                    ) { backStackEntry ->
+                        val type = backStackEntry.arguments?.getString("assessmentType") ?: ""
+                        VideoInstructionScreen(navController, type)
+                    }
+
                     composable("tug_assessment_screen") {
-                        TugAssessmentScreen(navController)
+                        PatientFriendlyTugAssessmentScreen(
+                            navController = navController,
+                            patientId = "test_patient_123" // Temporary test value
+                        )
                     }
-                    composable("ftfs_assessment_screen") {
-                        FtfsAssessmentScreen(navController)
-                    }
-                    composable("video_capture_screen") {
-                        VideoCaptureScreen(navController, patientViewModel)
-                    }
-                    composable("video_privacy_screen") {
-                        ManageVideoPrivacyScreen(navController, patientViewModel)
+                    composable("video_privacy_screen/{assessmentTitle}") { backStackEntry ->
+                        val assessmentTitle = backStackEntry.arguments?.getString("assessmentTitle")
+                        if (assessmentTitle != null) {
+                            ManageVideoPrivacyScreen(
+                                navController,
+                                patientViewModel,
+                                assessmentTitle
+                            )
+
+                        }
                     }
                     composable("view_videos_screen") {
                         ViewVideosScreen(navController)
                     }
-                    composable("loading_screen/{time}") { backStackEntry ->
-                        val time = backStackEntry.arguments?.getString("time")?.toIntOrNull() ?: 0
-                        LoadingScreen(navController, time)
+                    composable("loading_screen/{assessmentTitle}/{outputPath}") { backStackEntry ->
+                        val title = backStackEntry.arguments?.getString("assessmentTitle")
+                        val encodedPath = backStackEntry.arguments?.getString("outputPath")
+                        val decodedPath = encodedPath?.let { Uri.decode(it) }
+
+                        if (title != null && decodedPath != null) {
+                            LoadingScreen(
+                                navController,
+                                title,
+                                decodedPath,
+                                tugDataViewModel,
+                                patientViewModel
+                            )
+
+                        }
                     }
-                    composable(
-                        route = "result_screen/{time}",
-                        arguments = listOf(navArgument("time") { type = NavType.IntType })
-                    ) { backStackEntry ->
-                        val time = backStackEntry.arguments?.getInt("time") ?: 0
-                        ResultScreen(
-                            navController = navController,
-                            recordingTime = time,
-                            patientViewModel = patientViewModel
-                        )
+                    composable("result_screen/{assessmentTitle}") { backStackEntry ->
+                        val time = backStackEntry.arguments?.getString("assessmentTitle")
+                        if (time != null) {
+                            ResultScreen(navController, time, patientViewModel, tugDataViewModel)
+                        }
                     }
                 }
             }

@@ -4,11 +4,9 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.gaitguardian.data.roomDatabase.AppPreferencesRepository
+import com.example.gaitguardian.data.sharedPreferences.AppPreferencesRepository
 import com.example.gaitguardian.data.roomDatabase.clinician.Clinician
-import com.example.gaitguardian.data.roomDatabase.clinician.ClinicianDao
 import com.example.gaitguardian.data.roomDatabase.clinician.ClinicianRepository
-import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessmentRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,55 +14,38 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class ClinicianViewModel(private val clinicianRepository: ClinicianRepository, private val tugRepository: TUGAssessmentRepository, private val appPreferencesRepository: AppPreferencesRepository) : ViewModel() {
+class ClinicianViewModel(private val clinicianRepository: ClinicianRepository, private val appPreferencesRepository: AppPreferencesRepository) : ViewModel() {
     private val _clinician = MutableStateFlow<Clinician?>(null)
     val clinician: StateFlow<Clinician?> = _clinician
 
     // In ClinicianViewModel.kt
-    private val _allClinicians = MutableStateFlow<List<Clinician>>(emptyList())
-    val allClinicians: StateFlow<List<Clinician>> = _allClinicians
+//    private val _allClinicians = MutableStateFlow<List<Clinician>>(emptyList())
+//    val allClinicians: StateFlow<List<Clinician>> = _allClinicians
 
     init {
         Log.d("ClinicianViewModel", "ClinicianVM init called")
 
         viewModelScope.launch {
-            clinicianRepository.getClinician.collect(){
+            clinicianRepository.getClinician.collect {
                 _clinician.value = it
                 Log.d("ClinicianVM", "your value is ${_clinician.value}")
             }
 
         }
-        viewModelScope.launch {
-            clinicianRepository.allClinicians.collect { clinicians ->
-                _allClinicians.value = clinicians
-                Log.d("ClinicianVM", "Loaded ${clinicians.size} clinicians: $clinicians")
-            }
-        }
+//        viewModelScope.launch {
+//            clinicianRepository.allClinicians.collect { clinicians ->
+//                _allClinicians.value = clinicians
+//                Log.d("ClinicianVM", "Loaded ${clinicians.size} clinicians: $clinicians")
+//            }
+//        }
     }
 
     // function to insert clinician into RoomDB,
-    fun insertFirstClinician() {
-        val clinician = Clinician( // to edit these before adding :D
-//            id = 2,
-            name = "Bob Bobby",
-        )
+    fun insertClinician(clinician: Clinician) {
         viewModelScope.launch(Dispatchers.IO) {
             clinicianRepository.insert(clinician)
         }
     }
-    fun deleteAll() {
-        viewModelScope.launch(Dispatchers.IO) {
-            clinicianRepository.deleteAll()
-        }
-    }
-
-    fun updateId(id: Int, name: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            clinicianRepository.updateId(id, name)
-        }
-    }
-    // Update the TUG Assessment (Notes, Reviewed) etc.
-
 
     //Datastore Preferences
     // Store Current User
@@ -74,22 +55,18 @@ class ClinicianViewModel(private val clinicianRepository: ClinicianRepository, p
         }
     }
 
-    val getCurrentUserView: StateFlow<String> = appPreferencesRepository.getCurrentUserView()
+    val getCurrentUserView: StateFlow<String?> = appPreferencesRepository.getCurrentUserView()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
-//    fun getCurrentUserView(): StateFlow<String> {
-//        return appPreferencesRepository.getCurrentUserView()
-//            .stateIn(viewModelScope, SharingStarted.Lazily, "")
-//    }
 
     // For creating the VM in MainActivity
     class ClinicianViewModelFactory(private val clinicianRepository: ClinicianRepository,
-                                    private val tugRepository: TUGAssessmentRepository,
-                                    private val appPreferencesRepository: AppPreferencesRepository) :
+                                    private val appPreferencesRepository: AppPreferencesRepository
+    ) :
         ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(ClinicianViewModel::class.java)) {
-                @Suppress("UNCHECKED_CAST") return ClinicianViewModel(clinicianRepository,tugRepository, appPreferencesRepository) as T
+                @Suppress("UNCHECKED_CAST") return ClinicianViewModel(clinicianRepository, appPreferencesRepository) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }

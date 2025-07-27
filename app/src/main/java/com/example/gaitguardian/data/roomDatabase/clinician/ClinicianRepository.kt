@@ -4,9 +4,8 @@ import androidx.annotation.WorkerThread
 import kotlinx.coroutines.flow.Flow
 
 class ClinicianRepository(private val clinicianDao: ClinicianDao) {
-    //    val allPatients: Flow<List<Patient>> = patientDao.getAllPatients()
-    val getClinician: Flow<Clinician?> = clinicianDao.getClinicianById() // Remove the hardcoded 1
-    val allClinicians: Flow<List<Clinician>> = clinicianDao.getAllClinicians()
+    val getClinician: Flow<Clinician?> = clinicianDao.getClinicianById()
+//    val allClinicians: Flow<List<Clinician>> = clinicianDao.getAllClinicians()
 
     @WorkerThread
     suspend fun insert(clinician: Clinician) {

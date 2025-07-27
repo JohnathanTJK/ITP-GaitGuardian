@@ -1,5 +1,6 @@
 package com.example.gaitguardian.screens.clinician
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -47,42 +48,32 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.gaitguardian.data.roomDatabase.patient.Patient
-import com.example.gaitguardian.data.roomDatabase.tug.TUGVideo
+import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessment
 import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.ui.theme.buttonBackgroundColor
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import com.example.gaitguardian.viewmodels.PatientViewModel
+import com.example.gaitguardian.viewmodels.TugDataViewModel
 
 @Composable
 fun ClinicianHomeScreen(
     navController: NavController,
     clinicianViewModel: ClinicianViewModel,
     patientViewModel: PatientViewModel,
+    tugViewModel: TugDataViewModel,
     modifier: Modifier = Modifier
 ) {
-
-    var tugVideos by remember { mutableStateOf(listOf(
-        //TODO: Replace with actual data
-        TUGVideo(1, "Today, 1:30PM", "ON", "High", true),
-        TUGVideo(2, "Today, 2:00PM", "OFF", "Low", true),
-        TUGVideo(3, "Yesterday, 10:15AM", "ON", "Medium", false),
-        TUGVideo(4, "May 5, 3:45PM", "OFF", "High", true),
-        TUGVideo(5, "April 30, 9:00AM", "ON", "Low", false),
-        TUGVideo(6, "April 28, 11:20AM", "OFF", "High", false),
-        TUGVideo(7, "April 25, 12:15PM", "ON", "Medium", true),
-        TUGVideo(8, "April 20, 4:45PM", "OFF", "Low", true),
-        TUGVideo(9, "April 18, 2:30PM", "ON", "High", true),
-        TUGVideo(10, "April 15, 1:00PM", "OFF", "Medium", false),
-    )) }
-
-    val pendingReviews =
-        tugVideos.count { !it.watchStatus } // Calculate number of videos that are not watched
-
     // Start: Patient ViewModel testing
     val patientInfo by patientViewModel.patient.collectAsState()
+
     // End: Patient ViewModel testing
     // Start: Clinician ViewModel testing
     val clinicianInfo by clinicianViewModel.clinician.collectAsState()
+        val uploadedAssesssments by tugViewModel.allTUGAssessments.collectAsState()
+        val allTugAnalysis by tugViewModel.allTUGAnalysis.collectAsState()
+    val pendingReviews =
+        uploadedAssesssments.count { !it.watchStatus } // Calculate number of videos that are not watched
+
 
     // For the multiple mark-as-reviewed functionality
     var selectedVideoIds by remember { mutableStateOf(setOf<Int>()) }
@@ -91,9 +82,9 @@ fun ClinicianHomeScreen(
     var showPendingVideos by remember { mutableStateOf(false) }
 
     val filteredVideos = if (showPendingVideos) {
-        tugVideos.filter { !it.watchStatus }
+        uploadedAssesssments.filter { !it.watchStatus }
     } else {
-        tugVideos
+        uploadedAssesssments
     }
 
     Spacer(Modifier.height(30.dp))
@@ -113,15 +104,14 @@ fun ClinicianHomeScreen(
         ) {
             item {
                 ClinicianHeader(
-                    clinicianName = "Dr. ${clinicianInfo?.name ?: "Clinician"}",
+                    clinicianName = "${clinicianInfo?.name ?: "Clinician"}",
                     patient = patientInfo ?: Patient(id = 2, name = "Benny", age = 18),
                     pendingReviews = pendingReviews
                 )
             }
-
             item {
                 VideoReviewsSummaryCard(
-                    totalTests = tugVideos.count(),
+                    totalTests = uploadedAssesssments.count(),
                     pendingTests = pendingReviews,
                     showOnlyPending = showPendingVideos,
                     onFilterToggle = { showPendingVideos = it }
@@ -135,24 +125,45 @@ fun ClinicianHomeScreen(
                 }
             }
 
-//            items(tugVideos) { video ->
-                items(filteredVideos) { video ->
-                TUGVideoItem(
-                    navController = navController,
-                    testId = video.testId,
-                    dateTime = video.dateTime,
-                    medication = video.medication,
-                    severity = video.severity,
-                    watchStatus = if (video.watchStatus) "Watched" else "Pending",
-                    isSelected = selectedVideoIds.contains(video.testId),
-                    onSelectionChanged = { isSelected ->
-                        selectedVideoIds = if (isSelected) {
-                            selectedVideoIds + video.testId
-                        } else {
-                            selectedVideoIds - video.testId
-                        }
+            if(filteredVideos.isEmpty()){
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (showPendingVideos) "No pending assessments to review." else "No assessments available.",
+                            fontSize = 16.sp,
+                            color = Color.Gray
+                        )
                     }
-                )
+                }
+            }
+            else{
+                items(filteredVideos.reversed()) { video -> // show latest first
+                    val finalMedicationState = video.onMedication != video.updateMedication
+                    val matchedAnalysis = allTugAnalysis.find { it.testId == video.testId }
+                    val finalSeverity = matchedAnalysis?.severity ?: "N/A"
+                    TUGVideoItem(
+                        navController = navController,
+                        testId = video.testId,
+                        dateTime = video.dateTime,
+                        medication = finalMedicationState,
+                        severity = finalSeverity,
+                        watchStatus = if (video.watchStatus) "Reviewed" else "Pending",
+                        isSelected = selectedVideoIds.contains(video.testId),
+                        onSelectionChanged = { isSelected ->
+                            selectedVideoIds = if (isSelected) {
+                                selectedVideoIds + video.testId
+                            } else {
+                                selectedVideoIds - video.testId
+                            }
+                        }
+                    )
+                }
+
             }
         }
 
@@ -160,17 +171,8 @@ fun ClinicianHomeScreen(
             MultiSelectControls(
                 selectedCount = selectedVideoIds.size,
                 onMarkAsWatched = {
-//                    // TODO: To update the database
-                    // TODO: something likeclinicianViewModel.markVideoAsWatched(videoId)
                     selectedVideoIds.forEach { videoId ->
-                    }
-                    // For Testing Only
-                    tugVideos = tugVideos.map { video ->
-                        if (video.testId in selectedVideoIds) {
-                            video.copy(watchStatus = true)
-                        } else {
-                            video
-                        }
+                        tugViewModel.markMultiAsReviewed(videoId)
                     }
 
                     // After update then clear the selection
@@ -239,7 +241,7 @@ fun MultiSelectControls(
                     containerColor = Color.White
                 )
             ) {
-                Text("Mark as Watched", color = Color(0xFF4299E1))
+                Text("Mark as Reviewed", color = Color(0xFF4299E1))
             }
         }
     }
@@ -323,7 +325,7 @@ fun TUGVideoItem(
     navController: NavController,
     testId: Int,
     dateTime: String,
-    medication: String,
+    medication: Boolean,
     severity: String,
     watchStatus: String,
     isSelected: Boolean = false,
@@ -377,7 +379,7 @@ fun TUGVideoItem(
                 text = dateTime,
                 fontSize = 12.sp,
                 color = Color(0xFF2D3748),
-                modifier = Modifier.padding(start = 48.dp) // Align with text above (checkbox width + spacer)
+                modifier = Modifier.padding(start = 48.dp)
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -386,12 +388,12 @@ fun TUGVideoItem(
                 buildAnnotatedString {
                     append("Medication: ")
                     withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append(medication)
+                        append(if (medication) "ON" else "OFF")
                     }
                 },
                 fontSize = 14.sp,
                 color = Color.Black,
-                modifier = Modifier.padding(start = 48.dp) // Align with text above
+                modifier = Modifier.padding(start = 48.dp)
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -405,7 +407,7 @@ fun TUGVideoItem(
                 },
                 fontSize = 14.sp,
                 color = Color.Black,
-                modifier = Modifier.padding(start = 48.dp) // Align with text above
+                modifier = Modifier.padding(start = 48.dp)
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -414,12 +416,13 @@ fun TUGVideoItem(
             if (!isSelected) {
                 Button(
                     onClick = {
-                        navController.navigate("clinician_detailed_patient_view_screen")
+                        navController.navigate("clinician_detailed_patient_view_screen/${testId}")
+
                     },
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 48.dp), // Align with text above
+                        .padding(start = 48.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = buttonBackgroundColor
                     )
@@ -439,7 +442,7 @@ fun VideoWatchStatus(watchStatus: String) {
             .width(80.dp),
         shape = RoundedCornerShape(5.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (watchStatus == "Watched") Color(0xFFC6F6D5) else Color(0xFFFEEBC8),
+            containerColor = if (watchStatus == "Reviewed") Color(0xFFC6F6D5) else Color(0xFFFEEBC8),
         )
     ) {
         Box(
@@ -450,7 +453,7 @@ fun VideoWatchStatus(watchStatus: String) {
                 text = watchStatus,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = if (watchStatus == "Watched") Color(0xFF2F855A) else Color(0xFFDD6B20),
+                color = if (watchStatus == "Reviewed") Color(0xFF2F855A) else Color(0xFFDD6B20),
                 textAlign = TextAlign.Center
             )
         }

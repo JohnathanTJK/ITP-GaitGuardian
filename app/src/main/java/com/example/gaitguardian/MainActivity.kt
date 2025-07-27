@@ -8,15 +8,20 @@ import androidx.activity.enableEdgeToEdge
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
-//import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.example.gaitguardian.ui.theme.GaitGuardianTheme
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import com.example.gaitguardian.viewmodels.PatientViewModel
+import com.example.gaitguardian.viewmodels.TugDataViewModel
+import com.example.gaitguardian.api.TestApiConnection
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Test API connection
+        TestApiConnection.testConnection()
+
         if (!hasRequiredPermissions()) {
             ActivityCompat.requestPermissions(
                 this, CAMERAX_PERMISSIONS, 0
@@ -27,7 +32,6 @@ class MainActivity : ComponentActivity() {
         // Initialize ViewModel with the Factory
         val patientViewModelFactory = PatientViewModel.PatientViewModelFactory(
             (application as GaitGuardian).patientRepository,
-            (application as GaitGuardian).tugRepository,
             (application as GaitGuardian).appPreferencesRepository
         )
         val patientViewModel =
@@ -35,22 +39,25 @@ class MainActivity : ComponentActivity() {
         //TODO: Clinician ViewModel
         val clinicianViewModelFactory = ClinicianViewModel.ClinicianViewModelFactory(
             (application as GaitGuardian).clinicianRepository,
-            (application as GaitGuardian).tugRepository,
             (application as GaitGuardian).appPreferencesRepository
         )
         val clinicianViewModel =
             ViewModelProvider(this, clinicianViewModelFactory)[ClinicianViewModel::class.java]
+        // TUG ViewModel
+        val TugViewModelFactory = TugDataViewModel.TugDataViewModelFactory(
+            (application as GaitGuardian).tugRepository
+        )
+        val tugDataViewModel =
+            ViewModelProvider(this, TugViewModelFactory)[TugDataViewModel::class.java]
         setContent {
             GaitGuardianTheme {
-//                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                 val navController = rememberNavController()
                 NavGraph(
                     navController = navController,
-//                        modifier = Modifier.padding(innerPadding),
                     patientViewModel = patientViewModel,
-                    clinicianViewModel = clinicianViewModel
+                    clinicianViewModel = clinicianViewModel,
+                    tugDataViewModel = tugDataViewModel
                 )
-//                }
             }
         }
     }
