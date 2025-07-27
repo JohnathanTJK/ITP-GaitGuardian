@@ -32,7 +32,7 @@ python app.py
 private const val BASE_URL = "http://<<YOUR IP HERE>>:5001/"  // Change this IP!
 ```
 
-Make sure to rebuild the GaitGuardian app after updating the IP address so the changes take effect.
+Make sure to rebuild the GaitGuardian app using Android Studio after updating the IP address so the changes take effect.
 
 
 ## 🗂️ Project Structure
