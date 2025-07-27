@@ -36,36 +36,16 @@ Make sure to rebuild the GaitGuardian app after updating the IP address so the c
 
 
 ## 🗂️ Project Structure
-### File Structure of Pose Detection and Machine Learning
+### File Structure of Pose Detection and Machine Learning Backend
 ```
-computervision
-├── keypoints_and_durations/            ← Labelled Pose landmark coordinates CSVs and Duration Json
-├── video_results/                      ← Videos with Pose landmarks
-├── videos/                             ← Some SAIL-TUG Videos
-├── frame.py                            ← Frame-by-frame video viewer
-├── pose_and_subtask.py                 ← # Video pose estimation, Subtask classification, and Gait feature extraction (MediaPipe, XGBoost)
-├── pose_est_mlp.py                     ← # MLP-based classification for TUG subtask and severity prediction (TensorFlow, sklearn, Optuna)
-├── test2.py                            ← 
-├── train_xgb.py                        ← Train XGBoost classifier for TUG subtask prediction
-├── tug_analyzer.py                     ← 
-├── xgb_features.json                   ← Pose Feature columns for XGBoost model input
-├── xgb_label_encoder.pkl               ← LabelEncoder for TUG subtask labels
-└── xgb_model.pkl                       ← XGBoost model
-
 computervision_test
-├── data/                               ← Labelled Pose landmark coordinates CSVs
 ├── model/
 │   ├── xgb_features.json               ← Pose Feature columns for XGBoost model input
 │   ├── xgb_label_encoder.pkl           ← LabelEncoder for TUG subtask labels
 │   └── xgb_model.pkl                   ← XGBoost model
 │
 ├── app.py/                             ← Flask API for gait analysis: pose extraction, subtask classification, gait metrics, and severity scoring
-├── ml_analysis.py/                     ← 
-├── testing.py/                         ← 
-├── testing2.py/                        ← 
-├── testing3.py/                        ← 
-├── testingml.py/                       ← 
-└── tug_analyzer.py/                    ← 
+├── requirements.txt                    ← Required Modules for the backend
 ```
 
 ### File Structure of GaitGuardian Android App
