@@ -51,6 +51,10 @@ def initialize_models():
         # Load ML models
         model = joblib.load(MODEL_PATH)
         label_encoder = joblib.load(LABEL_PATH)
+
+        # Patch missing attribute for compatibility
+        if not hasattr(model, 'use_label_encoder'):
+            model.use_label_encoder = False
         
         with open(FEATURE_PATH, "r") as jf:
             expected_cols = json.load(jf)

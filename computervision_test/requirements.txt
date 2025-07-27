@@ -1,0 +1,10 @@
+Flask
+flask-cors
+opencv-python
+mediapipe
+numpy
+pandas
+scikit-learn
+scipy
+joblib
+xgboost
