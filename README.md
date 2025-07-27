@@ -89,11 +89,10 @@ app/src/main/java/com/example/gaitguardian
 ├── screens/                            ← View Layer
 │   ├── camera/                         ← Camera capture and preview screens
 │   ├── clinician/                      ← Home, PIN entry, assessment details, performance graphs
-│   └── patient/                        ← Home, recording, loading, results
-│
-├── SettingsScreen.kt                   ← Screen to manage app settings
-├── SplashScreen.kt                     ← Initial loading/splash screen
-├── StartScreen.kt                      ← Welcome screen for new users
+│   ├── patient/                        ← Home, recording, loading, results
+│   ├── SettingsScreen.kt                   ← Screen to manage app settings
+│   ├── SplashScreen.kt                     ← Initial loading/splash screen
+│   └── StartScreen.kt                      ← Welcome screen for new users
 │
 ├── viewmodels/                         ← ViewModel Layer
 │   ├── ClinicianViewModel.kt           ← Manages clinician-related UI state
