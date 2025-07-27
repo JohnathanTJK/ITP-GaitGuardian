@@ -47,7 +47,7 @@ computervision_test
 ├── app.py/                             ← Flask API for gait analysis: pose extraction, subtask classification, gait metrics, and severity scoring
 ├── requirements.txt                    ← Required Modules for the backend
 ```
-
+###### Please refer to the [`integration`](https://github.com/JohnathanTJK/ITP-GaitGuardian/tree/integration) branch for ML/Pose Estimation Testing codes.
 ### File Structure of GaitGuardian Android App
 ```
 app/src/main/java/com/example/gaitguardian
