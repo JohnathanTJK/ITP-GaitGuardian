@@ -1,7 +1,9 @@
 package com.example.gaitguardian.screens.patient
 
 // Core Android and Compose imports
+import android.net.Uri
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -16,17 +18,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.background
-
-// Coroutines
-import kotlinx.coroutines.launch
-
+import androidx.navigation.NavController
+import androidx.compose.foundation.shape.RoundedCornerShape
 // Java File
 import java.io.File
 
@@ -49,17 +43,11 @@ fun PatientFriendlyTugAssessmentScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val gaitClient = remember { GaitAnalysisClient() }
 
-    // State variables
-    var recordedVideoFile by remember { mutableStateOf<File?>(null) }
+    // State variables  
     var medicationState by remember { mutableStateOf("N/A") }
     var comments by remember { mutableStateOf("") }
     var showMedicationDialog by remember { mutableStateOf(false) }
-
-    // Analysis state
-    var analysisState by remember { mutableStateOf<AnalysisState>(AnalysisState.Idle) }
-    var analysisResult by remember { mutableStateOf<GaitAnalysisResponse?>(null) }
 
     // Patient-friendly color scheme
     val patientOrange = Color(0xFFFF9800)
@@ -126,152 +114,23 @@ fun PatientFriendlyTugAssessmentScreen(
         // Video Recording Section - Patient Friendly
         PatientVideoRecordingSection(
             onVideoRecorded = { videoFile ->
-                recordedVideoFile = videoFile
-                analysisState = AnalysisState.Idle
-                analysisResult = null
+                // New flow: Immediately navigate to loading screen for processing
+                val videoPath = videoFile.absolutePath
+                val encodedPath = Uri.encode(videoPath)
+                navController.navigate("loading_screen/TUG Assessment/$encodedPath")
             },
-            isEnabled = analysisState != AnalysisState.Analyzing,
+            isEnabled = true,
             patientOrange = patientOrange
         )
 
-        // Show video recorded confirmation
-        recordedVideoFile?.let { videoFile ->
-            Spacer(modifier = Modifier.height(24.dp))
+        // Simple Medication State Selection
+        PatientMedicationCard(
+            selectedState = medicationState,
+            onStateSelected = { medicationState = it },
+            patientOrange = patientOrange
+        )
 
-            // Big confirmation card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E8))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = "Video recorded",
-                        tint = Color(0xFF4CAF50),
-                        modifier = Modifier.size(40.dp)
-                    )
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text(
-                            text = "✅ Video Recorded",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF2E7D32)
-                        )
-                        Text(
-                            text = "Ready for analysis",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color(0xFF558B2F)
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Simple Medication State Selection
-            PatientMedicationCard(
-                selectedState = medicationState,
-                onStateSelected = { medicationState = it },
-                patientOrange = patientOrange
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-        }
-
-        // Analysis Section - Patient Friendly
-        when (analysisState) {
-            is AnalysisState.Idle -> {
-                if (recordedVideoFile != null) {
-                    // Big Analysis Button
-                    Button(
-                        onClick = {
-                            scope.launch {
-                                analysisState = AnalysisState.Analyzing
-                                try {
-                                    val result = gaitClient.analyzeVideo(recordedVideoFile!!)
-                                    result.fold(
-                                        onSuccess = { response ->
-                                            analysisResult = response
-                                            analysisState = AnalysisState.Success
-                                        },
-                                        onFailure = { exception ->
-                                            analysisState = AnalysisState.Error(
-                                                exception.message ?: "Analysis failed"
-                                            )
-                                        }
-                                    )
-                                } catch (e: Exception) {
-                                    analysisState = AnalysisState.Error(
-                                        "Unexpected error: ${e.message}"
-                                    )
-                                }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(70.dp), // Bigger button
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = patientOrange
-                        ),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Analytics,
-                            contentDescription = null,
-                            modifier = Modifier.size(28.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = "Start Analysis",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp
-                        )
-                    }
-                }
-            }
-
-            is AnalysisState.Analyzing -> {
-                PatientAnalysisProgressCard(patientOrange)
-            }
-
-            is AnalysisState.Success -> {
-                analysisResult?.let { result ->
-                    PatientFriendlyResultsCard(
-                        result = result,
-                        patientOrange = patientOrange,
-                        onTakeNew = {
-                            analysisState = AnalysisState.Idle
-                            analysisResult = null
-                            recordedVideoFile = null
-                            medicationState = "N/A"
-                        },
-                        onGoHome = {
-                            navController.popBackStack()
-                        }
-                    )
-                }
-            }
-
-            is AnalysisState.Error -> {
-                val errorState = analysisState as AnalysisState.Error
-                PatientErrorCard(
-                    error = errorState.message,
-                    patientOrange = patientOrange,
-                    onTryAgain = {
-                        analysisState = AnalysisState.Idle
-                        analysisResult = null
-                        recordedVideoFile = null
-                    }
-                )
-            }
-        }
+        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 

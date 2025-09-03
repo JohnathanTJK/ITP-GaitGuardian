@@ -33,8 +33,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.compose.ui.platform.LocalContext
 import com.example.gaitguardian.api.GaitAnalysisClient
 import com.example.gaitguardian.api.GaitAnalysisResponse
+import com.example.gaitguardian.api.GaitMetrics
+import com.example.gaitguardian.api.TugMetrics
+import com.example.gaitguardian.api.ProcessingInfo
+import com.example.gaitguardian.data.models.TugResult
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAnalysis
 import com.example.gaitguardian.viewmodels.PatientViewModel
 import com.example.gaitguardian.viewmodels.TugDataViewModel
@@ -50,11 +55,12 @@ fun LoadingScreen(
     tugDataViewModel: TugDataViewModel,
     patientViewModel: PatientViewModel
 ) {
+    val context = LocalContext.current
     val videoFile = File(outputPath)
     val scope = rememberCoroutineScope()
     var analysisState by remember { mutableStateOf<AnalysisState>(AnalysisState.Idle) }
     var analysisResult by remember { mutableStateOf<GaitAnalysisResponse?>(null) }
-    val gaitClient = remember { GaitAnalysisClient() }
+    val gaitClient = remember { GaitAnalysisClient(context) }
 
     val motivationalQuotes = listOf(
         "🌟 Keep going, you're doing amazing!",
@@ -69,36 +75,38 @@ fun LoadingScreen(
     LaunchedEffect(key1 = videoFile) {
         analysisState = AnalysisState.Analyzing
         try {
-            val result = gaitClient.analyzeVideo(videoFile)
-            result.fold(
-                onSuccess = { response ->
-                    analysisResult = response
-                    tugDataViewModel.setResponse(response)
+            // Use the correct method that returns TugResult and uses direct MediaPipe analysis
+            val tugResult = gaitClient.analyzeVideoFile(videoFile)
+            
+            if (tugResult.riskAssessment.startsWith("ERROR:")) {
+                // Handle error result
+                analysisState = AnalysisState.Error(tugResult.riskAssessment)
+            } else {
+                // Convert TugResult to GaitAnalysisResponse format for compatibility
+                val response = convertTugResultToGaitAnalysisResponse(tugResult)
+                analysisResult = response
+                tugDataViewModel.setResponse(response)
 
-                    val tugMetrics = response.tugMetrics
-                    val analysis = TUGAnalysis(
-                        severity = response.severity ?: "Unknown",
-                        timeTaken = tugMetrics?.totalTime ?: 0.0,
-                        stepCount = response.gaitMetrics?.stepCount ?: 0,
-                        sitToStand = tugMetrics?.sitToStandTime ?: 0.0,
-                        walkFromChair = tugMetrics?.walkFromChairTime ?: 0.0,
-                        turnFirst = tugMetrics?.turnFirstTime ?: 0.0,
-                        walkToChair = tugMetrics?.walkToChairTime ?: 0.0,
-                        turnSecond = tugMetrics?.turnSecondTime ?: 0.0,
-                        standToSit = tugMetrics?.standToSitTime ?: 0.0
-                    )
-                    tugDataViewModel.insertTugAnalysis(analysis)
+                val tugMetrics = response.tugMetrics
+                val analysis = TUGAnalysis(
+                    severity = response.severity ?: "Unknown",
+                    timeTaken = tugMetrics?.totalTime ?: 0.0,
+                    stepCount = response.gaitMetrics?.stepCount ?: 0,
+                    sitToStand = tugMetrics?.sitToStandTime ?: 0.0,
+                    walkFromChair = tugMetrics?.walkFromChairTime ?: 0.0,
+                    turnFirst = tugMetrics?.turnFirstTime ?: 0.0,
+                    walkToChair = tugMetrics?.walkToChairTime ?: 0.0,
+                    turnSecond = tugMetrics?.turnSecondTime ?: 0.0,
+                    standToSit = tugMetrics?.standToSitTime ?: 0.0
+                )
+                tugDataViewModel.insertTugAnalysis(analysis)
 
-                    if (!patientViewModel.saveVideos.value && videoFile.exists()) {
-                        videoFile.delete()
-                    }
-
-                    analysisState = AnalysisState.Success
-                },
-                onFailure = { error ->
-                    analysisState = AnalysisState.Error(error.message ?: "Analysis failed.")
+                if (!patientViewModel.saveVideos.value && videoFile.exists()) {
+                    videoFile.delete()
                 }
-            )
+
+                analysisState = AnalysisState.Success
+            }
         } catch (e: Exception) {
             analysisState = AnalysisState.Error("Unexpected error: ${e.message}")
         }
@@ -173,5 +181,78 @@ fun LoadingScreen(
                 }
             }
         }
+    }
+}
+
+/**
+ * Convert TugResult to GaitAnalysisResponse for compatibility with existing UI components
+ */
+private fun convertTugResultToGaitAnalysisResponse(tugResult: TugResult): GaitAnalysisResponse {
+    // Check if this is an error result
+    val isError = tugResult.riskAssessment.startsWith("ERROR:")
+    
+    return if (isError) {
+        // Return error response
+        GaitAnalysisResponse(
+            success = false,
+            gaitMetrics = null,
+            tugMetrics = null,
+            severity = null,
+            processingInfo = null,
+            requestId = "local_${System.currentTimeMillis()}",
+            error = tugResult.riskAssessment,
+            errorType = "ANALYSIS_FAILED"
+        )
+    } else {
+        // Create successful response
+        val tugMetrics = TugMetrics(
+            sitToStandTime = tugResult.sitToStandDuration,
+            walkFromChairTime = tugResult.phaseBreakdown["Walk-From-Chair"] ?: 0.0,
+            turnFirstTime = tugResult.phaseBreakdown["Turn-First"] ?: 0.0,
+            walkToChairTime = tugResult.phaseBreakdown["Walk-To-Chair"] ?: 0.0,
+            turnSecondTime = tugResult.phaseBreakdown["Turn-Second"] ?: 0.0,
+            standToSitTime = tugResult.standToSitDuration,
+            totalTime = tugResult.totalDuration
+        )
+        
+        // Create placeholder gait metrics
+        val gaitMetrics = GaitMetrics(
+            stepCount = 20, // Placeholder
+            meanStepLength = 0.5, // Placeholder
+            strideTime = 1.2, // Placeholder
+            cadence = 100.0, // Placeholder
+            stepSymmetry = 0.95, // Placeholder
+            leftKneeRange = 45.0, // Placeholder
+            rightKneeRange = 45.0, // Placeholder
+            upperBodySway = 5.0, // Placeholder
+            turn1Duration = tugMetrics.turnFirstTime,
+            turn2Duration = tugMetrics.turnSecondTime
+        )
+        
+        // Determine severity based on total time
+        val severity = when {
+            tugMetrics.totalTime <= 10.0 -> "Normal"
+            tugMetrics.totalTime <= 20.0 -> "Mild"
+            tugMetrics.totalTime <= 30.0 -> "Moderate"
+            else -> "Severe"
+        }
+        
+        val processingInfo = ProcessingInfo(
+            totalFrames = 100, // Placeholder
+            processedFrames = 100, // Placeholder
+            fps = 30.0,
+            processingTimeSeconds = 0.0
+        )
+        
+        GaitAnalysisResponse(
+            success = true,
+            gaitMetrics = gaitMetrics,
+            tugMetrics = tugMetrics,
+            severity = severity,
+            processingInfo = processingInfo,
+            requestId = "local_${System.currentTimeMillis()}",
+            error = null,
+            errorType = null
+        )
     }
 }

@@ -57,6 +57,7 @@ import com.example.gaitguardian.screens.patient.PatientHomeScreen
 import com.example.gaitguardian.screens.patient.ResultScreen
 import com.example.gaitguardian.screens.patient.VideoInstructionScreen
 import com.example.gaitguardian.screens.patient.ViewVideosScreen
+import com.example.gaitguardian.ui.screens.VideoTestScreen
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import com.example.gaitguardian.viewmodels.PatientViewModel
 import com.example.gaitguardian.viewmodels.TugDataViewModel
@@ -340,6 +341,9 @@ fun NavGraph(
                     }
                     composable("view_videos_screen") {
                         ViewVideosScreen(navController)
+                    }
+                    composable("video_test_screen") {
+                        VideoTestScreen()
                     }
                     composable("loading_screen/{assessmentTitle}/{outputPath}") { backStackEntry ->
                         val title = backStackEntry.arguments?.getString("assessmentTitle")

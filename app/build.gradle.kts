@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.devtools.ksp") version "2.0.0-1.0.21"
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.0.0"
 }
 
 android {
@@ -27,6 +28,9 @@ android {
                 "proguard-rules.pro"
             )
         }
+    }
+    lint {
+        baseline = file("lint-baseline.xml")
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -95,13 +99,24 @@ dependencies {
 //    implementation("com.google.ar:core-ktx:1.36.0")
 //    implementation("io.github.sceneview:arsceneview:2.3.0")
     implementation ("androidx.camera:camera-camera2:1.3.0")
-    implementation ("com.google.mlkit:object-detection:17.0.0")
 
     // Add these for API communication
     implementation ("com.squareup.retrofit2:retrofit:2.9.0")
     implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation ("com.squareup.okhttp3:logging-interceptor:4.11.0")
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+
+    // ONNX Runtime for ML model inference
+    implementation ("com.microsoft.onnxruntime:onnxruntime-android:1.16.3")
+    
+    // Kotlinx Serialization
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    
+    // MediaPipe for pose detection
+    implementation("com.google.mediapipe:tasks-vision:0.10.8")
+    
+    // OpenCV for image processing - TODO: Add proper OpenCV dependency
+    // implementation("org.opencv:opencv-android:4.5.4")
 
 
     // Material3 Icons

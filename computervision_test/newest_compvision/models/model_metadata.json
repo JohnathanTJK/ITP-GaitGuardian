@@ -1,0 +1,14 @@
+{
+  "model_type": "XGBoost_Sklearn",
+  "num_features": 111,
+  "num_classes": 6,
+  "classes": [
+    "Sit-To-Stand",
+    "Stand-To-Sit",
+    "Turn-First",
+    "Turn-Second",
+    "Walk-From-Chair",
+    "Walk-To-Chair"
+  ],
+  "feature_count": 111
+}

@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.gaitguardian.api.TugMetrics
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessment
 import com.example.gaitguardian.ui.theme.*
 import com.example.gaitguardian.viewmodels.PatientViewModel
@@ -82,7 +83,7 @@ LaunchedEffect(Unit){ // fetch latest TUG assessment (aka the one that was just 
             medicationOn = onMedication,
             showMedicationToggle = true,
             severity = severity,
-
+            tugMetrics = analysisResult?.tugMetrics,
             totalTime = totalTime.toFloat(), // cast to Float if needed
             modifier = Modifier
                 .fillMaxWidth()
@@ -143,6 +144,7 @@ fun LatestAssessmentResultsCard(
     latestTiming: Float,
     severity: String,
     totalTime: Float,
+    tugMetrics: TugMetrics? = null,
     medicationOn: Boolean? = null,
     showComments: Boolean = true,
     showDivider: Boolean = true,
@@ -233,6 +235,32 @@ fun LatestAssessmentResultsCard(
                 HorizontalDivider(thickness = 1.dp, color = Color.LightGray)
                 Spacer(modifier = Modifier.height(20.dp))
             }
+
+            // TUG Breakdown Section
+            Text(
+                text = "TUG Breakdown",
+                fontSize = subheading1,
+                fontWeight = FontWeight.Bold,
+                color = DefaultColor
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp)
+            ) {
+                TugPhaseRow("Sit-to-stand", tugMetrics?.sitToStandTime ?: 0.0)
+                TugPhaseRow("Walk-from-chair", tugMetrics?.walkFromChairTime ?: 0.0)
+                TugPhaseRow("Turn-first", tugMetrics?.turnFirstTime ?: 0.0)
+                TugPhaseRow("Walk-to-chair", tugMetrics?.walkToChairTime ?: 0.0)
+                TugPhaseRow("Turn-second", tugMetrics?.turnSecondTime ?: 0.0)
+                TugPhaseRow("Stand-to-sit", tugMetrics?.standToSitTime ?: 0.0)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             if (showMedicationToggle) {
                 Spacer(modifier = Modifier.height(12.dp))
@@ -418,5 +446,32 @@ fun HorizontalProgressBar(
 
             Spacer(modifier = Modifier.height(8.dp))
         }
+    }
+}
+
+@Composable
+fun TugPhaseRow(
+    phaseName: String,
+    duration: Double,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "$phaseName:",
+            fontSize = body,
+            fontWeight = FontWeight.Medium,
+            color = Color.Black,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = "${String.format("%.1f", duration)}s",
+            fontSize = body,
+            fontWeight = FontWeight.Bold,
+            color = DefaultColor
+        )
     }
 }

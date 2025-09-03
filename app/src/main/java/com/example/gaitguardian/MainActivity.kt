@@ -19,8 +19,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Test API connection
-        TestApiConnection.testConnection()
+        // Test local analysis components
+        TestApiConnection.testConnection(this)
 
         if (!hasRequiredPermissions()) {
             ActivityCompat.requestPermissions(

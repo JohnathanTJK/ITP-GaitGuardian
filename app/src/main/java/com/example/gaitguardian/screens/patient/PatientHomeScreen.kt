@@ -215,6 +215,24 @@ fun MissedAssessmentCard(navController: NavController) {
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
                 }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Button(
+                    onClick = { navController.navigate("video_test_screen") },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF4CAF50)
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = "Test Video Analysis",
+                        color = Color.White,
+                        fontSize = body,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
             }
 
         }
