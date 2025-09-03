@@ -309,6 +309,9 @@ User Interface:
 Data Models:
 ├── TugMetrics.kt - Phase timing data structure
 └── Various API response models
+
+Data From Python:
+└── newest_compvision - Python version + data
 ```
 
 ---
