@@ -64,7 +64,11 @@ import com.example.gaitguardian.viewmodels.TugDataViewModel
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-fun NavTopBar(navController: NavHostController, currentDestination: String) {
+fun NavTopBar(
+    navController: NavHostController,
+    currentDestination: String,
+    assessmentTitle: String? = null // optional
+) {
     CenterAlignedTopAppBar(
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
             containerColor = Color(0xFFFFF6DD),
@@ -72,7 +76,8 @@ fun NavTopBar(navController: NavHostController, currentDestination: String) {
         ),
         title = {
             Text(
-                text = "GaitGuardian",
+                text = if (currentDestination.startsWith("assessment_info_screen") && assessmentTitle != null)
+                    assessmentTitle else "GaitGuardian",
                 fontWeight = FontWeight.Bold,
                 overflow = TextOverflow.Ellipsis
             )
@@ -91,9 +96,7 @@ fun NavTopBar(navController: NavHostController, currentDestination: String) {
             }
         },
         actions = {
-            IconButton(onClick = {
-                navController.navigate("settings_screen")
-            }) {
+            IconButton(onClick = { navController.navigate("settings_screen") }) {
                 Icon(
                     imageVector = Icons.Default.Settings,
                     contentDescription = "Settings",
@@ -104,6 +107,7 @@ fun NavTopBar(navController: NavHostController, currentDestination: String) {
         }
     )
 }
+
 
 
 @Composable
@@ -160,7 +164,8 @@ fun NavGraph(
                 if (currentDestination != null && currentDestination != "camera_screen/{assessmentTitle}" && currentDestination != "3m_screen" && currentDestination != "gpt_screen" && currentDestination != "start_screen"
                     && currentDestination != "lateral_screen"
                 ) {
-                    NavTopBar(navController, currentDestination)
+                    NavTopBar(navController, currentDestination, assessmentTitle = if (currentDestination?.startsWith("assessment_info_screen") == true)
+                        navBackStackEntry?.arguments?.getString("assessmentTitle") else null)
                 }
             },
             bottomBar = {

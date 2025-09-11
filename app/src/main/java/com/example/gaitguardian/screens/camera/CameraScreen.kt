@@ -427,7 +427,8 @@ private fun recordVideo(
                             videoDuration = recordingTimeState.value.toFloat(),
                             videoTitle = outputFile.name,
                             onMedication = tugViewModel.onMedication.value,
-                            patientComments = tugViewModel.assessmentComment.value,
+//                            patientComments = tugViewModel.assessmentComment.value,
+                            patientComments = tugViewModel.selectedComments.value.joinToString(", ")
                         )
                         tugViewModel.insertNewAssessment(newTug)
                         Log.d("tug", "tug inserted into db with video")

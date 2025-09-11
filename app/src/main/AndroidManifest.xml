@@ -7,6 +7,8 @@
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 <!--    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />-->
 <!--    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />-->
+<!--    Vibration Haptic Feedback-->
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <!-- For ARCore-->
     <uses-feature android:name="android.hardware.camera.ar" android:required="true" />

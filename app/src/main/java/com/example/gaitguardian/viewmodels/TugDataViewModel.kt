@@ -112,7 +112,17 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository) : Vie
             tugRepository.multiSelectMarkAsReviewed(id, true)
         }
     }
+    // AssessmentInfoScreen
+    private val _selectedComments = MutableStateFlow<Set<String>>(emptySet())
+    val selectedComments: StateFlow<Set<String>> = _selectedComments
 
+    fun toggleComment(comment: String) {
+        _selectedComments.value = _selectedComments.value.toMutableSet().also {
+            if (it.contains(comment)) it.remove(comment) else it.add(comment)
+        }
+        Log.d("TugViewModel", "selected comments: ${_selectedComments.value}")
+
+    }
     // ML Analysis
     private val _response = MutableStateFlow<GaitAnalysisResponse?>(null)
     val response: StateFlow<GaitAnalysisResponse?> = _response
