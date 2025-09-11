@@ -66,24 +66,32 @@ fun PatientHomeScreen(
     modifier: Modifier = Modifier
 ) {
     val patientInfo by patientViewModel.patient.collectAsState()
+//    val previousTiming by patientViewModel.previousDuration.collectAsState()
+//    val latestTiming by patientViewModel.latestDuration.collectAsState()
 
+    // Recreated previousTiming and latestTiming to track state from database fetch instead
     var latestAnalysis by remember { mutableStateOf<TUGAnalysis?>(null) }
     var previousTiming by remember { mutableFloatStateOf(0f) }
     var latestTiming by remember { mutableFloatStateOf(0f) }
     val severity = latestAnalysis?.severity ?: "-"
     val totalTime = latestAnalysis?.timeTaken?.toFloat() ?: 0f
 
+
     LaunchedEffect(Unit) {
         tugViewModel.getLatestTwoDurations()
         tugViewModel.getLatestTUGAssessment()
-        latestAnalysis = tugViewModel.getLatestTugAnalysis()
+        latestAnalysis = tugViewModel.getLatestTugAnalysis()  // ← NEW
     }
 
+//    val latestTwoDurations by patientViewModel.latestTwoDurations.collectAsState()
+//
+//    val latestAssessment by patientViewModel.latestAssessment.collectAsState()
     val latestTwoDurations by tugViewModel.latestTwoDurations.collectAsState()
+
     val latestAssessment by tugViewModel.latestAssessment.collectAsState()
 
-    if (latestTwoDurations.size >= 2) {
-        latestTiming = latestTwoDurations[0]
+    if (latestTwoDurations.size >= 2) { // Ensure there are at least two values fetched
+        latestTiming = latestTwoDurations[0] // Sorted by testId DESC
         previousTiming = latestTwoDurations[1]
     }
 
@@ -91,52 +99,138 @@ fun PatientHomeScreen(
         modifier = modifier
             .fillMaxSize()
             .background(bgColor)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Greeting
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "Welcome back,",
-                fontSize = body,
-                color = Color(0xFF718096)
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = patientInfo?.name ?: "Sophia Tan",
-                fontWeight = ExtraBold,
-                fontSize = Heading1,
-                color = Color.Black
-            )
-        }
-
-        // Core Assessment Card (no medication, no comments)
-        LatestAssessmentResultsCard(
-            latestAssessment = latestAssessment,
-            previousTiming = previousTiming,
-            latestTiming = latestTiming,
-            severity = severity,
-            totalTime = totalTime,
-            showMedicationToggle = false,
-            showComments = false,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        // Take Assessment Button
-        Button(
-            onClick = { navController.navigate("result_screen/TestAssessment") },
-            //onClick = { navController.navigate("gait_assessment_screen") },
-            colors = ButtonDefaults.buttonColors(containerColor = buttonBackgroundColor),
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Record Video",
-                color = DefaultColor,
-                fontSize = Heading1,
-                modifier = Modifier.padding(vertical = 8.dp)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "Welcome back,",
+                    fontSize = body,
+                    color = Color(0xFF718096)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = patientInfo?.name ?: "Sophia Tan",
+                    fontWeight = ExtraBold,
+                    fontSize = Heading1,
+                    color = Color.Black
+                )
+            }
+
+            MissedAssessmentCard(navController)
+
+            LatestAssessmentResultsCard(
+                latestAssessment = latestAssessment,
+                previousTiming = previousTiming,
+                latestTiming = latestTiming,
+                medicationOn = true, // or from ViewModel if you want
+                showMedicationToggle = true,
+                severity = severity,
+                totalTime = totalTime,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
             )
+
         }
+
+        // Optional: HomeIcon(navController)
     }
 }
+
+
+@Composable
+fun MissedAssessmentCard(navController: NavController) {
+    val currentDate = LocalDate.now()
+
+    // Example 1: Missed assessment (before today)
+    val assessmentDate = LocalDate.parse("2025-06-10")
+
+    // Example 2: Assessment due today
+    // val assessmentDate = LocalDate.now()
+
+    // Example 3: Upcoming assessment (after today)
+    // val assessmentDate = LocalDate.parse("2025-06-20")
+
+    val (titleText, dateText, showButton) = when {
+        assessmentDate.isBefore(currentDate) -> Triple(
+            "Missed Assessment",
+            "on 10 June 2025",
+            true
+        )
+        assessmentDate.isEqual(currentDate) -> Triple(
+            "Assessment Due",
+            "Today",
+            true
+        )
+        else -> Triple(
+            "Next Assessment",
+            "on 20 June 2025",
+            false
+        )
+    }
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = cardBackgroundColor)
+    ) {
+        Column {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(25.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = titleText,
+                    fontSize = subheading1,
+                    color = DefaultColor,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = dateText,
+                    fontSize = Heading1,
+                    color = DefaultColor,
+                    fontWeight = ExtraBold,
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            if (showButton) {
+                Button(
+                    onClick = { navController.navigate("gait_assessment_screen") },
+                    colors = ButtonDefaults.buttonColors(containerColor = buttonBackgroundColor),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(0.dp)
+                ) {
+                    Text(
+                        text = "Take Assessment",
+                        color = DefaultColor,
+                        fontSize = Heading1,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+            }
+
+        }
+    }
+//    Button(
+//        onClick = {
+//            navController.navigate("tug_assessment_screen")
+//        }
+//
+//    ) {
+//        Text("Test TUG Assessment")
+//    }
+
+}
+
+
+
+
+
