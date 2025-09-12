@@ -34,132 +34,125 @@ fun ResultScreen(
     tugViewModel: TugDataViewModel,
     modifier: Modifier = Modifier
 ) {
+    var currentPage by remember { mutableStateOf(1) } // 1 = core results, 2 = breakdown
 
-LaunchedEffect(Unit){ // fetch latest TUG assessment (aka the one that was just recorded)
-//    patientViewModel.getLatestTUGAssessment()
-//    patientViewModel.getLatestTwoDurations()
-//    patientViewModel.setAssessmentComment("")
-    tugViewModel.getLatestTUGAssessment()
-    tugViewModel.getLatestTwoDurations()
-    tugViewModel.setAssessmentComment("")
-}
-//    val medicationStatus by patientViewModel.medicationStatus.collectAsState()
-//    val previousTiming by patientViewModel.previousDuration.collectAsState()
-//    val latestTiming by patientViewModel.latestDuration.collectAsState()
-    var previousTiming by remember { mutableFloatStateOf(0f) }
-    var latestTiming by remember { mutableFloatStateOf(0f) }
-//    val comment by patientViewModel.assessmentComment.collectAsState()
+    LaunchedEffect(Unit) {
+        tugViewModel.getLatestTUGAssessment()
+        tugViewModel.getLatestTwoDurations()
+        tugViewModel.setAssessmentComment("")
+    }
 
-    // Local state for toggle, initialized from ViewModel medicationStatus
-//    var isMedicationOn by remember { mutableStateOf(medicationStatus == "ON") }
-
-//    val onMedication by patientViewModel.onMedication.collectAsState()
-//    val latestTugAssessment by patientViewModel.latestAssessment.collectAsState()
-//    val latestTwoDurations by patientViewModel.latestTwoDurations.collectAsState()
     val onMedication by tugViewModel.onMedication.collectAsState()
     val latestTugAssessment by tugViewModel.latestAssessment.collectAsState()
     val latestTwoDurations by tugViewModel.latestTwoDurations.collectAsState()
     val analysisResult by tugViewModel.response.collectAsState()
+
     val severity = analysisResult?.severity ?: "-"
     val totalTime = analysisResult?.tugMetrics?.totalTime ?: 0.0
 
-    if (latestTwoDurations.size >= 2) { // Ensure there are at least two values fetched
+    var previousTiming by remember { mutableFloatStateOf(0f) }
+    var latestTiming by remember { mutableFloatStateOf(0f) }
+
+    if (latestTwoDurations.size >= 2) {
         latestTiming = latestTwoDurations[0]
         previousTiming = latestTwoDurations[1]
     }
 
+    // Medication update local state
+    val hasBeenUpdated = latestTugAssessment?.updateMedication == true
+    var hasUpdatedMedication by remember { mutableStateOf(hasBeenUpdated) }
+    LaunchedEffect(hasBeenUpdated) { hasUpdatedMedication = hasBeenUpdated }
+
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(bgColor),
-        verticalArrangement = Arrangement.Top
+            .background(bgColor)
+            .padding(16.dp)
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
+        when (currentPage) {
+            1 -> {
+                // Page 1 - Core Results
+                CoreResultsCard(
+                    latestAssessment = latestTugAssessment,
+                    previousTiming = previousTiming,
+                    latestTiming = latestTiming,
+                    severity = severity,
+                    totalTime = totalTime.toFloat(),
+                    medicationOn = onMedication,
+                    hasUpdatedMedication = hasUpdatedMedication,
+                    onUpdateMedication = {
+                        if (!hasUpdatedMedication) {
+                            hasUpdatedMedication = true
+                            tugViewModel.setOnMedication(!onMedication)
+                            tugViewModel.updatePostAssessmentOnMedicationStatus(true)
+                            tugViewModel.getLatestTUGAssessment()
+                        }
+                    }
+                )
 
-        LatestAssessmentResultsCard(
-            latestAssessment = latestTugAssessment,
-            previousTiming = previousTiming,
-            latestTiming = latestTiming,
-            medicationOn = onMedication,
-            showMedicationToggle = true,
-            severity = severity,
-            tugMetrics = analysisResult?.tugMetrics,
-            totalTime = totalTime.toFloat(), // cast to Float if needed
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-        )
+                Spacer(modifier = Modifier.height(24.dp))
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-    // Use the database flag to determine if already updated
-        val hasBeenUpdated = latestTugAssessment?.updateMedication == true
-        var hasUpdatedMedication by remember { mutableStateOf(hasBeenUpdated) }
-    // Sync local state with database state using LaunchedEffect
-        LaunchedEffect(hasBeenUpdated) {
-            hasUpdatedMedication = hasBeenUpdated
-        }
-
-        Button(
-            onClick = {
-                if (!hasUpdatedMedication) {
-                    // Update local state immediately
-                    hasUpdatedMedication = true
-
-                    // Update database
-//                    patientViewModel.setOnMedication(!onMedication)
-//                    patientViewModel.updatePostAssessmentOnMedicationStatus(true)
-//                    patientViewModel.getLatestTUGAssessment()
-                    tugViewModel.setOnMedication(!onMedication)
-                    tugViewModel.updatePostAssessmentOnMedicationStatus(true)
-                    tugViewModel.getLatestTUGAssessment()
+                Button(
+                    onClick = { currentPage = 2 },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = buttonBackgroundColor)
+                ) {
+                    Text("Next", fontWeight = FontWeight.Bold)
                 }
-            },
-            enabled = !hasUpdatedMedication, // Use local state
-            colors = ButtonDefaults.buttonColors(
-                containerColor = buttonBackgroundColor,
-                contentColor = DefaultColor,
-                disabledContainerColor = Color(0xFFE0E0E0),
-                disabledContentColor = Color.DarkGray
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Text(
-                text = if (hasUpdatedMedication) "Medication Status Updated" else "Update Medication Status",
-                fontWeight = FontWeight.Bold
-            )
+            }
 
+            2 -> {
+                // Page 2 - Breakdown + Comments
+                TugBreakdownCard(
+                    tugMetrics = analysisResult?.tugMetrics,
+                    latestAssessment = latestTugAssessment
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Button(
+                        onClick = { currentPage = 1 },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
+                    ) {
+                        Text("Back", fontWeight = FontWeight.Bold)
+                    }
+
+                    Button(
+                        onClick = { navController.popBackStack() },
+                        colors = ButtonDefaults.buttonColors(containerColor = buttonBackgroundColor)
+                    ) {
+                        Text("Finish", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-fun LatestAssessmentResultsCard(
+fun CoreResultsCard(
     modifier: Modifier = Modifier,
     latestAssessment: TUGAssessment?,
-    previousTiming: Float = 13f,
+    previousTiming: Float,
     latestTiming: Float,
     severity: String,
     totalTime: Float,
-    tugMetrics: TugMetrics? = null,
-    medicationOn: Boolean? = null,
-    showComments: Boolean = true,
-    showDivider: Boolean = true,
-    showMedicationToggle: Boolean = false,
+    medicationOn: Boolean?,
+    hasUpdatedMedication: Boolean,
+    showUpdateButton: Boolean = true,
+    onUpdateMedication: () -> Unit
 ) {
-
-    val maxVal = maxOf(previousTiming, latestTiming, 30f)
-
     Card(
         colors = CardDefaults.cardColors(containerColor = cardBackgroundColor),
-        modifier = modifier
+        modifier = modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Assessment Result",
+                "Assessment Result",
                 fontSize = subheading1,
                 fontWeight = FontWeight.Bold,
                 color = DefaultColor
@@ -167,7 +160,7 @@ fun LatestAssessmentResultsCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-//
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -181,7 +174,7 @@ fun LatestAssessmentResultsCard(
                 )
                 VerticalDivider()
                 Text(
-                    text = "${latestAssessment?.dateTime ?: "-"}",
+                    text = latestAssessment?.dateTime ?: "-",
                     color = Color.Black,
                     fontSize = body,
                     fontWeight = FontWeight.Medium
@@ -190,55 +183,68 @@ fun LatestAssessmentResultsCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-//
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp)
-            ) {
-                StatusBox(
-                    title = "Severity",
-                    value = severity,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp)
-                )
-
-                if (!showMedicationToggle) {
-                    StatusBox(
-                        title = "Medication",
-                        value = if (latestAssessment != null) {
-                            val isOn = latestAssessment.onMedication
-                            val wasUpdated = latestAssessment.updateMedication
-                            val displayStatus = if (wasUpdated) !isOn else isOn
-                            if (displayStatus) "ON" else "OFF"
-                        } else {
-                            "-"
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
+            // Severity
+            StatusBox(
+                title = "Severity",
+                value = severity,
+                modifier = Modifier.fillMaxWidth()
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Progress bar
             HorizontalProgressBar(
                 previousValue = previousTiming,
-                latestValue = totalTime.toFloat(),
-                maxValue = maxVal,
-                modifier = Modifier.padding(horizontal = 4.dp)
+                latestValue = totalTime,
+                maxValue = maxOf(previousTiming, latestTiming, 30f)
             )
 
-            if (showDivider) {
-                Spacer(modifier = Modifier.height(20.dp))
-                HorizontalDivider(thickness = 1.dp, color = Color.LightGray)
-                Spacer(modifier = Modifier.height(20.dp))
-            }
+            // Only show medication section and button if flag is true
+            if (showUpdateButton) {
+                Spacer(modifier = Modifier.height(16.dp))
+                StatusBox(
+                    title = "Medication",
+                    value = if (medicationOn == true) "ON" else "OFF",
+                    modifier = Modifier.fillMaxWidth()
+                )
 
-            // TUG Breakdown Section
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(
+                    onClick = onUpdateMedication,
+                    enabled = !hasUpdatedMedication,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = buttonBackgroundColor,
+                        contentColor = DefaultColor,
+                        disabledContainerColor = Color(0xFFE0E0E0),
+                        disabledContentColor = Color.DarkGray
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = if (hasUpdatedMedication) "Medication Status Updated" else "Update Medication Status",
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
+
+
+@Composable
+fun TugBreakdownCard(
+    tugMetrics: TugMetrics?,
+    latestAssessment: TUGAssessment?
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = cardBackgroundColor),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "TUG Breakdown",
+                "TUG Breakdown",
                 fontSize = subheading1,
                 fontWeight = FontWeight.Bold,
                 color = DefaultColor
@@ -246,12 +252,7 @@ fun LatestAssessmentResultsCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp)
-            ) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 TugPhaseRow("Sit-to-stand", tugMetrics?.sitToStandTime ?: 0.0)
                 TugPhaseRow("Walk-from-chair", tugMetrics?.walkFromChairTime ?: 0.0)
                 TugPhaseRow("Turn-first", tugMetrics?.turnFirstTime ?: 0.0)
@@ -262,62 +263,202 @@ fun LatestAssessmentResultsCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (showMedicationToggle) {
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = "Medication Status",
-                    fontSize = subheading1,
-                    fontWeight = FontWeight.Bold,
-                    color = DefaultColor
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Surface(
-                    color = buttonBackgroundColor,
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(70.dp)
-                        .padding(vertical = 12.dp),
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Text(
-                            text = if (medicationOn == true) "ON" else "OFF",
-//                            text = if (latestAssessment?.onMedication == true) "ON" else "OFF",
-                            color = DefaultColor
-                        )
-                    }
-                }
-            }
-
-            if (showComments) {
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = "Comments:",
-                    fontSize = subheading1,
-                    fontWeight = FontWeight.Bold,
-                    color = DefaultColor
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                (if (latestAssessment?.patientComments.isNullOrEmpty()) "No comment provided" else latestAssessment?.patientComments)?.let {
-                    Text(
-                        text = it,
-                        color = Color.Black,
-                        fontSize = body
-                    )
-                }
-             }
+            Text(
+                "Comments:",
+                fontSize = subheading1,
+                fontWeight = FontWeight.Bold,
+                color = DefaultColor
+            )
+            Text(
+                text = latestAssessment?.patientComments ?: "No comment provided",
+                color = Color.Black
+            )
         }
     }
 }
+
+//@Composable
+//fun LatestAssessmentResultsCard(
+//    modifier: Modifier = Modifier,
+//    latestAssessment: TUGAssessment?,
+//    previousTiming: Float = 13f,
+//    latestTiming: Float,
+//    severity: String,
+//    totalTime: Float,
+//    tugMetrics: TugMetrics? = null,
+//    medicationOn: Boolean? = null,
+//    showComments: Boolean = true,
+//    showDivider: Boolean = true,
+//    showMedicationToggle: Boolean = false,
+//) {
+//
+//    val maxVal = maxOf(previousTiming, latestTiming, 30f)
+//
+//    Card(
+//        colors = CardDefaults.cardColors(containerColor = cardBackgroundColor),
+//        modifier = modifier
+//    ) {
+//        Column(modifier = Modifier.padding(16.dp)) {
+//            Text(
+//                text = "Assessment Result",
+//                fontSize = subheading1,
+//                fontWeight = FontWeight.Bold,
+//                color = DefaultColor
+//            )
+//
+//            Spacer(modifier = Modifier.height(12.dp))
+//
+////
+//            Row(
+//                verticalAlignment = Alignment.CenterVertically,
+//                horizontalArrangement = Arrangement.spacedBy(12.dp),
+//                modifier = Modifier.fillMaxWidth()
+//            ) {
+//                Text(
+//                    text = "Type: ${if (latestAssessment != null) "TUG" else "-"}",
+//                    color = Color.Black,
+//                    fontSize = body,
+//                    fontWeight = FontWeight.Medium
+//                )
+//                VerticalDivider()
+//                Text(
+//                    text = "${latestAssessment?.dateTime ?: "-"}",
+//                    color = Color.Black,
+//                    fontSize = body,
+//                    fontWeight = FontWeight.Medium
+//                )
+//            }
+//
+//            Spacer(modifier = Modifier.height(16.dp))
+//
+////
+//            Row(
+//                horizontalArrangement = Arrangement.spacedBy(16.dp),
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .padding(horizontal = 4.dp)
+//            ) {
+//                StatusBox(
+//                    title = "Severity",
+//                    value = severity,
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .padding(horizontal = 4.dp)
+//                )
+//
+//                if (!showMedicationToggle) {
+//                    StatusBox(
+//                        title = "Medication",
+//                        value = if (latestAssessment != null) {
+//                            val isOn = latestAssessment.onMedication
+//                            val wasUpdated = latestAssessment.updateMedication
+//                            val displayStatus = if (wasUpdated) !isOn else isOn
+//                            if (displayStatus) "ON" else "OFF"
+//                        } else {
+//                            "-"
+//                        },
+//                        modifier = Modifier.weight(1f)
+//                    )
+//                }
+//            }
+//
+//            Spacer(modifier = Modifier.height(16.dp))
+//
+//            HorizontalProgressBar(
+//                previousValue = previousTiming,
+//                latestValue = totalTime.toFloat(),
+//                maxValue = maxVal,
+//                modifier = Modifier.padding(horizontal = 4.dp)
+//            )
+//
+//            if (showDivider) {
+//                Spacer(modifier = Modifier.height(20.dp))
+//                HorizontalDivider(thickness = 1.dp, color = Color.LightGray)
+//                Spacer(modifier = Modifier.height(20.dp))
+//            }
+//
+//            // TUG Breakdown Section
+//            Text(
+//                text = "TUG Breakdown",
+//                fontSize = subheading1,
+//                fontWeight = FontWeight.Bold,
+//                color = DefaultColor
+//            )
+//
+//            Spacer(modifier = Modifier.height(12.dp))
+//
+//            Column(
+//                verticalArrangement = Arrangement.spacedBy(8.dp),
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .padding(horizontal = 4.dp)
+//            ) {
+//                TugPhaseRow("Sit-to-stand", tugMetrics?.sitToStandTime ?: 0.0)
+//                TugPhaseRow("Walk-from-chair", tugMetrics?.walkFromChairTime ?: 0.0)
+//                TugPhaseRow("Turn-first", tugMetrics?.turnFirstTime ?: 0.0)
+//                TugPhaseRow("Walk-to-chair", tugMetrics?.walkToChairTime ?: 0.0)
+//                TugPhaseRow("Turn-second", tugMetrics?.turnSecondTime ?: 0.0)
+//                TugPhaseRow("Stand-to-sit", tugMetrics?.standToSitTime ?: 0.0)
+//            }
+//
+//            Spacer(modifier = Modifier.height(16.dp))
+//
+//            if (showMedicationToggle) {
+//                Spacer(modifier = Modifier.height(12.dp))
+//
+//                Text(
+//                    text = "Medication Status",
+//                    fontSize = subheading1,
+//                    fontWeight = FontWeight.Bold,
+//                    color = DefaultColor
+//                )
+//
+//                Spacer(modifier = Modifier.height(8.dp))
+//
+//                Surface(
+//                    color = buttonBackgroundColor,
+//                    shape = RoundedCornerShape(8.dp),
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .height(70.dp)
+//                        .padding(vertical = 12.dp),
+//                ) {
+//                    Box(
+//                        contentAlignment = Alignment.Center,
+//                        modifier = Modifier.fillMaxSize()
+//                    ) {
+//                        Text(
+//                            text = if (medicationOn == true) "ON" else "OFF",
+////                            text = if (latestAssessment?.onMedication == true) "ON" else "OFF",
+//                            color = DefaultColor
+//                        )
+//                    }
+//                }
+//            }
+//
+//            if (showComments) {
+//                Spacer(modifier = Modifier.height(16.dp))
+//
+//                Text(
+//                    text = "Comments:",
+//                    fontSize = subheading1,
+//                    fontWeight = FontWeight.Bold,
+//                    color = DefaultColor
+//                )
+//
+//                Spacer(modifier = Modifier.height(8.dp))
+//
+//                (if (latestAssessment?.patientComments.isNullOrEmpty()) "No comment provided" else latestAssessment?.patientComments)?.let {
+//                    Text(
+//                        text = it,
+//                        color = Color.Black,
+//                        fontSize = body
+//                    )
+//                }
+//             }
+//        }
+//    }
+//}
 
 
 @Composable

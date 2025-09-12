@@ -54,7 +54,7 @@ import java.time.LocalDate
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAnalysis
-import com.example.gaitguardian.screens.patient.LatestAssessmentResultsCard
+//import com.example.gaitguardian.screens.patient.LatestAssessmentResultsCard
 import com.example.gaitguardian.viewmodels.TugDataViewModel
 
 
@@ -63,35 +63,29 @@ fun PatientHomeScreen(
     navController: NavController,
     patientViewModel: PatientViewModel,
     tugViewModel: TugDataViewModel,
+    showButton: Boolean = true, // make sure this flag exists
     modifier: Modifier = Modifier
 ) {
     val patientInfo by patientViewModel.patient.collectAsState()
-//    val previousTiming by patientViewModel.previousDuration.collectAsState()
-//    val latestTiming by patientViewModel.latestDuration.collectAsState()
+    val latestTwoDurations by tugViewModel.latestTwoDurations.collectAsState()
+    val latestAssessment by tugViewModel.latestAssessment.collectAsState()
+    val onMedication by tugViewModel.onMedication.collectAsState()
 
-    // Recreated previousTiming and latestTiming to track state from database fetch instead
-    var latestAnalysis by remember { mutableStateOf<TUGAnalysis?>(null) }
     var previousTiming by remember { mutableFloatStateOf(0f) }
     var latestTiming by remember { mutableFloatStateOf(0f) }
+    var latestAnalysis by remember { mutableStateOf<TUGAnalysis?>(null) }
+
     val severity = latestAnalysis?.severity ?: "-"
     val totalTime = latestAnalysis?.timeTaken?.toFloat() ?: 0f
-
 
     LaunchedEffect(Unit) {
         tugViewModel.getLatestTwoDurations()
         tugViewModel.getLatestTUGAssessment()
-        latestAnalysis = tugViewModel.getLatestTugAnalysis()  // ← NEW
+        latestAnalysis = tugViewModel.getLatestTugAnalysis()
     }
 
-//    val latestTwoDurations by patientViewModel.latestTwoDurations.collectAsState()
-//
-//    val latestAssessment by patientViewModel.latestAssessment.collectAsState()
-    val latestTwoDurations by tugViewModel.latestTwoDurations.collectAsState()
-
-    val latestAssessment by tugViewModel.latestAssessment.collectAsState()
-
-    if (latestTwoDurations.size >= 2) { // Ensure there are at least two values fetched
-        latestTiming = latestTwoDurations[0] // Sorted by testId DESC
+    if (latestTwoDurations.size >= 2) {
+        latestTiming = latestTwoDurations[0]
         previousTiming = latestTwoDurations[1]
     }
 
@@ -99,11 +93,10 @@ fun PatientHomeScreen(
         modifier = modifier
             .fillMaxSize()
             .background(bgColor)
+            .padding(16.dp)
     ) {
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(16.dp),
+            modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -122,91 +115,33 @@ fun PatientHomeScreen(
                 )
             }
 
-            MissedAssessmentCard(navController)
-
-            LatestAssessmentResultsCard(
+            // Core Results Card
+            CoreResultsCard(
                 latestAssessment = latestAssessment,
                 previousTiming = previousTiming,
                 latestTiming = latestTiming,
-                medicationOn = true, // or from ViewModel if you want
-                showMedicationToggle = true,
                 severity = severity,
                 totalTime = totalTime,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                medicationOn = onMedication,
+                hasUpdatedMedication = latestAssessment?.updateMedication == true,
+                showUpdateButton = false,
+                onUpdateMedication = {}
             )
-
         }
 
-        // Optional: HomeIcon(navController)
-    }
-}
+        if (showButton) {
+            Spacer(modifier = Modifier.height(16.dp))
 
-
-@Composable
-fun MissedAssessmentCard(navController: NavController) {
-    val currentDate = LocalDate.now()
-
-    // Example 1: Missed assessment (before today)
-    val assessmentDate = LocalDate.parse("2025-06-10")
-
-    // Example 2: Assessment due today
-    // val assessmentDate = LocalDate.now()
-
-    // Example 3: Upcoming assessment (after today)
-    // val assessmentDate = LocalDate.parse("2025-06-20")
-
-    val (titleText, dateText, showButton) = when {
-        assessmentDate.isBefore(currentDate) -> Triple(
-            "Missed Assessment",
-            "on 10 June 2025",
-            true
-        )
-        assessmentDate.isEqual(currentDate) -> Triple(
-            "Assessment Due",
-            "Today",
-            true
-        )
-        else -> Triple(
-            "Next Assessment",
-            "on 20 June 2025",
-            false
-        )
-    }
-
-    Card(
-        colors = CardDefaults.cardColors(containerColor = cardBackgroundColor)
-    ) {
-        Column {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(25.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    text = titleText,
-                    fontSize = subheading1,
-                    color = DefaultColor,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = dateText,
-                    fontSize = Heading1,
-                    color = DefaultColor,
-                    fontWeight = ExtraBold,
-                    textAlign = TextAlign.Center
-                )
-            }
-
-            if (showButton) {
                 Button(
-                    onClick = { navController.navigate("gait_assessment_screen") },
-                    colors = ButtonDefaults.buttonColors(containerColor = buttonBackgroundColor),
+                    //onClick = { navController.navigate("gait_assessment_screen") },
+                    onClick = {navController.navigate("result_screen/TestAssessment") },
+                         colors = ButtonDefaults.buttonColors(containerColor = buttonBackgroundColor),
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(0.dp)
+                    shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
                         text = "Take Assessment",
@@ -215,15 +150,11 @@ fun MissedAssessmentCard(navController: NavController) {
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
                 }
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
+
                 Button(
                     onClick = { navController.navigate("video_test_screen") },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF4CAF50)
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                    modifier = Modifier.fillMaxWidth(), // fills the padded width
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
@@ -234,21 +165,6 @@ fun MissedAssessmentCard(navController: NavController) {
                     )
                 }
             }
-
         }
     }
-//    Button(
-//        onClick = {
-//            navController.navigate("tug_assessment_screen")
-//        }
-//
-//    ) {
-//        Text("Test TUG Assessment")
-//    }
-
 }
-
-
-
-
-
