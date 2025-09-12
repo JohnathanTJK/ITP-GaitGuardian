@@ -43,7 +43,6 @@ import com.example.gaitguardian.data.models.TugResult
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAnalysis
 import com.example.gaitguardian.viewmodels.PatientViewModel
 import com.example.gaitguardian.viewmodels.TugDataViewModel
-import kotlinx.coroutines.delay
 import java.io.File
 
 
@@ -99,6 +98,7 @@ fun LoadingScreen(
                     turnSecond = tugMetrics?.turnSecondTime ?: 0.0,
                     standToSit = tugMetrics?.standToSitTime ?: 0.0
                 )
+                // Wait for database insertion to complete before navigating
                 tugDataViewModel.insertTugAnalysis(analysis)
 
                 if (!patientViewModel.saveVideos.value && videoFile.exists()) {
@@ -229,13 +229,8 @@ private fun convertTugResultToGaitAnalysisResponse(tugResult: TugResult): GaitAn
             turn2Duration = tugMetrics.turnSecondTime
         )
         
-        // Determine severity based on total time
-        val severity = when {
-            tugMetrics.totalTime <= 10.0 -> "Normal"
-            tugMetrics.totalTime <= 20.0 -> "Mild"
-            tugMetrics.totalTime <= 30.0 -> "Moderate"
-            else -> "Severe"
-        }
+        // Use the ML-calculated severity from TugResult instead of hardcoded logic
+        val severity = tugResult.riskAssessment
         
         val processingInfo = ProcessingInfo(
             totalFrames = 100, // Placeholder

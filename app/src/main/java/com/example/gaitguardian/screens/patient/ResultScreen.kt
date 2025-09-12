@@ -21,10 +21,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.gaitguardian.api.TugMetrics
+import com.example.gaitguardian.data.roomDatabase.tug.TUGAnalysis
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessment
 import com.example.gaitguardian.ui.theme.*
 import com.example.gaitguardian.viewmodels.PatientViewModel
 import com.example.gaitguardian.viewmodels.TugDataViewModel
+import android.util.Log
 
 @Composable
 fun ResultScreen(
@@ -36,18 +38,24 @@ fun ResultScreen(
 ) {
     var currentPage by remember { mutableStateOf(1) } // 1 = core results, 2 = breakdown
 
+    // Get severity from database instead of cached response to ensure accuracy
+    var latestAnalysis by remember { mutableStateOf<TUGAnalysis?>(null) }
+
     LaunchedEffect(Unit) {
         tugViewModel.getLatestTUGAssessment()
         tugViewModel.getLatestTwoDurations()
         tugViewModel.setAssessmentComment("")
-    }
+        // Fetch the latest analysis from database to get accurate severity
+        latestAnalysis = tugViewModel.getLatestTugAnalysis()
+        Log.d("ResultScreen", "Latest analysis fetched: severity=${latestAnalysis?.severity}, testId=${latestAnalysis?.testId}")
+}
 
     val onMedication by tugViewModel.onMedication.collectAsState()
     val latestTugAssessment by tugViewModel.latestAssessment.collectAsState()
     val latestTwoDurations by tugViewModel.latestTwoDurations.collectAsState()
     val analysisResult by tugViewModel.response.collectAsState()
-
-    val severity = analysisResult?.severity ?: "-"
+    
+    val severity = latestAnalysis?.severity ?: ""
     val totalTime = analysisResult?.tugMetrics?.totalTime ?: 0.0
 
     var previousTiming by remember { mutableFloatStateOf(0f) }

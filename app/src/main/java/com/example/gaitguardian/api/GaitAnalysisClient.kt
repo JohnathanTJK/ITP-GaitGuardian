@@ -229,8 +229,12 @@ class GaitAnalysisClient(private val context: Context) {
                 (prediction.phase_durations["Walk-To-Chair"]?.toDouble() ?: 0.0)
         val stand = prediction.phase_durations["Stand-To-Sit"]?.toDouble() ?: 0.0
 
-        val label = if (prediction.success) "Analysis completed"
-                    else prediction.error_message ?: "Analysis failed"
+        // Use the actual ML-calculated severity from the prediction
+        val riskAssessment = if (prediction.success) {
+            prediction.severity
+        } else {
+            prediction.error_message ?: "Analysis failed"
+        }
 
         val breakdown: Map<String, Double> = prediction.phase_durations.mapValues { it.value.toDouble() }
 
@@ -239,7 +243,7 @@ class GaitAnalysisClient(private val context: Context) {
             sitToStandDuration  = sit,
             walkingDuration     = walk,
             standToSitDuration  = stand,
-            riskAssessment      = label,
+            riskAssessment      = riskAssessment,
             analysisDate        = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
                                     .format(java.util.Date()),
             phaseBreakdown      = breakdown

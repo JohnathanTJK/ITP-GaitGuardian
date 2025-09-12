@@ -45,6 +45,7 @@ class TugPrediction(private val context: Context) {
         val total_duration_sec: Float,
         val phase_durations: Map<String, Float>,
         val phase_analysis: List<PhaseAnalysis>,
+        val severity: String = "Unknown",
         val success: Boolean,
         val error_message: String? = null
     )
@@ -148,12 +149,18 @@ class TugPrediction(private val context: Context) {
             }
             Log.i(TAG, "Total TUG duration: ${totalDuration}s")
             
+            // Calculate severity using SeverityClassification
+            val tugMetrics = createTugMetricsMap(phaseDurations, totalDuration.toDouble())
+            val severity = SeverityClassification.classifyGaitSeverity(tugMetrics)
+            Log.i(TAG, "Calculated severity: $severity")
+            
             PredictionResult(
                 filename = "pose_landmarks",
                 total_frames = landmarksList.size,
                 total_duration_sec = totalDuration,
                 phase_durations = phaseDurations,
                 phase_analysis = phaseAnalysis,
+                severity = severity,
                 success = true
             )
             
@@ -165,6 +172,7 @@ class TugPrediction(private val context: Context) {
                 total_duration_sec = 0f,
                 phase_durations = emptyMap(),
                 phase_analysis = emptyList(),
+                severity = "Unknown",
                 success = false,
                 error_message = "Processing failed: ${e.message}"
             )
@@ -227,12 +235,18 @@ class TugPrediction(private val context: Context) {
             }
             Log.i(TAG, "Total TUG duration: ${totalDuration}s")
             
+            // Calculate severity using SeverityClassification
+            val tugMetrics = createTugMetricsMap(phaseDurations, totalDuration.toDouble())
+            val severity = SeverityClassification.classifyGaitSeverity(tugMetrics)
+            Log.i(TAG, "Calculated severity: $severity")
+            
             PredictionResult(
                 filename = "python_features",
                 total_frames = features.size,
                 total_duration_sec = totalDuration,
                 phase_durations = phaseDurations,
                 phase_analysis = phaseAnalysis,
+                severity = severity,
                 success = true
             )
             
@@ -244,6 +258,7 @@ class TugPrediction(private val context: Context) {
                 total_duration_sec = 0f,
                 phase_durations = emptyMap(),
                 phase_analysis = emptyList(),
+                severity = "Unknown",
                 success = false,
                 error_message = "Feature processing failed: ${e.message}"
             )
@@ -531,6 +546,21 @@ class TugPrediction(private val context: Context) {
     }
 
     // ===== Utilities =====
+    
+    /**
+     * Create TUG metrics map for severity classification
+     */
+    private fun createTugMetricsMap(phaseDurations: Map<String, Float>, totalTime: Double): Map<String, Double> {
+        return mapOf(
+            "total_time" to totalTime,
+            "walk_from_chair_time" to (phaseDurations["Walk-From-Chair"]?.toDouble() ?: 0.0),
+            "walk_to_chair_time" to (phaseDurations["Walk-To-Chair"]?.toDouble() ?: 0.0),
+            "turn_first_time" to (phaseDurations["Turn-First"]?.toDouble() ?: 0.0),
+            "turn_second_time" to (phaseDurations["Turn-Second"]?.toDouble() ?: 0.0),
+            "sit_to_stand_time" to (phaseDurations["Sit-To-Stand"]?.toDouble() ?: 0.0),
+            "stand_to_sit_time" to (phaseDurations["Stand-To-Sit"]?.toDouble() ?: 0.0)
+        )
+    }
 
     private fun failResult(name: String, msg: String): PredictionResult =
         PredictionResult(
@@ -539,6 +569,7 @@ class TugPrediction(private val context: Context) {
             total_duration_sec = 0f,
             phase_durations = emptyMap(),
             phase_analysis = emptyList(),
+            severity = "Unknown",
             success = false,
             error_message = msg
         )

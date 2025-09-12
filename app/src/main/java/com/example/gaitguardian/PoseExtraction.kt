@@ -76,7 +76,6 @@ class PoseExtraction(private val context: Context) {
             Log.d(TAG, "🔧 Creating PoseLandmarker from options...")
             poseLandmarker = PoseLandmarker.createFromOptions(context, options)
             Log.e(TAG, "MediaPipe PoseLandmarker initialized successfully")
-            Log.e(TAG, "PYTHON-MATCHED Configuration: VIDEO mode, minDetection=0.5, minPresence=0.5, minTracking=0.5, numPoses=1")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to initialize MediaPipe PoseLandmarker", e)
             Log.e(TAG, "Error details: ${e.message}")
@@ -111,6 +110,10 @@ class PoseExtraction(private val context: Context) {
             Log.d(TAG, "Video FPS detection - Raw FPS string: '$frameRateString', Parsed FPS: $frameRate")
             Log.d(TAG, "Video metadata - Duration: ${duration}ms, Total frames: $totalFrames, Frame rate: ${frameRate}fps")
             Log.e(TAG, "Duration: ${duration}ms, FPS: $frameRate, TotalFrames: $totalFrames")
+            
+            // Log frame extraction method for debugging
+            val useFrameIndex = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P
+            Log.e(TAG, "Frame extraction method: ${if (useFrameIndex) "getFrameAtIndex() [API 28+]" else "getFrameAtTime() [Pre-API 28]"}")
 
             val landmarksList = mutableListOf<List<NormalizedLandmark>>()
             
@@ -131,18 +134,44 @@ class PoseExtraction(private val context: Context) {
                     // CRITICAL: Use strictly increasing timestamp to avoid MediaPipe errors
                     val timestampMs = startTimestampMs + (frameNumber * frameDurationMs)
                     
-                    val timeUs = (frameNumber * 1000000L / frameRate).toLong()
-                    // CRITICAL: Use OPTION_CLOSEST (not OPTION_CLOSEST_SYNC) to get sequential frames like Python
-                    var bitmap = mediaMetadataRetriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST)
+                    // OPTIMIZATION: Use getFrameAtIndex() for exact frame extraction on API 28+
+                    var bitmap = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                        // API 28+ - Use frame-perfect extraction (like Python's cap.read())
+                        try {
+                            mediaMetadataRetriever.getFrameAtIndex(frameNumber)
+                        } catch (e: Exception) {
+                            Log.w(TAG, "getFrameAtIndex failed for frame $frameNumber, falling back to getFrameAtTime: ${e.message}")
+                            // Fallback to time-based extraction if index fails
+                            val timeUs = (frameNumber * 1000000L / frameRate).toLong()
+                            mediaMetadataRetriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST)
+                        }
+                    } else {
+                        // Pre-API 28 - Use time-based extraction
+                        val timeUs = (frameNumber * 1000000L / frameRate).toLong()
+                        mediaMetadataRetriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST)
+                    }
                     
-                    // Second-chance retry if frame extraction fails
+                    // Second-chance retry if frame extraction fails (for both methods)
                     if (bitmap == null && frameNumber > 0) {
-                        val retryTimeUs = timeUs + (500000L / frameRate).toLong()
-                        bitmap = mediaMetadataRetriever.getFrameAtTime(retryTimeUs, MediaMetadataRetriever.OPTION_CLOSEST)
+                        bitmap = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                            // Retry with previous frame index
+                            try {
+                                mediaMetadataRetriever.getFrameAtIndex(frameNumber - 1)
+                            } catch (e: Exception) {
+                                // Final fallback to time-based
+                                val retryTimeUs = ((frameNumber - 1) * 1000000L / frameRate).toLong()
+                                mediaMetadataRetriever.getFrameAtTime(retryTimeUs, MediaMetadataRetriever.OPTION_CLOSEST)
+                            }
+                        } else {
+                            // Retry with slightly offset time
+                            val retryTimeUs = (frameNumber * 1000000L / frameRate).toLong() + (500000L / frameRate).toLong()
+                            mediaMetadataRetriever.getFrameAtTime(retryTimeUs, MediaMetadataRetriever.OPTION_CLOSEST)
+                        }
                     }
                     
                     if (frameNumber % 100 == 0) {
-                        Log.d(TAG, "Processing frame $frameNumber/$totalFrames (timestamp=${timestampMs}ms)")
+                        val extractionMethod = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) "getFrameAtIndex" else "getFrameAtTime"
+                        Log.d(TAG, "Processing frame $frameNumber/$totalFrames (timestamp=${timestampMs}ms, method=$extractionMethod)")
                     }
                     
                     bitmap?.let { frame ->
@@ -240,10 +269,7 @@ class PoseExtraction(private val context: Context) {
             
             if (successfulFrames == 0) {
                 Log.e(TAG, "NO POSES DETECTED IN ANY FRAME - Check video quality, lighting, and person visibility")
-            } else {
-                // Export first few frames to CSV format for comparison
-                exportLandmarksToCSV(landmarksList, frameRate)
-            }
+            } 
             
             VideoLandmarksResult(
                 landmarks = landmarksList,
@@ -258,37 +284,6 @@ class PoseExtraction(private val context: Context) {
         }
     }
     
-    /**
-     * Export landmarks to CSV format
-     */
-    private fun exportLandmarksToCSV(landmarksList: List<List<NormalizedLandmark>>, fps: Float) {
-        try {
-            val outputDir = File(context.filesDir, "android_landmarks_debug")
-            outputDir.mkdirs()
-            val csvFile = File(outputDir, "android_landmarks_${System.currentTimeMillis()}.csv")
-            
-            val writer = FileWriter(csvFile)
-            writer.append("frame,landmark_id,x,y,z,visibility\n")
-            
-            // Export every 100th frame for comparison
-            for (frameIndex in landmarksList.indices) {
-                if (frameIndex % 100 == 0 && landmarksList[frameIndex].isNotEmpty()) {
-                    val landmarks = landmarksList[frameIndex]
-                    for (landmarkIndex in landmarks.indices) {
-                        val landmark = landmarks[landmarkIndex]
-                        writer.append("$frameIndex,$landmarkIndex,${landmark.x()},${landmark.y()},${landmark.z()},${landmark.visibility().orElse(1.0f)}\n")
-                    }
-                }
-            }
-            
-            writer.close()
-            Log.e(TAG, "EXPORTED LANDMARKS CSV for comparison: ${csvFile.absolutePath}")
-            Log.e(TAG, "File contains every 100th frame of landmarks in Python-compatible format")
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to export landmarks CSV", e)
-        }
-    }
     
     fun cleanup() {
         try {
