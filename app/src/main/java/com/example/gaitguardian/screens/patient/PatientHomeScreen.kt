@@ -53,7 +53,9 @@ import com.example.gaitguardian.viewmodels.PatientViewModel
 import java.time.LocalDate
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAnalysis
+import com.example.gaitguardian.ui.theme.ButtonActive
 //import com.example.gaitguardian.screens.patient.LatestAssessmentResultsCard
 import com.example.gaitguardian.viewmodels.TugDataViewModel
 
@@ -89,17 +91,19 @@ fun PatientHomeScreen(
         previousTiming = latestTwoDurations[1]
     }
 
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
             .background(bgColor)
-            .padding(16.dp)
+            .padding(16.dp),
+        contentAlignment = Alignment.Center // center everything vertically & horizontally
     ) {
         Column(
-            modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth()
         ) {
+            // Welcome Text
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = "Welcome back,",
@@ -127,42 +131,44 @@ fun PatientHomeScreen(
                 showUpdateButton = false,
                 onUpdateMedication = {}
             )
-        }
 
-        if (showButton) {
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Button(
-                    //onClick = { navController.navigate("gait_assessment_screen") },
-                    onClick = {navController.navigate("result_screen/TestAssessment") },
-                         colors = ButtonDefaults.buttonColors(containerColor = buttonBackgroundColor),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp)
+            if (showButton) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(
-                        text = "Take Assessment",
-                        color = DefaultColor,
-                        fontSize = Heading1,
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    )
-                }
+                    Button(
+                        //onClick = { navController.navigate("gait_assessment_screen") },
+                        onClick = { navController.navigate("result_screen/TestAssessment") },
+                        colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(60.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "Record Video",
+                            color = DefaultColor,
+                            fontSize = Heading1,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
 
-                Button(
-                    onClick = { navController.navigate("video_test_screen") },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                    modifier = Modifier.fillMaxWidth(), // fills the padded width
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        text = "Test Video Analysis",
-                        color = Color.White,
-                        fontSize = body,
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    )
+                    Button(
+                        onClick = { navController.navigate("video_test_screen") },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(60.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "Test Video Analysis",
+                            color = Color.White,
+                            fontSize = Heading1,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }

@@ -54,7 +54,7 @@ fun ResultScreen(
     val latestTugAssessment by tugViewModel.latestAssessment.collectAsState()
     val latestTwoDurations by tugViewModel.latestTwoDurations.collectAsState()
     val analysisResult by tugViewModel.response.collectAsState()
-    
+
     val severity = latestAnalysis?.severity ?: ""
     val totalTime = analysisResult?.tugMetrics?.totalTime ?: 0.0
 
@@ -71,12 +71,20 @@ fun ResultScreen(
     var hasUpdatedMedication by remember { mutableStateOf(hasBeenUpdated) }
     LaunchedEffect(hasBeenUpdated) { hasUpdatedMedication = hasBeenUpdated }
 
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
             .background(bgColor)
-            .padding(16.dp)
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
     ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+
+        ) {
+
         when (currentPage) {
             1 -> {
                 // Page 1 - Core Results
@@ -102,12 +110,22 @@ fun ResultScreen(
 
                 Button(
                     onClick = { currentPage = 2 },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = buttonBackgroundColor)
+                    colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp),
+                    shape = RoundedCornerShape(12.dp)
+
                 ) {
-                    Text("Next", fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "Next",
+                        color = DefaultColor,
+                        fontSize = Heading1,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
+
 
             2 -> {
                 // Page 2 - Breakdown + Comments
@@ -124,17 +142,20 @@ fun ResultScreen(
                 ) {
                     Button(
                         onClick = { currentPage = 1 },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
+                        colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(60.dp),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Back", fontWeight = FontWeight.Bold)
+                        Text(
+                            text = "Back",
+                            color = DefaultColor,
+                            fontSize = Heading1,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
-
-                    Button(
-                        onClick = { navController.popBackStack() },
-                        colors = ButtonDefaults.buttonColors(containerColor = buttonBackgroundColor)
-                    ) {
-                        Text("Finish", fontWeight = FontWeight.Bold)
-                    }
+                }
                 }
             }
         }
