@@ -138,8 +138,8 @@ fun PatientHomeScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Button(
-                        //onClick = { navController.navigate("gait_assessment_screen") },
-                        onClick = { navController.navigate("result_screen/TestAssessment") },
+                        onClick = { navController.navigate("gait_assessment_screen") },
+                        //onClick = { navController.navigate("result_screen/TestAssessment") },
                         colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
                         modifier = Modifier
                             .fillMaxWidth()
