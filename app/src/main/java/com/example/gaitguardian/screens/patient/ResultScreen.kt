@@ -27,6 +27,10 @@ import com.example.gaitguardian.ui.theme.*
 import com.example.gaitguardian.viewmodels.PatientViewModel
 import com.example.gaitguardian.viewmodels.TugDataViewModel
 import android.util.Log
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 
 @Composable
 fun ResultScreen(
@@ -181,7 +185,7 @@ fun CoreResultsCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                "Assessment Result",
+                "Latest Assessment Result",
                 fontSize = subheading1,
                 fontWeight = FontWeight.Bold,
                 color = DefaultColor
@@ -544,7 +548,8 @@ fun HorizontalProgressBar(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(40.dp)
+                .height(60.dp)
+//                .height(40.dp)
                 .clip(RoundedCornerShape(8.dp)),
             contentAlignment = Alignment.Center
         ) {
@@ -565,18 +570,61 @@ fun HorizontalProgressBar(
                     )
                 }
             } else {
+//                val difference = latestValue - previousValue
+//                val (barColor, statusText) = when {
+//                    difference < 0f -> {
+//                        Color(0xFF4CAF50) to "You beat your previous time by:\n ${"%.1f".format(kotlin.math.abs(difference))}s"
+//                    }
+//                    difference > 0f -> {
+//                        Color(0xFFE53935) to "Missed your previous timing by:\n ${"%.1f".format(kotlin.math.abs(difference))}s"
+//                    }
+//                    else -> {
+//                        Color(0xFFFFCC80) to "Stable performance"
+//                    }
+//                }
+//                Box(
+//                    modifier = Modifier
+//                        .fillMaxSize()
+//                        .background(barColor),
+//                    contentAlignment = Alignment.Center
+//                ) {
+//                    Text(
+//                        text = statusText,
+//                        color = Color.White,
+//                        fontSize = 16.sp,
+////                        maxLines = 1,
+////                        overflow = TextOverflow.Ellipsis
+//                        maxLines = 2,
+//                        lineHeight = 20.sp
+//                    )
+//                }
                 val difference = latestValue - previousValue
                 val (barColor, statusText) = when {
                     difference < 0f -> {
-                        Color(0xFF4CAF50) to "Improve by: ${"%.1f".format(kotlin.math.abs(difference))}s"
+                        Color(0xFF4CAF50) to buildAnnotatedString {
+                            append("You beat your previous timing by:\n")
+                            withStyle(style = SpanStyle(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 20.sp
+                            )
+                            ) {
+                                append("${"%.1f".format(kotlin.math.abs(difference))}s")
+                            }
+                        }
                     }
                     difference > 0f -> {
-                        Color(0xFFE53935) to "Worsen by: ${"%.1f".format(kotlin.math.abs(difference))}s"
+                        Color(0xFFE53935) to buildAnnotatedString {
+                            append("You missed your previous timing by:\n")
+                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, fontSize = 20.sp)) {
+                                append("${"%.1f".format(kotlin.math.abs(difference))}s")
+                            }
+                        }
                     }
                     else -> {
-                        Color(0xFFFFCC80) to "Stable performance"
+                        Color(0xFFFFCC80) to AnnotatedString("Stable performance")
                     }
                 }
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -587,8 +635,8 @@ fun HorizontalProgressBar(
                         text = statusText,
                         color = Color.White,
                         fontSize = 16.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        lineHeight = 22.sp,
+                        textAlign = TextAlign.Center
                     )
                 }
             }
