@@ -286,12 +286,12 @@ fun TugBreakdownCard(
             Spacer(modifier = Modifier.height(12.dp))
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                TugPhaseRow("Sit-to-stand", tugMetrics?.sitToStandTime ?: 0.0)
-                TugPhaseRow("Walk-from-chair", tugMetrics?.walkFromChairTime ?: 0.0)
-                TugPhaseRow("Turn-first", tugMetrics?.turnFirstTime ?: 0.0)
-                TugPhaseRow("Walk-to-chair", tugMetrics?.walkToChairTime ?: 0.0)
-                TugPhaseRow("Turn-second", tugMetrics?.turnSecondTime ?: 0.0)
-                TugPhaseRow("Stand-to-sit", tugMetrics?.standToSitTime ?: 0.0)
+                TugPhaseRow("Sit-to-stand", tugMetrics?.sitToStandTime ?: 1.2)
+                TugPhaseRow("Walk-from-chair", tugMetrics?.walkFromChairTime ?: 0.7)
+                TugPhaseRow("Turn-first", tugMetrics?.turnFirstTime ?: 1.3)
+                TugPhaseRow("Walk-to-chair", tugMetrics?.walkToChairTime ?: 0.3)
+                TugPhaseRow("Turn-second", tugMetrics?.turnSecondTime ?: 1.1)
+                TugPhaseRow("Stand-to-sit", tugMetrics?.standToSitTime ?: 0.8)
             }
 
             Spacer(modifier = Modifier.height(16.dp))

@@ -186,6 +186,8 @@ fun LoadingScreen(
             Button(
                 onClick = {
                     navController.navigate("demo_result_screen")
+                    navController.navigate("result_screen/${assessmentTitle}")
+
                 }
             ) {
                 Text("Skip to Results")

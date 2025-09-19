@@ -154,21 +154,21 @@ fun PatientHomeScreen(
                         )
                     }
 
-                    Button(
-                        onClick = { navController.navigate("video_test_screen") },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(60.dp),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(
-                            text = "Test Video Analysis",
-                            color = Color.White,
-                            fontSize = Heading1,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+//                    Button(
+//                        onClick = { navController.navigate("video_test_screen") },
+//                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+//                        modifier = Modifier
+//                            .fillMaxWidth()
+//                            .height(60.dp),
+//                        shape = RoundedCornerShape(12.dp)
+//                    ) {
+//                        Text(
+//                            text = "Test Video Analysis",
+//                            color = Color.White,
+//                            fontSize = Heading1,
+//                            fontWeight = FontWeight.Bold
+//                        )
+//                    }
                 }
             }
         }
