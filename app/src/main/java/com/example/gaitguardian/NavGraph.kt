@@ -367,9 +367,6 @@ fun NavGraph(
 
                         }
                     }
-                    composable("demo_result_screen") {
-                        DemoResultScreen(navController)
-                    }
                     composable("result_screen/{assessmentTitle}") { backStackEntry ->
                         val time = backStackEntry.arguments?.getString("assessmentTitle")
                         if (time != null) {
