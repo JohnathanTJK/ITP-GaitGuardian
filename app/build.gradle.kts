@@ -66,6 +66,7 @@ dependencies {
     implementation(libs.core)
     implementation(libs.pose.detection.accurate)
     implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.compose.foundation)
 //    implementation(libs.ads.mobile.sdk)
 //    implementation(libs.androidx.room.compiler)
 //    implementation(libs.androidx.room.common.jvm)

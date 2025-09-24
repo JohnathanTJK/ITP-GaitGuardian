@@ -268,7 +268,6 @@ fun NavGraph(
                         if (testId != null) {
                             ClinicianDetailedPatientViewScreen(
                                 navController,
-                                clinicianViewModel,
                                 tugDataViewModel,
                                 testId
                             )
@@ -276,7 +275,7 @@ fun NavGraph(
                     }
                     composable("performance_screen")
                     {
-                        PerformanceScreen()
+                        PerformanceScreen(tugDataViewModel)
                     }
                     composable("camera_screen/{assessmentTitle}") { backStackEntry ->
                         val assessmentTitle = backStackEntry.arguments?.getString("assessmentTitle")

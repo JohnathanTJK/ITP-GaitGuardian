@@ -3,6 +3,7 @@ package com.example.gaitguardian.screens.clinician
 import android.content.Context
 import android.content.Intent
 import android.os.Environment
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.navigation.NavController
 import com.example.gaitguardian.data.roomDatabase.patient.Patient
+import com.example.gaitguardian.data.roomDatabase.tug.TUGAnalysis
 import com.example.gaitguardian.data.roomDatabase.tug.subtaskDuration
 import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.ui.theme.buttonBackgroundColor
@@ -75,7 +77,6 @@ import java.io.File
 @Composable
 fun ClinicianDetailedPatientViewScreen(
     navController: NavController,
-    clinicianViewModel: ClinicianViewModel,
     tugViewModel: TugDataViewModel,
     testId: Int,
     modifier: Modifier = Modifier
@@ -86,7 +87,7 @@ fun ClinicianDetailedPatientViewScreen(
         tugViewModel.getSubtaskById(testId)
     }
 
-
+    val allSubtasks by tugViewModel.allTUGAnalysis.collectAsState()
     val assessment by tugViewModel.selectedTUGAssessment.collectAsState()
     val subtaskDuration by tugViewModel.subtaskDuration.collectAsState()
 
@@ -276,7 +277,7 @@ fun ClinicianDetailedPatientViewScreen(
                 )
             }
 
-            JetpackComposeBasicLineChart()
+            JetpackComposeBasicLineChart(subtasks=allSubtasks)
             Box(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
@@ -512,15 +513,20 @@ fun TUGsubTasksList(
 
 
 @Composable
-fun JetpackComposeBasicLineChart(modifier: Modifier = Modifier) {
+fun JetpackComposeBasicLineChart(subtasks: List<TUGAnalysis>, modifier: Modifier = Modifier) {
     val modelProducer = remember { CartesianChartModelProducer() }
-
     LaunchedEffect(Unit) {
+        // Extract X and Y values
+        val xValues = (1..subtasks.size).toList()                 // [1, 2, 3, ...]
+        val yValues = subtasks.map { it.timeTaken.toFloat() }     // [timeTaken values]
+
         modelProducer.runTransaction {
             lineSeries {
                 series(
-                    listOf(1, 2, 3, 4, 5, 6),  // TUG Tests # / X values
-                    listOf(13, 8, 7, 12, 0, 1)       // Time Taken / Y Values
+                    xValues,
+                    yValues
+//                    listOf(1, 2, 3, 4, 5, 6),  // TUG Tests # / X values
+//                    listOf(13, 8, 7, 12, 0, 1)       // Time Taken / Y Values
                 )
             }
         }
