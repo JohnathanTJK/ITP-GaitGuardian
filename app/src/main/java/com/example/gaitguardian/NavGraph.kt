@@ -49,7 +49,6 @@ import com.example.gaitguardian.screens.clinician.ClinicianHomeScreen
 import com.example.gaitguardian.screens.clinician.PerformanceScreen
 import com.example.gaitguardian.screens.clinician.PinEntryExample
 import com.example.gaitguardian.screens.patient.AssessmentInfoScreen
-import com.example.gaitguardian.screens.patient.DemoResultScreen
 import com.example.gaitguardian.screens.patient.GaitAssessmentScreen
 import com.example.gaitguardian.screens.patient.LoadingScreen
 import com.example.gaitguardian.screens.patient.ManageVideoPrivacyScreen
