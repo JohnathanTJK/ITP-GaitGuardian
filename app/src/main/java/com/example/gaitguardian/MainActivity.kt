@@ -1,7 +1,11 @@
 package com.example.gaitguardian
 
+import android.app.NotificationChannel
+import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -28,7 +32,21 @@ class MainActivity : ComponentActivity() {
             )
         }
 //        enableEdgeToEdge()
-
+        // Notification channel + permission
+        createNotificationChannel() // must be called once
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                    1001 // request code
+                )
+            }
+        }
         // Initialize ViewModel with the Factory
         val patientViewModelFactory = PatientViewModel.PatientViewModelFactory(
             (application as GaitGuardian).patientRepository,
@@ -76,5 +94,19 @@ class MainActivity : ComponentActivity() {
             android.Manifest.permission.CAMERA,
             android.Manifest.permission.RECORD_AUDIO
         )
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                NotificationService.SEVERITY_ALERT_CHANNEL_ID,
+                "GaitGuardian",
+                android.app.NotificationManager.IMPORTANCE_HIGH
+            )
+            channel.description = "Used to notify when condition deteriorates"
+
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
     }
 }
