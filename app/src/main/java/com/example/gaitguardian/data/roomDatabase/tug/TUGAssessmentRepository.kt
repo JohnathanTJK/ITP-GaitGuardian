@@ -43,12 +43,16 @@ class TUGAssessmentRepository(private val tugDao: TugDao, private val tugAnalysi
     }
 
     // ML Analysis
+//    @WorkerThread
+//    suspend fun insertTugAnalysis(tugAnalysis: TUGAnalysis) {
+//        tugAnalysisDao.insertNewTUGAnalysis(tugAnalysis)
+//    }
     @WorkerThread
-    suspend fun insertTugAnalysis(tugAnalysis: TUGAnalysis) {
-        tugAnalysisDao.insertNewTUGAnalysis(tugAnalysis)
+    suspend fun insertTugAnalysis(tugAnalysis: TUGAnalysis): Long {
+        return tugAnalysisDao.insertNewTUGAnalysis(tugAnalysis)
     }
     @WorkerThread
-    suspend fun getSubtaskById(id: Int): subtaskDuration {
+    suspend fun getSubtaskById(id: Int): subtaskDuration? {
         return tugAnalysisDao.getSubtaskById(id)
     }
     @WorkerThread

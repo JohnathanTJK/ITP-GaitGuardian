@@ -73,11 +73,12 @@ class MainActivity : ComponentActivity() {
         val clinicianViewModel =
             ViewModelProvider(this, clinicianViewModelFactory)[ClinicianViewModel::class.java]
         // TUG ViewModel
-        val TugViewModelFactory = TugDataViewModel.TugDataViewModelFactory(
-            (application as GaitGuardian).tugRepository
+        val tugViewModelFactory = TugDataViewModel.TugDataViewModelFactory(
+            (application as GaitGuardian).tugRepository,
+            (application as GaitGuardian).appPreferencesRepository
         )
         val tugDataViewModel =
-            ViewModelProvider(this, TugViewModelFactory)[TugDataViewModel::class.java]
+            ViewModelProvider(this, tugViewModelFactory)[TugDataViewModel::class.java]
         setContent {
             GaitGuardianTheme {
                 val navController = rememberNavController()

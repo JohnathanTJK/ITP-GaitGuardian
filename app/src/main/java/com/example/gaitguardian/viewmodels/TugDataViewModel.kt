@@ -1,6 +1,9 @@
 package com.example.gaitguardian.viewmodels
 
 import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -9,12 +12,15 @@ import com.example.gaitguardian.data.roomDatabase.tug.TUGAnalysis
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessment
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessmentRepository
 import com.example.gaitguardian.data.roomDatabase.tug.subtaskDuration
+import com.example.gaitguardian.data.sharedPreferences.AppPreferencesRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class TugDataViewModel(private val tugRepository: TUGAssessmentRepository) : ViewModel() {
+class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, private val appPreferencesRepository: AppPreferencesRepository) : ViewModel() {
     init {
         viewModelScope.launch {
             tugRepository.allTUGAssessments.collect { tugList ->
@@ -130,8 +136,11 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository) : Vie
     private val _allTUGAnalysis = MutableStateFlow<List<TUGAnalysis>>(emptyList())
     val allTUGAnalysis: StateFlow<List<TUGAnalysis>> = _allTUGAnalysis
 
+    var lastInsertedId by mutableStateOf<Long?>(null)
+        private set
     suspend fun insertTugAnalysis(tugAnalysis: TUGAnalysis) {
-        tugRepository.insertTugAnalysis(tugAnalysis)
+        val id = tugRepository.insertTugAnalysis(tugAnalysis)
+        lastInsertedId = id
     }
 
     private val _subtaskDuration = MutableStateFlow<subtaskDuration?>(null)
@@ -153,13 +162,30 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository) : Vie
     suspend fun getLatestTugAnalysis(): TUGAnalysis? {
         return tugRepository.getLatestTugAnalysis()
     }
+
+    // Notification Storing of IDs
+    fun saveAssessmentIDsforNotifications(testId: Int) {
+        viewModelScope.launch {
+            appPreferencesRepository.addAssessmentId(testId)
+        }
+    }
+    // StateFlow of List<Int>
+    val pendingAssessmentIds: StateFlow<List<Int>> =
+        appPreferencesRepository.getPendingAssessmentsIds()
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                emptyList() // initial value
+            )
+
     // For creating the VM in MainActivity
     class TugDataViewModelFactory(private val tugRepository: TUGAssessmentRepository,
+        private val appPreferencesRepository: AppPreferencesRepository
     ) :
         ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(TugDataViewModel::class.java)) {
-                @Suppress("UNCHECKED_CAST") return TugDataViewModel(tugRepository) as T
+                @Suppress("UNCHECKED_CAST") return TugDataViewModel(tugRepository, appPreferencesRepository) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }
