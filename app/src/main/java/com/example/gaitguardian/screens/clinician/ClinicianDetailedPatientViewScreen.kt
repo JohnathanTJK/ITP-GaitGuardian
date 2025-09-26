@@ -277,7 +277,10 @@ fun ClinicianDetailedPatientViewScreen(
                 )
             }
 
-            JetpackComposeBasicLineChart(subtasks=allSubtasks)
+            if (allSubtasks.isNotEmpty())
+            {
+                JetpackComposeBasicLineChart(subtasks=allSubtasks)
+            }
             Box(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center

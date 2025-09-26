@@ -15,14 +15,24 @@ class NotificationService(
 
     fun showNotification() {
         // Intent to open MainActivity when notification is tapped
-        val activityIntent = Intent(context, MainActivity::class.java)
+//        val activityIntent = Intent(context, MainActivity::class.java)
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("assessmentId", 2)
+        }
+//        val activityPendingIntent = PendingIntent.getActivity(
+//            context,
+//            0,
+//            activityIntent,
+//            PendingIntent.FLAG_IMMUTABLE
+//        )
+
         val activityPendingIntent = PendingIntent.getActivity(
             context,
-            0,
-            activityIntent,
-            PendingIntent.FLAG_IMMUTABLE
+            3,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-
         // Build the notification
         val notification = NotificationCompat.Builder(context, SEVERITY_ALERT_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)

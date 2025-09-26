@@ -30,6 +30,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -114,6 +115,7 @@ fun NavTopBar(
 fun NavGraph(
     navController: NavHostController,
 //    modifier: Modifier = Modifier,
+    initialId: Int?,
     patientViewModel: PatientViewModel,
     clinicianViewModel: ClinicianViewModel,
     tugDataViewModel: TugDataViewModel
@@ -152,6 +154,15 @@ fun NavGraph(
                 }
             }
             hasNavigated = true
+        }
+    }
+    // Check if initialId exits ( Notification Tracking , use the Id provided to direct to detailed screen directly
+    LaunchedEffect(initialId)
+    {
+        if (initialId != null) {
+            navController.navigate("clinician_detailed_patient_view_screen/$initialId") {
+                launchSingleTop = true
+            }
         }
     }
     if (currentDestination == "splash_screen") {

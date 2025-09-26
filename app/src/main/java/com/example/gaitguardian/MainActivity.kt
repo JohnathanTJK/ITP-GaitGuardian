@@ -2,13 +2,13 @@ package com.example.gaitguardian
 
 import android.app.NotificationChannel
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.mutableStateOf
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
@@ -18,8 +18,16 @@ import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import com.example.gaitguardian.viewmodels.PatientViewModel
 import com.example.gaitguardian.viewmodels.TugDataViewModel
 import com.example.gaitguardian.api.TestApiConnection
+import kotlinx.coroutines.flow.StateFlow
 
 class MainActivity : ComponentActivity() {
+    private val _assessmentId = mutableStateOf<Int?>(null)
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        _assessmentId.value = intent.getIntExtra("assessmentId", -1)
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -32,6 +40,7 @@ class MainActivity : ComponentActivity() {
             )
         }
 //        enableEdgeToEdge()
+        // Notification Intent Retrieval
         // Notification channel + permission
         createNotificationChannel() // must be called once
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -47,6 +56,8 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+        _assessmentId.value = intent?.getIntExtra("assessmentId", -1)?.takeIf { it != -1 }
+
         // Initialize ViewModel with the Factory
         val patientViewModelFactory = PatientViewModel.PatientViewModelFactory(
             (application as GaitGuardian).patientRepository,
@@ -72,6 +83,7 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 NavGraph(
                     navController = navController,
+                    initialId = _assessmentId.value,
                     patientViewModel = patientViewModel,
                     clinicianViewModel = clinicianViewModel,
                     tugDataViewModel = tugDataViewModel
