@@ -68,9 +68,12 @@ fun ClinicianHomeScreen(
 ) {
     val context = LocalContext.current
     val pendingIds by tugViewModel.pendingAssessmentIds.collectAsState(initial = emptyList())
+
     LaunchedEffect(Unit) {
         Log.d("Clinician","this is ${pendingIds}")
-        NotificationService(context,tugViewModel).showNotification()
+        pendingIds.forEach { testId ->
+            NotificationService(context).showNotification(testId)
+        }
     }
     // Start: Patient ViewModel testing
     val patientInfo by patientViewModel.patient.collectAsState()

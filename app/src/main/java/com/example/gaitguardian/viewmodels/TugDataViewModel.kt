@@ -169,6 +169,11 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, priva
             appPreferencesRepository.addAssessmentId(testId)
         }
     }
+    fun clearAssessmentIDsforNotifications(testId: Int) {
+        viewModelScope.launch {
+            appPreferencesRepository.removeAssessmentId(testId)
+        }
+    }
     // StateFlow of List<Int>
     val pendingAssessmentIds: StateFlow<List<Int>> =
         appPreferencesRepository.getPendingAssessmentsIds()
