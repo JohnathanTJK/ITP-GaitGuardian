@@ -1,28 +1,18 @@
 package com.example.gaitguardian.screens.patient
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,27 +26,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight.Companion.ExtraBold
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.gaitguardian.ui.theme.DefaultColor
 import com.example.gaitguardian.ui.theme.Heading1
 import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.ui.theme.body
-import com.example.gaitguardian.ui.theme.boxShape
-import com.example.gaitguardian.ui.theme.buttonBackgroundColor
-import com.example.gaitguardian.ui.theme.cardBackgroundColor
-import com.example.gaitguardian.ui.theme.homeIconSize
-import com.example.gaitguardian.ui.theme.severityBoxColor
-import com.example.gaitguardian.ui.theme.subheading1
 import com.example.gaitguardian.viewmodels.PatientViewModel
-import java.time.LocalDate
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.window.Dialog
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAnalysis
 import com.example.gaitguardian.ui.theme.ButtonActive
-//import com.example.gaitguardian.screens.patient.LatestAssessmentResultsCard
 import com.example.gaitguardian.viewmodels.TugDataViewModel
 
 
@@ -79,6 +59,8 @@ fun PatientHomeScreen(
 
     val severity = latestAnalysis?.severity ?: "-"
     val totalTime = latestAnalysis?.timeTaken?.toFloat() ?: 0f
+
+    var showTutorial by remember { mutableStateOf(false) } // <-- control overlay
 
     LaunchedEffect(Unit) {
         tugViewModel.getLatestTwoDurations()
@@ -153,23 +135,33 @@ fun PatientHomeScreen(
                             fontWeight = FontWeight.Bold
                         )
                     }
-
-//                    Button(
-//                        onClick = { navController.navigate("video_test_screen") },
-//                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-//                        modifier = Modifier
-//                            .fillMaxWidth()
-//                            .height(60.dp),
-//                        shape = RoundedCornerShape(12.dp)
-//                    ) {
-//                        Text(
-//                            text = "Test Video Analysis",
-//                            color = Color.White,
-//                            fontSize = Heading1,
-//                            fontWeight = FontWeight.Bold
-//                        )
-//                    }
+                    if (showButton) {
+                        Button(
+                            onClick = { showTutorial = true }, // <-- show overlay
+                            colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(60.dp),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                text = "Need Help?",
+                                color = DefaultColor,
+                                fontSize = Heading1,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
+
+            }
+        }
+        // --- Full-screen tutorial overlay using Dialog ---
+        if (showTutorial) {
+            Dialog(onDismissRequest = { showTutorial = false }) {
+                PatientTutorialScreen(
+                    onClose = { showTutorial = false }
+                )
             }
         }
     }

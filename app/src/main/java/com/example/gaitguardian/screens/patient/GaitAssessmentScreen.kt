@@ -8,16 +8,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.ui.theme.ButtonActive
+import com.example.gaitguardian.ui.theme.Heading1
 import com.example.gaitguardian.ui.theme.screenPadding
 import com.example.gaitguardian.ui.theme.spacerLarge
 
 @Composable
 fun GaitAssessmentScreen(navController: NavController, modifier: Modifier = Modifier) {
+
+    var showTutorial by remember { mutableStateOf(false) }
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -89,6 +94,31 @@ fun GaitAssessmentScreen(navController: NavController, modifier: Modifier = Modi
             ) {
                 Text("Go Back", fontSize = 20.sp, color = Color.Black)
             }
+            // --- Need help button ---
+            Button(
+                onClick = { showTutorial = true },
+                colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(80.dp)
+                    .padding(vertical = 12.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = "Need help?",
+                    color = Color.Black,
+                    fontSize = Heading1,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+// --- Full-screen tutorial overlay using Dialog ---
+    if (showTutorial) {
+        Dialog(onDismissRequest = { showTutorial = false }) {
+            GaitAssessmentTutorial(
+                onClose = { showTutorial = false }
+            )
         }
     }
 }
