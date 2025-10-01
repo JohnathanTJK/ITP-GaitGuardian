@@ -14,9 +14,11 @@ import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessmentRepository
 import com.example.gaitguardian.data.roomDatabase.tug.subtaskDuration
 import com.example.gaitguardian.data.sharedPreferences.AppPreferencesRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -173,6 +175,13 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, priva
         viewModelScope.launch {
             appPreferencesRepository.removeAssessmentId(testId)
         }
+    }
+    // In your ViewModel
+    private val _notificationEvents = MutableSharedFlow<Int>(extraBufferCapacity = 1)
+    val notificationEvents = _notificationEvents.asSharedFlow()
+
+    fun onNotificationReceived(id: Int) {
+        _notificationEvents.tryEmit(id) // emits even if the same ID
     }
     // StateFlow of List<Int>
     val pendingAssessmentIds: StateFlow<List<Int>> =

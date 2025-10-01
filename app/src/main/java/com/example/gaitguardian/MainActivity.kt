@@ -12,15 +12,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.example.gaitguardian.ui.theme.GaitGuardianTheme
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import com.example.gaitguardian.viewmodels.PatientViewModel
 import com.example.gaitguardian.viewmodels.TugDataViewModel
 import com.example.gaitguardian.api.TestApiConnection
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val _assessmentId = mutableStateOf<Int?>(null)
@@ -90,19 +87,21 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        _assessmentId.value = intent.getIntExtra("assessmentId", -1).takeIf { it != -1 }
-
+        intent.getIntExtra("assessmentId", -1)
+            .takeIf { it != -1 }
+            ?.let { tugDataViewModel.onNotificationReceived(it) } // if not -1, update VM
         // ✅ handle notification tap (warm start)
         handleNotificationIntent(intent)
     }
 
     private fun handleNotificationIntent(intent: Intent?) {
         val tappedId = intent?.getIntExtra("clearNotificationId", -1) ?: -1
-        if (tappedId != -1) {
-            lifecycleScope.launch {
-                tugDataViewModel.clearAssessmentIDsforNotifications(tappedId)
-            }
-        }
+        // TODO: Uncomment when notification flow confirm works
+//        if (tappedId != -1) {
+//            lifecycleScope.launch {
+//                tugDataViewModel.clearAssessmentIDsforNotifications(tappedId)
+//            }
+//        }
     }
 
     private fun hasRequiredPermissions(): Boolean {

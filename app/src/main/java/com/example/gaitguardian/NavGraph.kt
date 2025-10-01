@@ -1,6 +1,7 @@
 package com.example.gaitguardian
 
 import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -26,8 +27,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -62,6 +65,7 @@ import com.example.gaitguardian.ui.screens.VideoTestScreen
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import com.example.gaitguardian.viewmodels.PatientViewModel
 import com.example.gaitguardian.viewmodels.TugDataViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -129,24 +133,47 @@ fun NavGraph(
     val currentUserView by clinicianViewModel.getCurrentUserView.collectAsState()
     // to track if the initial navigation already happened
     var hasNavigated by rememberSaveable { mutableStateOf(false) }
-
+    // Check if in clinician graph already
+    val isInClinicianGraph = navBackStackEntry?.destination?.parent?.route == "clinician_graph"
 //    // Upon app start,
 //    // check what is the saved current view and load directly into the graph
-    LaunchedEffect(currentUserView) {
-        if (!hasNavigated) {
+    val currentNotifId by rememberUpdatedState(initialId) // 'by' gives you the value directly
+
+//    LaunchedEffect(Unit) {
+//        Log.d("navgraph", "is it cliniciangraph? $isInClinicianGraph")
+//        snapshotFlow { currentNotifId }  // now emits the actual String? value
+//            .collect { id ->
+//                id?.let {
+//                    if (isInClinicianGraph) {
+//                        navController.navigate("clinician_detailed_patient_view_screen/$it")
+//                    } else {
+//                        navController.navigate("clinician_pin_verification_screen/$it")
+//                    }
+//                }
+//            }
+//    }
+    LaunchedEffect(currentUserView, initialId) {
+        if (!hasNavigated && currentDestination == "splash_screen") {
+            delay(4000)
             when (currentUserView) {
                 null -> {
                     navController.navigate("start_screen") {
                         popUpTo("splash_screen") { inclusive = true }
                     }
                 }
-
                 "clinician" -> {
-                    navController.navigate("clinician_graph") {
+                    Log.d("NavGraph", "inside default, clnicinaGraphis $isInClinicianGraph")
+                    val route = if (initialId != null) {
+                        "clinician_pin_verification_screen/$initialId"
+                    } else {
+                        "clinician_pin_verification_screen/-1"
+                    }
+
+                    navController.navigate(route) {
                         popUpTo("splash_screen") { inclusive = true }
+                        launchSingleTop = true
                     }
                 }
-
                 "patient" -> {
                     navController.navigate("patient_graph") {
                         popUpTo("splash_screen") { inclusive = true }
@@ -156,12 +183,18 @@ fun NavGraph(
             hasNavigated = true
         }
     }
-    // Check if initialId exits ( Notification Tracking , use the Id provided to direct to detailed screen directly
-    LaunchedEffect(initialId)
-    {
-        if (initialId != null) {
-            navController.navigate("clinician_detailed_patient_view_screen/$initialId") {
-                launchSingleTop = true
+
+    LaunchedEffect(Unit) {
+        tugDataViewModel.notificationEvents.collect { notifId ->
+            val navBackStackEntry = navController.currentBackStackEntry
+            val isInClinicianGraph = navBackStackEntry?.destination?.parent?.route == "clinician_graph"
+            val targetRoute = if (isInClinicianGraph) {
+                "clinician_detailed_patient_view_screen/$notifId"
+            } else {
+                "clinician_pin_verification_screen/$notifId"
+            }
+            navController.navigate(targetRoute) {
+//                launchSingleTop = true
             }
         }
     }
@@ -256,16 +289,27 @@ fun NavGraph(
                         clinicianViewModel = clinicianViewModel
                     )
                 }
+                composable(
+                    "clinician_pin_verification_screen/{notifId}",
+                    arguments = listOf(navArgument("notifId") {
+                        type = NavType.IntType
+                        defaultValue = -1 // optional
+                    })
+                ) { backStackEntry ->
+                    val notifId = backStackEntry.arguments?.getInt("notifId")?.takeIf { it != -1 }
+                    PinEntryExample(navController, notifId)
+                }
+
                 // Clinician-Specific Screens here
                 navigation(
-                    startDestination = "clinician_pin_verification_screen",
+                    startDestination = "clinician_home_screen",
                     route = "clinician_graph"
 
                 )
                 {
-                    composable("clinician_pin_verification_screen") {
-                        PinEntryExample(navController)
-                    }
+//                    composable("clinician_pin_verification_screen") {
+//                        PinEntryExample(navController)
+//                    }
                     composable("clinician_home_screen") {
                         ClinicianHomeScreen(
                             navController,

@@ -216,7 +216,7 @@ fun PinDigitBox(
 }
 
 @Composable
-fun PinEntryExample(navController: NavController) { // for testing now
+fun PinEntryExample(navController: NavController, notificationId: Int? = null) { // for testing now
     var showSuccess by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     val coroutineScope = rememberCoroutineScope()
@@ -242,14 +242,28 @@ fun PinEntryExample(navController: NavController) { // for testing now
                 pinLength = 4,
                 onPinComplete = { pin ->
                     // Validate PIN here, for now just 1234
-                    if (pin == "1234") {
+                    if (pin == "1234") { // validation
                         showSuccess = true
-                        errorMessage = ""
-                        coroutineScope.launch{
+                        coroutineScope.launch {
                             delay(1500)
-                            navController.navigate("clinician_home_screen")
+
+                            if (notificationId != null) {
+                                // Navigate to detail screen if notificationId (tapped notification)
+                                navController.navigate("clinician_detailed_patient_view_screen/$notificationId") {
+//                                navController.navigate("clinician_graph/clinician_detailed_patient_view_screen/$notificationId") {
+                                    popUpTo("clinician_pin_verification_screen") { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            } else {
+                                // Navigate to home
+                                navController.navigate("clinician_graph") {
+                                    popUpTo("clinician_pin_verification_screen") { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            }
                         }
-                    } else {
+                    }
+                    else {
                         errorMessage = "Incorrect PIN. Try again."
                     }
                 },
