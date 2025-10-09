@@ -67,6 +67,8 @@ dependencies {
     implementation(libs.pose.detection.accurate)
     implementation(libs.androidx.media3.ui)
     implementation(libs.androidx.compose.foundation)
+    //Exoplayer video
+    implementation(libs.androidx.media3.exoplayer)
 //    implementation(libs.ads.mobile.sdk)
 //    implementation(libs.androidx.room.compiler)
 //    implementation(libs.androidx.room.common.jvm)
@@ -119,7 +121,6 @@ dependencies {
     
     // OpenCV for image processing - TODO: Add proper OpenCV dependency
     // implementation("org.opencv:opencv-android:4.5.4")
-
 
     // Material3 Icons
     implementation(libs.androidx.material.icons.extended)

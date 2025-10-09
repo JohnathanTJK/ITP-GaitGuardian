@@ -3,15 +3,19 @@ package com.example.gaitguardian
 import android.app.NotificationChannel
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.gaitguardian.ui.theme.GaitGuardianTheme
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
@@ -73,6 +77,28 @@ class MainActivity : ComponentActivity() {
         setContent {
             GaitGuardianTheme {
                 val navController = rememberNavController()
+                val activity = this
+                // Attach listener directly to navController
+                DisposableEffect(navController) {
+//                    val routeOrientations = mapOf(
+//                        "video_screen" to ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,
+//                        "clinician_home_screen" to ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,
+//                        "patient_screen" to ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,
+//                        "camera_screen" to ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,
+//                        "login" to ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+//                    )
+                    val unspecifiedScreens = setOf("video_screen", "camera_screen") // screens that DO NOT enforce strict orientation
+                    // check the currentdestination route, and orientate screen accordingly
+                    val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
+                        activity.requestedOrientation = if (destination.route in unspecifiedScreens) {
+                            ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                        } else {
+                            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                        }
+                    }
+                    navController.addOnDestinationChangedListener(listener)
+                    onDispose { navController.removeOnDestinationChangedListener(listener) }
+                }
                 NavGraph(
                     navController = navController,
                     initialId = _assessmentId.value,

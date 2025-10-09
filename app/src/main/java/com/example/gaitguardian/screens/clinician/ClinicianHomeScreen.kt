@@ -1,5 +1,7 @@
 package com.example.gaitguardian.screens.clinician
 
+import android.app.Activity
+import android.content.pm.ActivityInfo
 import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -30,6 +32,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -68,7 +71,13 @@ fun ClinicianHomeScreen(
 ) {
     val context = LocalContext.current
     val pendingIds by tugViewModel.pendingAssessmentIds.collectAsState(initial = emptyList())
-
+//    val activity = context as? Activity
+//    DisposableEffect(Unit) {
+//        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+//        onDispose {
+//            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+//        }
+//    }
     LaunchedEffect(pendingIds) {
         Log.d("Clinician","this is ${pendingIds}")
         pendingIds.forEach { testId ->
@@ -114,6 +123,16 @@ fun ClinicianHomeScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            item {
+                Button(
+                    onClick = {
+                        navController.navigate("video_screen")
+                    }
+                )
+                {
+                    Text("test video")
+                }
+            }
             item {
                 ClinicianHeader(
                     clinicianName = "${clinicianInfo?.name ?: "Clinician"}",

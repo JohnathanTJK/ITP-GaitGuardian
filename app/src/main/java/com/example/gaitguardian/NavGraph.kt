@@ -1,5 +1,7 @@
 package com.example.gaitguardian
 
+import android.app.Activity
+import android.content.pm.ActivityInfo
 import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.layout.fillMaxSize
@@ -47,6 +49,7 @@ import androidx.navigation.navArgument
 import com.example.gaitguardian.screens.SettingsScreen
 import com.example.gaitguardian.screens.SplashScreen
 import com.example.gaitguardian.screens.StartScreen
+import com.example.gaitguardian.screens.VideoPlaybackScreen
 import com.example.gaitguardian.screens.camera.NewCameraScreen
 import com.example.gaitguardian.screens.clinician.ClinicianDetailedPatientViewScreen
 import com.example.gaitguardian.screens.clinician.ClinicianHomeScreen
@@ -124,6 +127,10 @@ fun NavGraph(
     clinicianViewModel: ClinicianViewModel,
     tugDataViewModel: TugDataViewModel
 ) {
+
+    val context = LocalContext.current
+    val activity = context as? Activity
+
     val saveVideos by patientViewModel.saveVideos.collectAsState()
     var showPrivacyDialog by remember { mutableStateOf(false) }
 
@@ -206,14 +213,15 @@ fun NavGraph(
             modifier = Modifier.fillMaxSize(),
             topBar = {
                 if (currentDestination != null && currentDestination != "camera_screen/{assessmentTitle}" && currentDestination != "3m_screen" && currentDestination != "gpt_screen" && currentDestination != "start_screen"
-                    && currentDestination != "lateral_screen"
+                    && currentDestination != "lateral_screen" && currentDestination != "video_screen"
                 ) {
                     NavTopBar(navController, currentDestination, assessmentTitle = if (currentDestination?.startsWith("assessment_info_screen") == true)
                         navBackStackEntry?.arguments?.getString("assessmentTitle") else null)
                 }
             },
             bottomBar = {
-                if (currentDestination != "camera_screen/{assessmentTitle}" && currentDestination != "3m_screen" && currentDestination != "gpt_screen" && currentDestination != "start_screen" && currentDestination != "lateral_screen") {
+                if (currentDestination != "camera_screen/{assessmentTitle}" && currentDestination != "3m_screen" && currentDestination != "gpt_screen" && currentDestination != "start_screen" && currentDestination != "lateral_screen"
+                    && currentDestination != "video_screen") {
                     NavigationBar(
                         containerColor = Color.White,
                     ) {
@@ -342,6 +350,10 @@ fun NavGraph(
                                 assessmentTitle
                             )
                         }
+                    }
+                    composable("video_screen")
+                    {
+                        VideoPlaybackScreen(tugDataViewModel, navController)
                     }
                 }
 
