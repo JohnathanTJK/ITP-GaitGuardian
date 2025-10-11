@@ -145,7 +145,7 @@ fun PatientHomeScreen(
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text(
-                                text = "Need Help?",
+                                text = "How to use",
                                 color = DefaultColor,
                                 fontSize = Heading1,
                                 fontWeight = FontWeight.Bold

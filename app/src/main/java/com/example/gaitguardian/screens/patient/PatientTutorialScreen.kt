@@ -31,6 +31,7 @@ fun PatientTutorialScreen(onClose: () -> Unit) {
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 tts?.language = Locale.US
+                tts?.setSpeechRate(0.8f)
                 ttsReady = true
             }
         }
@@ -40,9 +41,9 @@ fun PatientTutorialScreen(onClose: () -> Unit) {
     LaunchedEffect(page, ttsReady) {
         if (!ttsReady) return@LaunchedEffect
         val speechText = if (page == 1) {
-            "Record Video tutorial. Tap the Record button, walk as instructed, and save the video."
+            "Tap on the Record Video button to start recording your gait assessment. Follow the instructions"
         } else {
-            "Settings tutorial. Open settings, adjust preferences, and enable reminders for assessments."
+            "Tap on settings to adjust your preferences on video privacy"
         }
         tts?.speak(speechText, TextToSpeech.QUEUE_FLUSH, null, "tutorialTTS")
     }
@@ -77,9 +78,7 @@ fun PatientTutorialScreen(onClose: () -> Unit) {
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text("1. Tap the 'Record' button.", fontSize = body * 1.2f, color = Color.Black)
-                        Text("2. Walk as instructed.", fontSize = body * 1.2f, color = Color.Black)
-                        Text("3. Save the video for review.", fontSize = body * 1.2f, color = Color.Black)
+                        Text("Tap on the Record Video button to start recording your gait assessment. Follow the instructions", fontSize = body * 1.2f, color = Color.Black)
                     }
                     Box(
                         modifier = Modifier
@@ -102,9 +101,7 @@ fun PatientTutorialScreen(onClose: () -> Unit) {
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text("1. Open the settings page.", fontSize = body * 1.2f, color = Color.Black)
-                        Text("2. Adjust your preferences.", fontSize = body * 1.2f, color = Color.Black)
-                        Text("3. Enable reminders for assessments.", fontSize = body * 1.2f, color = Color.Black)
+                        Text("Tap on settings to adjust your preferences on video privacy", fontSize = body * 1.2f, color = Color.Black)
                     }
                     Box(
                         modifier = Modifier
@@ -119,8 +116,11 @@ fun PatientTutorialScreen(onClose: () -> Unit) {
 
                 Button(
                     onClick = {
-                        if (page == 1) page = 2
-                        else onClose()
+                        if (page == 1) page = 2 else {
+                            tts?.stop()
+                            tts?.shutdown()
+                            onClose()
+                        }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
                     modifier = Modifier

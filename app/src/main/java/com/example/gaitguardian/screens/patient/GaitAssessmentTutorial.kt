@@ -33,6 +33,7 @@ fun GaitAssessmentTutorial(onClose: () -> Unit) {
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 tts?.language = Locale.US
+                tts?.setSpeechRate(0.8f)
                 ttsReady = true
             }
         }
@@ -42,8 +43,8 @@ fun GaitAssessmentTutorial(onClose: () -> Unit) {
     LaunchedEffect(page, ttsReady) {
         if (!ttsReady) return@LaunchedEffect
         val speechText = when (page) {
-            1 -> "Gait assessment tutorial. Choose an assessment to begin the test."
-            2 -> "Assessment info tutorial. Tag your medication status and add any comments if necessary."
+            1 -> "Choose an assessment to begin the test. Stand-Walk Test or Five Times Sit to Stand"
+            2 -> "Tag your medication status and select any additional comments if necessary. When done, click continue."
             3 -> "Camera requirement tutorial. Follow the instructions to position the camera correctly for the test."
             else -> ""
         }
@@ -98,9 +99,7 @@ fun GaitAssessmentTutorial(onClose: () -> Unit) {
                 ) {
                     when (page) {
                         1 -> {
-                            Text("1. Choose an assessment to begin.", fontSize = body * 1.2f, color = Color.Black)
-                            Text("2. Click on the assessment button.", fontSize = body * 1.2f, color = Color.Black)
-                            Text("3. Proceed to the next screen.", fontSize = body * 1.2f, color = Color.Black)
+                            Text("Select an assessment", fontSize = body * 1.2f, color = Color.Black)
 
                             // Fake buttons (unclickable)
                             listOf("Stand-Walk Test", "Five Times Sit to Stand").forEach { text ->
@@ -145,7 +144,12 @@ fun GaitAssessmentTutorial(onClose: () -> Unit) {
                 // --- Next / Finish Button ---
                 Button(
                     onClick = {
-                        if (page < 3) page++ else onClose()
+                        if (page < 3) page++ else {
+                            // 👇 Stop speaking before closing
+                            tts?.stop()
+                            tts?.shutdown()
+                            onClose()
+                        }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
                     modifier = Modifier

@@ -105,7 +105,7 @@ fun GaitAssessmentScreen(navController: NavController, modifier: Modifier = Modi
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
-                    text = "Need help?",
+                    text = "How to use",
                     color = Color.Black,
                     fontSize = Heading1,
                     fontWeight = FontWeight.Bold
