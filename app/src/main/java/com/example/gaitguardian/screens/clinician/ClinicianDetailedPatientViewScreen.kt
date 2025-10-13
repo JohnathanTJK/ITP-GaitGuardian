@@ -90,7 +90,7 @@ fun ClinicianDetailedPatientViewScreen(
     val allSubtasks by tugViewModel.allTUGAnalysis.collectAsState()
     val assessment by tugViewModel.selectedTUGAssessment.collectAsState()
     val subtaskDuration by tugViewModel.subtaskDuration.collectAsState()
-
+    Log.d("ClinicianDetailedPatientViewScreen", "asssemntinfo: $assessment")
     val patient = Patient(2, "Benny", 18)
 
     var tugDateTime by remember { mutableStateOf("") }
@@ -174,7 +174,7 @@ fun ClinicianDetailedPatientViewScreen(
                     textAlign = TextAlign.Center,
                     color = Color.Black
                 )
-                VideoWatchStatus((if (isReviewed) "Reviewed" else "Pending"))
+//                VideoWatchStatus((if (isReviewed) "Reviewed" else "Pending"))
             }
             Row(
                 modifier = Modifier
@@ -257,7 +257,7 @@ fun ClinicianDetailedPatientViewScreen(
                 )
             }
             // Assessment Recording Button
-            VideoButton(tugVideo, tugDuration)
+            VideoButton(tugVideo, tugDuration, navController)
 
         }
         Card(
@@ -539,12 +539,24 @@ fun JetpackComposeBasicLineChart(subtasks: List<TUGAnalysis>, modifier: Modifier
 
 
 @Composable
-fun VideoButton(videoTitle: String, videoDuration: Float) {
+fun VideoButton(videoTitle: String, videoDuration: Float, navController: NavController) {
     val context = LocalContext.current
     val videoFolder = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
     val videoFile = videoFolder?.listFiles()?.find { it.name == videoTitle }
     if (videoFile != null && videoFile.exists()) {
-        VideoListItem(context, videoFile, videoDuration)
+        Button(
+            onClick = {
+                navController.navigate("video_screen")
+            },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(10.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFFFC9E4F),
+                contentColor = Color.Black
+            )
+        ) {
+            Text("Watch Assessment Recording [${videoDuration}s]", fontWeight = FontWeight.Bold)
+        }
     } else {
         Box(
             modifier = Modifier
@@ -560,38 +572,5 @@ fun VideoButton(videoTitle: String, videoDuration: Float) {
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
-    }
-}
-
-@Composable
-fun VideoListItem(context: Context, file: File, videoDuration: Float) {
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(20.dp)
-    ) {
-        Button(
-            onClick = {
-                val uri = FileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.provider",
-                    file
-                )
-                val intent = Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(uri, "video/mp4")
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }
-                context.startActivity(intent)
-            },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFFFC9E4F),
-                contentColor = Color.Black
-            )
-        ) {
-            Text("Watch Assessment Recording [${videoDuration}s]", fontWeight = FontWeight.Bold)
-        }
     }
 }

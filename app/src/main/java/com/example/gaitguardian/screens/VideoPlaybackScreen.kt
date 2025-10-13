@@ -31,13 +31,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import androidx.navigation.NavHostController
+import com.example.gaitguardian.ui.theme.bgColor
+import com.example.gaitguardian.ui.theme.buttonBackgroundColor
+import java.io.File
 
 @Composable
 fun VideoPlaybackScreen(
@@ -49,11 +59,6 @@ fun VideoPlaybackScreen(
     val configuration = LocalConfiguration.current
     val orientation = configuration.orientation
 
-    LaunchedEffect(Unit) {
-        tugViewModel.loadAssessmentById(11)
-        tugViewModel.getSubtaskById(11)
-    }
-
     // shared playback states to control ExoPlayer
     var isPlaying by rememberSaveable { mutableStateOf(false) }
     var currentPosition by rememberSaveable { mutableStateOf(0L) }
@@ -62,21 +67,17 @@ fun VideoPlaybackScreen(
     val assessment by tugViewModel.selectedTUGAssessment.collectAsState()
     val subtaskDuration by tugViewModel.subtaskDuration.collectAsState()
     val subtaskJumpTimings = subtaskDuration?.let { prepareSubtaskJumpTimings(it) }
-
     val videoFolder = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
-    val latestVideo = remember {
-        videoFolder?.listFiles()
-            ?.filter { it.extension.lowercase() == "mp4" }
-            ?.maxByOrNull { it.lastModified() }
-    }
-
-    val videoUri = latestVideo?.toUri()?.toString() ?: return
+    val videoTitle = assessment?.videoTitle ?: return
+    val videoFile = File(videoFolder, videoTitle)
+    val videoUri = videoFile.toUri()
 
     // Hoist ExoPlayer to parent component so that it does not recreate the ExoPlayer instance when screen rotate
     val lifecycleOwner = LocalLifecycleOwner.current
     val exoPlayer = remember {
         ExoPlayer.Builder(context).build().apply {
-            setMediaItem(MediaItem.fromUri(videoUri.toUri()))
+            setMediaItem(MediaItem.fromUri(videoUri))
+
             prepare()
             seekTo(currentPosition)
             if(isPlaying) play() else pause()
@@ -112,37 +113,44 @@ fun VideoPlaybackScreen(
         }
     }
 
-    if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-        ImmersiveLandscapeVideoLayout(
-            exoPlayer = exoPlayer,
-            isPlaying = isPlaying,
-            currentPosition = currentPosition,
-            duration = duration,
-            onPlayPauseClick = {
-                if (exoPlayer.isPlaying) {
-                    exoPlayer.pause()
-                } else {
-                    exoPlayer.play()
-                }
-            },
-            jumpTimestamps = subtaskJumpTimings,
-            navController = navController
-        )
-    } else {
-        PortraitVideoLayout(
-            exoPlayer = exoPlayer,
-            isPlaying = isPlaying,
-            currentPosition = currentPosition,
-            duration = duration,
-            onPlayPauseClick = {
-                if (exoPlayer.isPlaying) {
-                    exoPlayer.pause()
-                } else {
-                    exoPlayer.play()
-                }
-            },
-            jumpTimestamps = subtaskJumpTimings
-        )
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(bgColor)
+    )
+    {
+        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            ImmersiveLandscapeVideoLayout(
+                exoPlayer = exoPlayer,
+                isPlaying = isPlaying,
+                currentPosition = currentPosition,
+                duration = duration,
+                onPlayPauseClick = {
+                    if (exoPlayer.isPlaying) {
+                        exoPlayer.pause()
+                    } else {
+                        exoPlayer.play()
+                    }
+                },
+                jumpTimestamps = subtaskJumpTimings,
+                navController = navController
+            )
+        } else {
+            PortraitVideoLayout(
+                exoPlayer = exoPlayer,
+                isPlaying = isPlaying,
+                currentPosition = currentPosition,
+                duration = duration,
+                onPlayPauseClick = {
+                    if (exoPlayer.isPlaying) {
+                        exoPlayer.pause()
+                    } else {
+                        exoPlayer.play()
+                    }
+                },
+                jumpTimestamps = subtaskJumpTimings
+            )
+        }
     }
 }
 
@@ -179,9 +187,9 @@ fun PortraitVideoLayout(
 
         // Playback Controls
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Button(onClick = onPlayPauseClick) {
-                Text(if (isPlaying) "Pause" else "Play")
-            }
+//            Button(onClick = onPlayPauseClick) {
+//                Text(if (isPlaying) "Pause" else "Play")
+//            }
 
             Spacer(modifier = Modifier.width(16.dp))
 
@@ -190,15 +198,20 @@ fun PortraitVideoLayout(
                     value = currentPosition.toFloat(),
                     onValueChange = { value -> exoPlayer.seekTo(value.toLong()) },
                     valueRange = 0f..(duration.coerceAtLeast(0L)).toFloat(),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = SliderDefaults.colors(
+                        thumbColor = Color(0xFFFC9E4F),
+                        activeTrackColor = buttonBackgroundColor,
+                        inactiveTrackColor = Color.Gray
+                )
                 )
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(formatTimeSeconds(currentPosition))
-                    Text(formatTimeSeconds(duration))
+                    Text(formatTimeSeconds(currentPosition), color = Color.Black)
+                    Text(formatTimeSeconds(duration), color = Color.Black)
                 }
             }
         }
@@ -206,22 +219,84 @@ fun PortraitVideoLayout(
         Spacer(modifier = Modifier.height(8.dp))
 
         // Jump Buttons
+//        FlowRow(
+//            modifier = Modifier.fillMaxWidth().padding(4.dp),
+//            verticalArrangement = Arrangement.spacedBy(8.dp),
+//            horizontalArrangement = Arrangement.spacedBy(8.dp),
+//            maxItemsInEachRow = 3
+//        ) {
+//            jumpTimestamps?.forEach { (label, startMs, endMs) ->
+//                val isActive = currentPosition in startMs..endMs
+//                Button(
+//                    onClick = { exoPlayer.seekTo(startMs) },
+//                    colors = if (isActive) ButtonDefaults.buttonColors(
+//                        containerColor = Color(0xFF4A148C)
+//                    ) else ButtonDefaults.buttonColors(containerColor = Color.Gray)
+//                ) {
+//                    Text(label)
+//                }
+//            }
+//        }
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            maxItemsInEachRow = 3
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            maxItemsInEachRow = 2, // 2 columns
+            modifier = Modifier.fillMaxWidth()
         ) {
             jumpTimestamps?.forEach { (label, startMs, endMs) ->
                 val isActive = currentPosition in startMs..endMs
+
                 Button(
                     onClick = { exoPlayer.seekTo(startMs) },
-                    colors = if (isActive) ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF4A148C)
-                    ) else ButtonDefaults.buttonColors(containerColor = Color.Gray)
+                    modifier = Modifier
+                        .weight(1f)   // equal width in the row
+                        .height(48.dp),
+                    colors = if (isActive)
+                        ButtonDefaults.buttonColors(containerColor = Color(0xFF4A148C))
+                    else
+                        ButtonDefaults.buttonColors(containerColor = Color.Gray),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text(label)
+                    Text(
+                        text = label,
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         }
+//        LazyVerticalGrid(
+//            columns = GridCells.Fixed(2), // 2 columns
+//            horizontalArrangement = Arrangement.spacedBy(8.dp),
+//            verticalArrangement = Arrangement.spacedBy(8.dp),
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .padding(4.dp)
+//        ) {
+//            items(jumpTimestamps?.size ?: 0) { index ->
+//                val (label, startMs, endMs) = jumpTimestamps!![index]
+//                val isActive = currentPosition in startMs..endMs
+//
+//                Button(
+//                    onClick = { exoPlayer.seekTo(startMs) },
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .height(48.dp),
+//                    colors = if (isActive) ButtonDefaults.buttonColors(
+//                        containerColor = Color(0xFF4A148C)
+//                    ) else ButtonDefaults.buttonColors(containerColor = Color.Gray),
+//                    shape = RoundedCornerShape(8.dp)
+//                ) {
+//                    Text(
+//                        text = label,
+//                        textAlign = TextAlign.Left,
+//                        modifier = Modifier.fillMaxWidth()
+//                    )
+//                }
+//            }
+//        }
     }
 }
 
@@ -287,7 +362,22 @@ fun ImmersiveLandscapeVideoLayout(
             },
             modifier = Modifier.fillMaxSize()
         )
-
+        // Top-right current subtask text
+        jumpTimestamps?.let { jumps ->
+            // Since my Triple is (subtask label, start time, end time), check for t
+            // the current position of the video to be within the start and end time and extract the label of it
+            val currentSubtask = jumps.find { currentPosition in it.second..it.third }?.first ?: ""
+            Text(
+                text = "Subtask: $currentSubtask",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+                    .background(Color.Black.copy(alpha = 0.5f), shape = RoundedCornerShape(4.dp))
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+        }
         // Animated overlay controls
         AnimatedVisibility(
             visible = controlsVisible,
@@ -316,7 +406,7 @@ fun ImmersiveLandscapeVideoLayout(
                             navController.popBackStack()
                         }
                     ) {
-                        Text("GO BACK TO MENU")
+                        Text("Back")
                     }
 
                     Button(
@@ -331,6 +421,7 @@ fun ImmersiveLandscapeVideoLayout(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     FlowRow(
+//                        verticalArrangement = Arrangement.spacedBy(8.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         maxItemsInEachRow = 3,
                         modifier = Modifier.fillMaxWidth()
@@ -338,6 +429,7 @@ fun ImmersiveLandscapeVideoLayout(
                         jumpTimestamps?.forEach { (label, startMs, endMs) ->
                             val isActive = currentPosition in startMs..endMs
                             Button(
+                                modifier = Modifier.fillMaxWidth(0.25f),
                                 onClick = { exoPlayer.seekTo(startMs) },
                                 colors = if (isActive)
                                     ButtonDefaults.buttonColors(
@@ -346,7 +438,8 @@ fun ImmersiveLandscapeVideoLayout(
                                 else
                                     ButtonDefaults.buttonColors(
                                         containerColor = Color.DarkGray.copy(alpha = 0.7f)
-                                    )
+                                    ),
+                                shape = RoundedCornerShape(8.dp)
                             ) {
                                 Text(label, color = Color.White)
                             }

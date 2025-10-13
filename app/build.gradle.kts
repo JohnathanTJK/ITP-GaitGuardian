@@ -69,6 +69,7 @@ dependencies {
     implementation(libs.androidx.compose.foundation)
     //Exoplayer video
     implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.foundation)
 //    implementation(libs.ads.mobile.sdk)
 //    implementation(libs.androidx.room.compiler)
 //    implementation(libs.androidx.room.common.jvm)
