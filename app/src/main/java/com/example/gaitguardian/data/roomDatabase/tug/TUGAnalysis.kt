@@ -29,6 +29,9 @@ data class TUGAnalysis(
     val turnSecond: Double,
     @ColumnInfo("standToSit")
     val standToSit: Double,
+    // Flagged for exceeding 1 second after comparing with previous assessment
+    @ColumnInfo(name = "isFlagged")
+    val isFlagged: Boolean = false
 )
 
 

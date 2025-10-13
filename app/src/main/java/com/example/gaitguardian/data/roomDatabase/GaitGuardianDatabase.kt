@@ -35,6 +35,7 @@ abstract class GaitGuardianRoomDatabase : RoomDatabase() {
                     GaitGuardianRoomDatabase::class.java,
                     "GaitGuardian_database"
 //                ).fallbackToDestructiveMigration(true).build()
+                    // TODO: Don't use fallbackToDestructiveMigration after finalising schema / final submission !
                 ).fallbackToDestructiveMigration().build()
                 INSTANCE = instance
                 instance

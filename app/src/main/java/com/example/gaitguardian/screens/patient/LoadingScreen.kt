@@ -81,28 +81,47 @@ fun LoadingScreen(
                 // Handle error result
                 analysisState = AnalysisState.Error(tugResult.riskAssessment)
             } else {
+                //
                 // Convert TugResult to GaitAnalysisResponse format for compatibility
                 val response = convertTugResultToGaitAnalysisResponse(tugResult)
                 analysisResult = response
                 tugDataViewModel.setResponse(response)
-
                 val tugMetrics = response.tugMetrics
+                //TODO: Fetch the latest analysis
+                val previousAnalysis = tugDataViewModel.getLatestTugAnalysis() // Retrieve latest TUGAnalysis
+                Log.d("Severity", "Latest TUG in db: $previousAnalysis")
+                var isFlagged = false
+
+                if (previousAnalysis != null) { // If previous analysis exists, then compare and edit flag if necessary
+                    Log.d("Severity", "Found previous, comparing...")
+                    // Calculate the difference in time
+                    val currentTime = tugMetrics?.totalTime ?: 0.0
+                    val prevTime = previousAnalysis.timeTaken
+                    val timeDifference = kotlin.math.abs(currentTime - prevTime)
+                    Log.d("Severity", " prevTime: $prevTime, currentTime: $currentTime, Time difference: $timeDifference")
+                    if (timeDifference > 1.0) { // if exceeds by 1 second, set as Flagged = True ( to trigger alert in Clinician)
+                        isFlagged = true
+                    }
+                }
+
                 val analysis = TUGAnalysis(
-                    severity = response.severity ?: "Unknown",
-                    timeTaken = tugMetrics?.totalTime ?: 0.0,
-                    stepCount = response.gaitMetrics?.stepCount ?: 0,
-                    sitToStand = tugMetrics?.sitToStandTime ?: 0.0,
-                    walkFromChair = tugMetrics?.walkFromChairTime ?: 0.0,
-                    turnFirst = tugMetrics?.turnFirstTime ?: 0.0,
-                    walkToChair = tugMetrics?.walkToChairTime ?: 0.0,
-                    turnSecond = tugMetrics?.turnSecondTime ?: 0.0,
-                    standToSit = tugMetrics?.standToSitTime ?: 0.0
+                        severity = response.severity ?: "Unknown",
+                        timeTaken = tugMetrics?.totalTime ?: 0.0,
+                        stepCount = response.gaitMetrics?.stepCount ?: 0,
+                        sitToStand = tugMetrics?.sitToStandTime ?: 0.0,
+                        walkFromChair = tugMetrics?.walkFromChairTime ?: 0.0,
+                        turnFirst = tugMetrics?.turnFirstTime ?: 0.0,
+                        walkToChair = tugMetrics?.walkToChairTime ?: 0.0,
+                        turnSecond = tugMetrics?.turnSecondTime ?: 0.0,
+                        standToSit = tugMetrics?.standToSitTime ?: 0.0,
+                        isFlagged = isFlagged
                 )
+
                 // Wait for database insertion to complete before navigating
                 tugDataViewModel.insertTugAnalysis(analysis)
                 tugDataViewModel.lastInsertedId?.toInt()?.let { newId ->
                     Log.d("Severity", "Id is ${newId}")
-                    tugDataViewModel.saveAssessmentIDsforNotifications(newId)
+                    tugDataViewModel.saveAssessmentIDsforNotifications(newId) // trigger notification
                     Log.d("Severity", "insertion complete")
                     Log.d("Severity", "Mild severity detected for test:${newId}")
                 }
