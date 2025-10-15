@@ -31,7 +31,7 @@ fun PatientTutorialScreen(onClose: () -> Unit) {
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 tts?.language = Locale.US
-                tts?.setSpeechRate(0.8f)
+                tts?.setSpeechRate(0.6f)
                 ttsReady = true
             }
         }
