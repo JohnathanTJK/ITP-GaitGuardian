@@ -253,17 +253,91 @@ class FeatureExtraction {
             val concentricPower = maxOf(0f, hipYVelocity * verticalMomentum)
             val eccentricPower = maxOf(0f, -hipYVelocity * verticalMomentum)
             
-            // Python: Task progression
+            // Python: Turn preparation score (needed for movement detection)
+            val turnPreparationScore = (
+                abs(shoulderRotationVelocity) * 0.3f +
+                abs(hipRotationVelocity) * 0.3f +
+                abs(headYawVelocity) * 0.2f +
+                axialDissociationVelocity * 0.2f
+            )
+            
+            // Python: Movement activity detection - only give temporal priors if actually moving
+            val isActivelyMoving = (
+                abs(hipYVelocity) > 0.01f ||      // Vertical movement
+                abs(hipXVelocity) > 0.01f ||      // Horizontal movement
+                abs(forwardMomentum) > 0.01f ||    // Forward progression
+                abs(shoulderRotationVelocity) > 5f ||  // Turning
+                abs(hipRotationVelocity) > 5f ||       // Pelvic rotation
+                verticalMomentum > 0.02f           // Any significant momentum
+            )
+            
+            // Python: Movement intensity over recent history (last 30 frames = 1 second)
+            var recentMovementIntensity = 0f
+            if (i >= 30) {
+                val recentFrames = landmarksList.subList(i - 30, i)
+                val recentHipYValues = recentFrames.map { (it[23].y() + it[24].y()) / 2f }
+                val recentHipXValues = recentFrames.map { (it[23].x() + it[24].x()) / 2f }
+                val recentHipYRange = recentHipYValues.maxOrNull()!! - recentHipYValues.minOrNull()!!
+                val recentHipXRange = recentHipXValues.maxOrNull()!! - recentHipXValues.minOrNull()!!
+                recentMovementIntensity = recentHipYRange + recentHipXRange
+            }
+            
+            // Python: Only activate temporal priors if significant movement detected
+            val movementMultiplier = if (isActivelyMoving && recentMovementIntensity > 0.05f) 1.0f else 0.0f
+            
+            // Debug movement detection every 30 frames
+            if (i % 30 == 0) {
+                Log.d(TAG, "Frame $i: isActivelyMoving=$isActivelyMoving, recentMovementIntensity=$recentMovementIntensity, movementMultiplier=$movementMultiplier")
+                Log.d(TAG, "  hipYVel=${abs(hipYVelocity)}, hipXVel=${abs(hipXVelocity)}, forwardMom=${abs(forwardMomentum)}")
+                Log.d(TAG, "  shoulderRotVel=${abs(shoulderRotationVelocity)}, hipRotVel=${abs(hipRotationVelocity)}, vertMom=$verticalMomentum")
+            }
+            
+            // ========== TEMPORAL LIKELIHOODS WITH MOVEMENT DETECTION ==========
+            // Python port: Prevents false positives when user sits still
+            
+            // Task progression (0.0 to 1.0)
             val taskProgression = i.toFloat() / landmarksList.size.toFloat()
+            
+            // Progression velocity (0 at middle, 1 at extremes)
             val progressionVelocity = abs(taskProgression - 0.5f) * 2f
             
-            // Python: Phase likelihoods (Gaussian peaks)
-            val sitToStandLikelihood = exp(-((taskProgression - 0.05f) * (taskProgression - 0.05f)) / 0.01f)
-            val walkFromLikelihood = exp(-((taskProgression - 0.25f) * (taskProgression - 0.25f)) / 0.02f)
-            val turnFirstLikelihood = exp(-((taskProgression - 0.45f) * (taskProgression - 0.45f)) / 0.01f)
-            val walkToLikelihood = exp(-((taskProgression - 0.65f) * (taskProgression - 0.65f)) / 0.02f)
-            val turnSecondLikelihood = exp(-((taskProgression - 0.8f) * (taskProgression - 0.8f)) / 0.01f)
-            val standToSitLikelihood = exp(-((taskProgression - 0.95f) * (taskProgression - 0.95f)) / 0.01f)
+            // Base temporal likelihoods (only active during movement)
+            var sitToStandLikelihood = exp(-((taskProgression - 0.05f).pow(2)) / 0.01f) * movementMultiplier
+            var walkFromLikelihood = exp(-((taskProgression - 0.25f).pow(2)) / 0.02f) * movementMultiplier
+            var turnFirstLikelihood = exp(-((taskProgression - 0.45f).pow(2)) / 0.01f) * movementMultiplier
+            var walkToLikelihood = exp(-((taskProgression - 0.65f).pow(2)) / 0.02f) * movementMultiplier
+            var turnSecondLikelihood = exp(-((taskProgression - 0.8f).pow(2)) / 0.01f) * movementMultiplier
+            var standToSitLikelihood = exp(-((taskProgression - 0.95f).pow(2)) / 0.01f) * movementMultiplier
+            
+            // Override: If no movement detected, explicitly zero out ALL motion features
+            // This prevents the model from making false predictions based on pose jitter
+            val shouldZeroMotionFeatures = movementMultiplier == 0.0f
+            
+            if (shouldZeroMotionFeatures && taskProgression < 0.15f) {
+                // Near start of video with no movement = sitting
+                sitToStandLikelihood = 0.9f
+                walkFromLikelihood = 0.0f
+                turnFirstLikelihood = 0.0f
+                walkToLikelihood = 0.0f
+                turnSecondLikelihood = 0.0f
+                standToSitLikelihood = 0.0f
+            } else if (shouldZeroMotionFeatures) {
+                // No movement anywhere = sitting/standing still (zero out all movement phases)
+                sitToStandLikelihood = 0.5f
+                walkFromLikelihood = 0.0f
+                turnFirstLikelihood = 0.0f
+                walkToLikelihood = 0.0f
+                turnSecondLikelihood = 0.0f
+                standToSitLikelihood = 0.3f
+            }
+            
+            // Debug temporal likelihoods every 30 frames
+            if (i % 30 == 0) {
+                Log.d(TAG, "Frame $i temporal likelihoods: sitToStand=$sitToStandLikelihood, walkFrom=$walkFromLikelihood, turnFirst=$turnFirstLikelihood, walkTo=$walkToLikelihood, turnSecond=$turnSecondLikelihood, standToSit=$standToSitLikelihood")
+                Log.d(TAG, "Frame $i shouldZeroMotionFeatures=$shouldZeroMotionFeatures")
+            }
+            
+            // ========== END TEMPORAL LIKELIHOODS ==========
             
             // Python: Derived features - stride length variation
             val recentAnkleDistances = (maxOf(0, i - 10) until i).mapNotNull { j ->
@@ -289,14 +363,6 @@ class FeatureExtraction {
             if (directionChangeMagnitude > 180f) {
                 directionChangeMagnitude = 360f - directionChangeMagnitude
             }
-            
-            // Python: Turn preparation score
-            val turnPreparationScore = (
-                abs(shoulderRotationVelocity) * 0.3f +
-                abs(hipRotationVelocity) * 0.3f +
-                abs(headYawVelocity) * 0.2f +
-                axialDissociationVelocity * 0.2f
-            )
             
             // Python: Body sway - std of lateral positions
             val bodySway = if (i > 5) {
@@ -443,20 +509,45 @@ class FeatureExtraction {
             // Python: Note - prev_vals is NEVER updated in Python code, stays at initial values
             
             // Python: Build feature map exactly matching Python dictionary structure
+            // CRITICAL FIX: Zero out ALL velocity features when no movement detected
+            // This prevents false positives from pose estimation jitter
+            val effectiveHipYVelocity = if (shouldZeroMotionFeatures) 0f else hipYVelocity
+            val effectiveHipXVelocity = if (shouldZeroMotionFeatures) 0f else hipXVelocity
+            val effectiveHipVerticalAcceleration = if (shouldZeroMotionFeatures) 0f else hipVerticalAcceleration
+            val effectiveHipHorizontalAcceleration = if (shouldZeroMotionFeatures) 0f else hipHorizontalAcceleration
+            val effectiveComXVelocity = if (shouldZeroMotionFeatures) 0f else comXVelocity
+            val effectiveComYVelocity = if (shouldZeroMotionFeatures) 0f else comYVelocity
+            val effectiveComAcceleration = if (shouldZeroMotionFeatures) 0f else comAcceleration
+            val effectiveForwardMomentum = if (shouldZeroMotionFeatures) 0f else forwardMomentum
+            val effectiveForwardAcceleration = if (shouldZeroMotionFeatures) 0f else forwardAcceleration
+            val effectiveVerticalMomentum = if (shouldZeroMotionFeatures) 0f else verticalMomentum
+            val effectiveTurnPreparationScore = if (shouldZeroMotionFeatures) 0f else turnPreparationScore
+            val effectiveShoulderRotationVelocity = if (shouldZeroMotionFeatures) 0f else shoulderRotationVelocity
+            val effectiveHipRotationVelocity = if (shouldZeroMotionFeatures) 0f else hipRotationVelocity
+            val effectiveHeadYawVelocity = if (shouldZeroMotionFeatures) 0f else headYawVelocity
+            val effectiveLeftKneeVelocity = if (shouldZeroMotionFeatures) 0f else leftKneeVelocity
+            val effectiveRightKneeVelocity = if (shouldZeroMotionFeatures) 0f else rightKneeVelocity
+            val effectiveLheelYVelocity = if (shouldZeroMotionFeatures) 0f else lheelYVelocity
+            val effectiveRheelYVelocity = if (shouldZeroMotionFeatures) 0f else rheelYVelocity
+            val effectiveLheelXVelocity = if (shouldZeroMotionFeatures) 0f else lheelXVelocity
+            val effectiveRheelXVelocity = if (shouldZeroMotionFeatures) 0f else rheelXVelocity
+            val effectiveMovementComplexity = if (shouldZeroMotionFeatures) 0f else movementComplexity
+            val effectiveTotalBodyMomentum = if (shouldZeroMotionFeatures) 0f else totalBodyMomentum
+            
             val frameFeatures = mapOf(
                 "frame" to i.toFloat(),
                 
                 // CLINICAL GAIT PARAMETERS
                 "hip_height" to hipY,
-                "hip_y_velocity" to hipYVelocity,
-                "hip_x_velocity" to hipXVelocity,
-                "hip_vertical_acceleration" to hipVerticalAcceleration,
-                "hip_horizontal_acceleration" to hipHorizontalAcceleration,
+                "hip_y_velocity" to effectiveHipYVelocity,
+                "hip_x_velocity" to effectiveHipXVelocity,
+                "hip_vertical_acceleration" to effectiveHipVerticalAcceleration,
+                "hip_horizontal_acceleration" to effectiveHipHorizontalAcceleration,
                 "com_x" to comX,
                 "com_y" to comY,
-                "com_x_velocity" to comXVelocity,
-                "com_y_velocity" to comYVelocity,
-                "com_acceleration" to comAcceleration,
+                "com_x_velocity" to effectiveComXVelocity,
+                "com_y_velocity" to effectiveComYVelocity,
+                "com_acceleration" to effectiveComAcceleration,
                 
                 // JOINT KINEMATICS
                 "left_knee_angle" to leftKneeAngle,
@@ -475,15 +566,15 @@ class FeatureExtraction {
                 "knee_extension_power" to kneeExtensionPower,
                 "hip_extension_power" to hipExtensionPower,
                 "ankle_power" to anklePower,
-                "left_knee_velocity" to leftKneeVelocity,
-                "right_knee_velocity" to rightKneeVelocity,
+                "left_knee_velocity" to effectiveLeftKneeVelocity,
+                "right_knee_velocity" to effectiveRightKneeVelocity,
                 
                 // PHASE-SPECIFIC FEATURES
-                "vertical_momentum" to verticalMomentum,
+                "vertical_momentum" to effectiveVerticalMomentum,
                 "sit_to_stand_power" to sitToStandPower,
                 "trunk_flexion_velocity" to trunkFlexionVelocity,
-                "forward_momentum" to forwardMomentum,
-                "forward_acceleration" to forwardAcceleration,
+                "forward_momentum" to effectiveForwardMomentum,
+                "forward_acceleration" to effectiveForwardAcceleration,
                 
                 // GAIT ANALYSIS
                 "ankle_distance" to ankleDistance,
@@ -491,10 +582,10 @@ class FeatureExtraction {
                 "toe_distance" to toeDistance,
                 "base_of_support_width" to baseOfSupportWidth,
                 "base_of_support_length" to baseOfSupportLength,
-                "lheel_y_velocity" to lheelYVelocity,
-                "rheel_y_velocity" to rheelYVelocity,
-                "lheel_x_velocity" to lheelXVelocity,
-                "rheel_x_velocity" to rheelXVelocity,
+                "lheel_y_velocity" to effectiveLheelYVelocity,
+                "rheel_y_velocity" to effectiveRheelYVelocity,
+                "lheel_x_velocity" to effectiveLheelXVelocity,
+                "rheel_x_velocity" to effectiveRheelXVelocity,
                 "step_asymmetry" to stepAsymmetry,
                 "stride_asymmetry" to strideAsymmetry,
                 "time_since_last_step" to timeSinceLastStep,
@@ -504,17 +595,17 @@ class FeatureExtraction {
                 
                 // TURNING KINEMATICS
                 "shoulder_angle" to shoulderAngle,
-                "shoulder_rotation_velocity" to shoulderRotationVelocity,
+                "shoulder_rotation_velocity" to effectiveShoulderRotationVelocity,
                 "hip_rotation" to hipRotation,
-                "hip_rotation_velocity" to hipRotationVelocity,
+                "hip_rotation_velocity" to effectiveHipRotationVelocity,
                 "axial_dissociation" to axialDissociation,
                 "axial_dissociation_velocity" to axialDissociationVelocity,
                 "head_yaw" to headYaw,
-                "head_yaw_velocity" to headYawVelocity,
+                "head_yaw_velocity" to effectiveHeadYawVelocity,
                 "torso_twist" to torsoTwist,
                 "torso_twist_velocity" to torsoTwistVelocity,
                 "direction_change_magnitude" to directionChangeMagnitude,
-                "turn_preparation_score" to turnPreparationScore,
+                "turn_preparation_score" to effectiveTurnPreparationScore,
                 
                 // BALANCE AND STABILITY
                 "mediolateral_sway" to mediolateralSway,
@@ -524,7 +615,7 @@ class FeatureExtraction {
                 "stability_margin" to stabilityMargin,
                 "body_sway" to bodySway,
                 "postural_control" to posturalControl,
-                "movement_complexity" to movementComplexity,
+                "movement_complexity" to effectiveMovementComplexity,
                 
                 // ENERGY AND POWER
                 "kinetic_energy" to kineticEnergy,
@@ -533,7 +624,7 @@ class FeatureExtraction {
                 "rotational_energy" to rotationalEnergy,
                 "concentric_power" to concentricPower,
                 "eccentric_power" to eccentricPower,
-                "total_body_momentum" to totalBodyMomentum,
+                "total_body_momentum" to effectiveTotalBodyMomentum,
                 
                 // TEMPORAL CONTEXT
                 "task_progression" to taskProgression,
@@ -543,7 +634,10 @@ class FeatureExtraction {
                 "turn_first_likelihood" to turnFirstLikelihood,
                 "walk_to_likelihood" to walkToLikelihood,
                 "turn_second_likelihood" to turnSecondLikelihood,
-                "stand_to_sit_likelihood" to standToSitLikelihood
+                "stand_to_sit_likelihood" to standToSitLikelihood,
+                
+                // MOVEMENT DETECTION FLAG (for post-prediction override)
+                "no_movement_detected" to if (shouldZeroMotionFeatures) 1.0f else 0.0f
             )
             
             features.add(frameFeatures)

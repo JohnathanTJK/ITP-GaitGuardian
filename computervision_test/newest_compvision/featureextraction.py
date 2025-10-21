@@ -5,10 +5,10 @@ from math import degrees, acos, atan2
 from numpy.linalg import norm
 
 # === Config ===
-# input_dir = "raw_landmarks_csv"
-# output_dir = "engineered_features_csv"
-input_dir = "testrawlandmarks"
-output_dir = "test_engineered_features_csv"
+# input_dir = "raw_landmarks_train"
+# output_dir = "training_features_csv"
+input_dir = "raw_landmarks_test"
+output_dir = "test_features_csv"
 os.makedirs(output_dir, exist_ok=True)
 fps = 30
 
@@ -246,16 +246,47 @@ def extract_tug_features(df):
         # Temporal context within TUG task
         task_progression = row['frame'] / len(df) if len(df) > 1 else 0
         
+        # Movement activity detection - only give temporal priors if actually moving
+        # This prevents false positives when user sits still for entire video
+        is_actively_moving = (
+            abs(hip_y_velocity) > 0.01 or      # Vertical movement
+            abs(hip_x_velocity) > 0.01 or      # Horizontal movement
+            abs(forward_momentum) > 0.01 or    # Forward progression
+            abs(shoulder_rotation_velocity) > 5 or  # Turning
+            abs(hip_rotation_velocity) > 5 or       # Pelvic rotation
+            vertical_momentum > 0.02           # Any significant momentum
+        )
+        
+        # Movement intensity over recent history (last 30 frames = 1 second)
+        recent_movement_intensity = 0
+        if i >= 30:
+            recent_frames = df.iloc[i-30:i]
+            recent_hip_y_range = recent_frames['y_23'].max() - recent_frames['y_23'].min()
+            recent_hip_x_range = recent_frames['x_23'].max() - recent_frames['x_23'].min()
+            recent_movement_intensity = recent_hip_y_range + recent_hip_x_range
+        
+        # Only activate temporal priors if significant movement detected
+        movement_multiplier = 1.0 if (is_actively_moving and recent_movement_intensity > 0.05) else 0.0
+        
         # Phase likelihood based on temporal progression (refined estimates)
-        # These act as weak priors for the classifier
+        # These act as weak priors ONLY when movement is detected
         progression_velocity = abs(task_progression - 0.5) * 2  # 0 at middle, 1 at extremes
         
-        sit_to_stand_likelihood = np.exp(-((task_progression - 0.05)**2) / 0.01)  # Peak at 5%
-        walk_from_likelihood = np.exp(-((task_progression - 0.25)**2) / 0.02)     # Peak at 25%
-        turn_first_likelihood = np.exp(-((task_progression - 0.45)**2) / 0.01)    # Peak at 45%
-        walk_to_likelihood = np.exp(-((task_progression - 0.65)**2) / 0.02)       # Peak at 65%
-        turn_second_likelihood = np.exp(-((task_progression - 0.8)**2) / 0.01)    # Peak at 80%
-        stand_to_sit_likelihood = np.exp(-((task_progression - 0.95)**2) / 0.01)  # Peak at 95%
+        # Base temporal likelihoods (only active during movement)
+        sit_to_stand_likelihood = np.exp(-((task_progression - 0.05)**2) / 0.01) * movement_multiplier
+        walk_from_likelihood = np.exp(-((task_progression - 0.25)**2) / 0.02) * movement_multiplier
+        turn_first_likelihood = np.exp(-((task_progression - 0.45)**2) / 0.01) * movement_multiplier
+        walk_to_likelihood = np.exp(-((task_progression - 0.65)**2) / 0.02) * movement_multiplier
+        turn_second_likelihood = np.exp(-((task_progression - 0.8)**2) / 0.01) * movement_multiplier
+        stand_to_sit_likelihood = np.exp(-((task_progression - 0.95)**2) / 0.01) * movement_multiplier
+        
+        # If no movement detected and near start of video, strongly indicate sitting
+        if not is_actively_moving and task_progression < 0.15:
+            sit_to_stand_likelihood = 0.9  # Strong prior for sitting at start
+        # If no movement detected anywhere in video, default to sitting/standing still
+        elif not is_actively_moving:
+            sit_to_stand_likelihood = 0.5
+            stand_to_sit_likelihood = 0.3
         
         # === 9. DERIVED AND COMPOSITE FEATURES ===
         
@@ -475,7 +506,12 @@ for file_idx, filename in enumerate(landmark_files, 1):
         
         # Ensure no empty values - replace any remaining NaN with 0
         df_features = df_features.fillna(0)
-        
+        # Ensure frame is integer and zeros are plain 0
+        df_features['frame'] = df_features['frame'].astype(int)
+        for col in df_features.columns:
+            if col != 'frame':
+                df_features[col] = df_features[col].apply(lambda x: 0 if x == 0 else x)
+
         df_features.to_csv(output_path, index=False)
         
         print(f"✅ Extracted {len(df_features)} feature vectors with {len(df_features.columns)-1} features")
