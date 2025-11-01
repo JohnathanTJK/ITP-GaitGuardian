@@ -62,7 +62,7 @@ class NotificationService(private val context: Context) {
             "There was an error processing your video. Tap to try again."
         }
         val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
 //            putExtra("destination", "result_screen/$assessmentTitle")
             putExtra("destination", destination)
         }

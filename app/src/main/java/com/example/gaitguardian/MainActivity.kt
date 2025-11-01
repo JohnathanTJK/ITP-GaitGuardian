@@ -11,11 +11,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.gaitguardian.ui.theme.GaitGuardianTheme
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
@@ -25,6 +27,7 @@ import com.example.gaitguardian.api.TestApiConnection
 
 class MainActivity : ComponentActivity() {
     private val _assessmentId = mutableStateOf<Int?>(null)
+    private val _destinationFromIntent = mutableStateOf<String?>(null)
 
     // Initialize ViewModels at the top
     private val patientViewModel by lazy {
@@ -70,9 +73,10 @@ class MainActivity : ComponentActivity() {
         requestNotificationPermissionIfNeeded()
 
         _assessmentId.value = intent?.getIntExtra("assessmentId", -1)?.takeIf { it != -1 }
+        _destinationFromIntent.value = intent?.getStringExtra("destination")
 
         // ✅ handle notification tap (cold start)
-        handleNotificationIntent(intent)
+//        handleNotificationIntent(intent)
 
         setContent {
             GaitGuardianTheme {
@@ -80,14 +84,7 @@ class MainActivity : ComponentActivity() {
                 val activity = this
                 // Attach listener directly to navController
                 DisposableEffect(navController) {
-//                    val routeOrientations = mapOf(
-//                        "video_screen" to ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,
-//                        "clinician_home_screen" to ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,
-//                        "patient_screen" to ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,
-//                        "camera_screen" to ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,
-//                        "login" to ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-//                    )
-                    val unspecifiedScreens = setOf("video_screen", "camera_screen") // screens that DO NOT enforce strict orientation
+                    val unspecifiedScreens = setOf("video_screen", "camera_screen", "camera_test") // screens that DO NOT enforce strict orientation
                     // check the currentdestination route, and orientate screen accordingly
                     val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
                         activity.requestedOrientation = if (destination.route in unspecifiedScreens) {
@@ -99,9 +96,12 @@ class MainActivity : ComponentActivity() {
                     navController.addOnDestinationChangedListener(listener)
                     onDispose { navController.removeOnDestinationChangedListener(listener) }
                 }
+//                val destinationFromIntent = intent?.getStringExtra("destination")
+                val destinationFromIntent by _destinationFromIntent
                 NavGraph(
                     navController = navController,
                     initialId = _assessmentId.value,
+                    destinationIntent = destinationFromIntent,
                     patientViewModel = patientViewModel,
                     clinicianViewModel = clinicianViewModel,
                     tugDataViewModel = tugDataViewModel
@@ -113,20 +113,10 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        intent.getIntExtra("assessmentId", -1)
-            .takeIf { it != -1 }
-            ?.let { tugDataViewModel.onNotificationReceived(it) } // if not -1, update VM
-        // ✅ handle notification tap (warm start)
-        handleNotificationIntent(intent)
-    }
-
-    private fun handleNotificationIntent(intent: Intent?) {
-        val tappedId = intent?.getIntExtra("clearNotificationId", -1) ?: -1
-        // TODO: Uncomment when notification flow confirm works
-//        if (tappedId != -1) {
-//            lifecycleScope.launch {
-//                tugDataViewModel.clearAssessmentIDsforNotifications(tappedId)
-//            }
+        _destinationFromIntent.value = intent.getStringExtra("destination")
+//        val destination = intent.getStringExtra("destination")
+//        if (destination != null) {
+//            navController.navigate(destination)
 //        }
     }
 
