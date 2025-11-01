@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,6 +40,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.media3.common.MediaItem
@@ -66,7 +68,9 @@ fun VideoPlaybackScreen(
 
     val assessment by tugViewModel.selectedTUGAssessment.collectAsState()
     val subtaskDuration by tugViewModel.subtaskDuration.collectAsState()
+    Log.d("playbackscreen", "subtaskduration = $subtaskDuration")
     val subtaskJumpTimings = subtaskDuration?.let { prepareSubtaskJumpTimings(it) }
+    Log.d("playbackscreen", "subtasktimings = $subtaskJumpTimings")
     val videoFolder = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
     val videoTitle = assessment?.videoTitle ?: return
     val videoFile = File(videoFolder, videoTitle)
@@ -120,7 +124,7 @@ fun VideoPlaybackScreen(
     )
     {
         if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            ImmersiveLandscapeVideoLayout(
+            LandscapeVideoLayout(
                 exoPlayer = exoPlayer,
                 isPlaying = isPlaying,
                 currentPosition = currentPosition,
@@ -219,28 +223,10 @@ fun PortraitVideoLayout(
         Spacer(modifier = Modifier.height(8.dp))
 
         // Jump Buttons
-//        FlowRow(
-//            modifier = Modifier.fillMaxWidth().padding(4.dp),
-//            verticalArrangement = Arrangement.spacedBy(8.dp),
-//            horizontalArrangement = Arrangement.spacedBy(8.dp),
-//            maxItemsInEachRow = 3
-//        ) {
-//            jumpTimestamps?.forEach { (label, startMs, endMs) ->
-//                val isActive = currentPosition in startMs..endMs
-//                Button(
-//                    onClick = { exoPlayer.seekTo(startMs) },
-//                    colors = if (isActive) ButtonDefaults.buttonColors(
-//                        containerColor = Color(0xFF4A148C)
-//                    ) else ButtonDefaults.buttonColors(containerColor = Color.Gray)
-//                ) {
-//                    Text(label)
-//                }
-//            }
-//        }
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            maxItemsInEachRow = 2, // 2 columns
+            verticalArrangement = Arrangement.spacedBy(2.5.dp),
+            maxItemsInEachRow = 3,
             modifier = Modifier.fillMaxWidth()
         ) {
             jumpTimestamps?.forEach { (label, startMs, endMs) ->
@@ -249,7 +235,7 @@ fun PortraitVideoLayout(
                 Button(
                     onClick = { exoPlayer.seekTo(startMs) },
                     modifier = Modifier
-                        .weight(1f)   // equal width in the row
+                        .fillMaxWidth()
                         .height(48.dp),
                     colors = if (isActive)
                         ButtonDefaults.buttonColors(containerColor = Color(0xFF4A148C))
@@ -257,51 +243,32 @@ fun PortraitVideoLayout(
                         ButtonDefaults.buttonColors(containerColor = Color.Gray),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text(
-                        text = label,
-                        color = Color.White,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = label,
+                            color = Color.White,
+                            maxLines = 1,
+                        )
+                        Text(
+                            text = "${(endMs - startMs) / 1000f} s",
+                            color = Color.White.copy(alpha = 0.8f),
+                            textAlign = TextAlign.End,
+                        )
+                    }
                 }
             }
         }
-//        LazyVerticalGrid(
-//            columns = GridCells.Fixed(2), // 2 columns
-//            horizontalArrangement = Arrangement.spacedBy(8.dp),
-//            verticalArrangement = Arrangement.spacedBy(8.dp),
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .padding(4.dp)
-//        ) {
-//            items(jumpTimestamps?.size ?: 0) { index ->
-//                val (label, startMs, endMs) = jumpTimestamps!![index]
-//                val isActive = currentPosition in startMs..endMs
-//
-//                Button(
-//                    onClick = { exoPlayer.seekTo(startMs) },
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                        .height(48.dp),
-//                    colors = if (isActive) ButtonDefaults.buttonColors(
-//                        containerColor = Color(0xFF4A148C)
-//                    ) else ButtonDefaults.buttonColors(containerColor = Color.Gray),
-//                    shape = RoundedCornerShape(8.dp)
-//                ) {
-//                    Text(
-//                        text = label,
-//                        textAlign = TextAlign.Left,
-//                        modifier = Modifier.fillMaxWidth()
-//                    )
-//                }
-//            }
-//        }
     }
 }
 
 @Composable
-fun ImmersiveLandscapeVideoLayout(
+fun LandscapeVideoLayout(
     exoPlayer: ExoPlayer,
     isPlaying: Boolean,
     currentPosition: Long,
@@ -324,7 +291,7 @@ fun ImmersiveLandscapeVideoLayout(
         }
     }
 
-    // Hide system bars for immersive full-screen video
+    // Hide system bars for full-screen video
     DisposableEffect(Unit) {
         val window = activity?.window
         val controller = window?.let { androidx.core.view.WindowInsetsControllerCompat(it, it.decorView) }
@@ -421,30 +388,46 @@ fun ImmersiveLandscapeVideoLayout(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     FlowRow(
-//                        verticalArrangement = Arrangement.spacedBy(8.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                         maxItemsInEachRow = 3,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         jumpTimestamps?.forEach { (label, startMs, endMs) ->
                             val isActive = currentPosition in startMs..endMs
+
+                            // Each button takes roughly 1/3 of the available width
                             Button(
-                                modifier = Modifier.fillMaxWidth(0.25f),
                                 onClick = { exoPlayer.seekTo(startMs) },
                                 colors = if (isActive)
-                                    ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFF4A148C)
-                                    )
+                                    ButtonDefaults.buttonColors(containerColor = Color(0xFF4A148C))
                                 else
-                                    ButtonDefaults.buttonColors(
-                                        containerColor = Color.DarkGray.copy(alpha = 0.7f)
-                                    ),
-                                shape = RoundedCornerShape(8.dp)
+                                    ButtonDefaults.buttonColors(containerColor = Color.DarkGray.copy(alpha = 0.7f)),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
                             ) {
-                                Text(label, color = Color.White)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = label,
+                                        color = Color.White,
+                                        maxLines = 1,
+                                        fontSize = 14.sp
+                                    )
+                                    Text(
+                                        text = "${(endMs - startMs) / 1000f} s",
+                                        color = Color.White.copy(alpha = 0.8f),
+                                        fontSize = 12.sp
+                                    )
+                                }
                             }
                         }
                     }
+
 
                     Spacer(modifier = Modifier.height(8.dp))
 
