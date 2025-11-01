@@ -24,6 +24,4 @@ interface TugAnalysisDao {
 
     @Query("SELECT sitToStand, walkFromChair, turnFirst, walkToChair, turnSecond, standToSit FROM tug_analysis_table WHERE testId = :id ")
     suspend fun getSubtaskById(id: Int): subtaskDuration
-
-
 }

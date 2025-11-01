@@ -33,6 +33,6 @@ interface TugDao {
     @Query("SELECT * FROM tug_assessment_table ORDER BY testId DESC LIMIT 1")
     suspend fun getLatestAssessment(): TUGAssessment?
 
-//    @Query("DELETE FROM patients_table WHERE id = :id")
-//    fun deletePatient(id: Int)
+    @Query("DELETE FROM tug_assessment_table WHERE testId = (SELECT testId FROM tug_assessment_table ORDER BY testId DESC LIMIT 1)")
+    suspend fun removeLastInsertedAssessment()
 }

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -107,11 +108,25 @@ fun LoadingScreen(
                         // retrieve the result
                         val json = workInfo.outputData.getString("ANALYSIS_RESULT")
                         //convert to gson
-                        val response = gson.fromJson(json, GaitAnalysisResponse::class.java)
-                        analysisResult = response
-                        analysisState = AnalysisState.Success
-                        CoroutineScope(Dispatchers.IO).launch {
-                            handleAnalysisSuccess(response, videoFile, tugDataViewModel, patientViewModel)
+                        val analysisResult = gson.fromJson(json, GaitAnalysisResponse::class.java)
+                        // if analysis success , set State to Success else set as Error
+                        Log.d("result", "analysisResult is $analysisResult")
+                        if (analysisResult.success) analysisState = AnalysisState.Success else analysisResult.error?.let { analysisState = AnalysisState.Error(it) }
+
+                        if (analysisResult.success) {
+                            Log.d("result", "analysis state is success: inserting new entry now!")
+                            CoroutineScope(Dispatchers.IO).launch {
+                                handleAnalysisSuccess(
+                                    analysisResult,
+                                    videoFile,
+                                    tugDataViewModel,
+                                    patientViewModel
+                                )
+                            }
+                        }
+                        if (analysisState is AnalysisState.Error) {
+                            tugDataViewModel.removeLastInsertedAssessment()
+                            Log.d("LoadingScreen","SUCCESSFULLY REMOVED LAST ASSESSMENT BECAUSE FAILED")
                         }
 //                        handleAnalysisSuccess(response, videoFile, tugDataViewModel, patientViewModel)
                     }
@@ -180,6 +195,14 @@ fun LoadingScreen(
                         color = Color.Red,
                         fontWeight = FontWeight.Bold
                     )
+                    Button(
+                        onClick = {
+                            navController.navigate("camera_screen/$assessmentTitle")
+                        }
+                    )
+                    {
+                        Text("Record Again")
+                    }
                 }
 
                 else -> {}

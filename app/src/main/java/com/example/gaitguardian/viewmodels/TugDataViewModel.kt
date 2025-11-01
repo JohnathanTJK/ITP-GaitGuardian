@@ -88,6 +88,12 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, priva
         _assessmentComment.value = comment
     }
 
+    // Remove Assessment ( if video fails, need to re-upload/record)
+    fun removeLastInsertedAssessment() {
+        viewModelScope.launch(Dispatchers.IO) {
+            tugRepository.removeLastInserted()
+        }
+    }
     // END PATIENT
 
     // Clinician

@@ -13,6 +13,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
 import java.io.File
+import java.io.IOException
 import java.nio.FloatBuffer
 import kotlin.math.roundToInt
 
@@ -203,7 +204,11 @@ class TugPrediction(private val context: Context) {
             )
             
         } catch (e: Exception) {
-            Log.e(TAG, "Pose landmarks processing failed", e)
+            val errorMessage = when (e) {
+                is IndexOutOfBoundsException -> "No body detected in video frames. Please ensure you are in the frame."
+                is IOException -> "File read/write error during analysis"
+                else -> "Unexpected error: ${e.localizedMessage ?: "Unknown"}"
+            }
             PredictionResult(
                 filename = "pose_landmarks",
                 total_frames = landmarksList.size,
@@ -212,7 +217,8 @@ class TugPrediction(private val context: Context) {
                 phase_analysis = emptyList(),
                 severity = "Unknown",
                 success = false,
-                error_message = "Processing failed: ${e.message}"
+//                error_message = "Processing failed: ${e.message}"
+                error_message = errorMessage
             )
         }
     }

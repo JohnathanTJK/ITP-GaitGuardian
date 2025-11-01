@@ -186,6 +186,17 @@ fun NewCameraScreen(
             )
         }
     }
+    DisposableEffect(Unit) {
+        onDispose {
+            try {
+                recording?.stop()
+                recording?.close()
+                recording = null
+            } catch (e: Exception) {
+                Log.w("CameraCleanup", "Failed to stop recording cleanly: ${e.message}")
+            }
+        }
+    }
 
     val configuration = LocalConfiguration.current
     val screenWidthDp = configuration.screenWidthDp
@@ -409,6 +420,7 @@ private fun recordVideo(
 
                 is VideoRecordEvent.Finalize -> {
                     if (event.hasError()) {
+                        Log.e("CameraRecording", "Video capture failed: ${event.error}", event.cause)
                         recording?.close()
                         recording = null
                         onRecordingStateChange(false)
