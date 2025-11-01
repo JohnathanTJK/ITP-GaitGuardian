@@ -70,6 +70,8 @@ dependencies {
     //Exoplayer video
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.foundation)
+    implementation(libs.androidx.room.external.antlr)
+    implementation(libs.androidx.work.runtime.ktx)
 //    implementation(libs.ads.mobile.sdk)
 //    implementation(libs.androidx.room.compiler)
 //    implementation(libs.androidx.room.common.jvm)
@@ -91,6 +93,9 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.3.1")
     implementation("androidx.camera:camera-video:1.3.1")
     implementation("androidx.camera:camera-view:1.3.1")
+    // ML Kit
+    // ML Kit Object Detection
+    implementation("com.google.mlkit:object-detection:17.0.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
 
     // Room Database
@@ -123,6 +128,13 @@ dependencies {
     // OpenCV for image processing - TODO: Add proper OpenCV dependency
     // implementation("org.opencv:opencv-android:4.5.4")
 
+    // TFlite
+    // TensorFlow Lite core
+    implementation("org.tensorflow:tensorflow-lite:2.14.0")
+// TensorFlow Lite Support Library (for ByteBuffer / Bitmap conversion, file utils)
+    implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
+// TensorFlow Lite Task Library for Vision / Object Detection / Image Processing
+    implementation("org.tensorflow:tensorflow-lite-task-vision:0.4.4")
     // Material3 Icons
     implementation(libs.androidx.material.icons.extended)
 }

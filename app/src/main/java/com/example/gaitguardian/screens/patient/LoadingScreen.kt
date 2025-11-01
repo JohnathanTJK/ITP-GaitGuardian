@@ -1,5 +1,6 @@
 package com.example.gaitguardian.screens.patient
 
+import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -34,6 +35,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.compose.ui.platform.LocalContext
+import androidx.work.CoroutineWorker
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import androidx.work.WorkerParameters
+import androidx.work.workDataOf
+import com.example.gaitguardian.NotificationService
 import com.example.gaitguardian.api.GaitAnalysisClient
 import com.example.gaitguardian.api.GaitAnalysisResponse
 import com.example.gaitguardian.api.GaitMetrics
@@ -43,8 +51,11 @@ import com.example.gaitguardian.data.models.TugResult
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAnalysis
 import com.example.gaitguardian.viewmodels.PatientViewModel
 import com.example.gaitguardian.viewmodels.TugDataViewModel
+import com.google.gson.Gson
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.File
-
 
 @Composable
 fun LoadingScreen(
@@ -56,10 +67,12 @@ fun LoadingScreen(
 ) {
     val context = LocalContext.current
     val videoFile = File(outputPath)
-    val scope = rememberCoroutineScope()
+    val gson = remember { Gson() }
+    val workManager = WorkManager.getInstance(context)
+
     var analysisState by remember { mutableStateOf<AnalysisState>(AnalysisState.Idle) }
+    var progress by remember { mutableStateOf(0) }
     var analysisResult by remember { mutableStateOf<GaitAnalysisResponse?>(null) }
-    val gaitClient = remember { GaitAnalysisClient(context) }
 
     val motivationalQuotes = listOf(
         "🌟 Keep going, you're doing amazing!",
@@ -70,79 +83,51 @@ fun LoadingScreen(
     )
     val randomQuote = remember { motivationalQuotes.random() }
 
-    // 🔁 Start ML analysis
-    LaunchedEffect(key1 = videoFile) {
+    // Start background analysis using WorkManager
+    LaunchedEffect(videoFile) {
         analysisState = AnalysisState.Analyzing
-        try {
-            // Use the correct method that returns TugResult and uses direct MediaPipe analysis
-            val tugResult = gaitClient.analyzeVideoFile(videoFile)
-            
-            if (tugResult.riskAssessment.startsWith("ERROR:")) {
-                // Handle error result
-                analysisState = AnalysisState.Error(tugResult.riskAssessment)
-            } else {
-                //
-                // Convert TugResult to GaitAnalysisResponse format for compatibility
-                val response = convertTugResultToGaitAnalysisResponse(tugResult)
-                analysisResult = response
-                tugDataViewModel.setResponse(response)
-                val tugMetrics = response.tugMetrics
-                //TODO: Fetch the latest analysis
-                val previousAnalysis = tugDataViewModel.getLatestTugAnalysis() // Retrieve latest TUGAnalysis
-                Log.d("Severity", "Latest TUG in db: $previousAnalysis")
-                var isFlagged = false
 
-                if (previousAnalysis != null) { // If previous analysis exists, then compare and edit flag if necessary
-                    Log.d("Severity", "Found previous, comparing...")
-                    // Calculate the difference in time
-                    val currentTime = tugMetrics?.totalTime ?: 0.0
-                    val prevTime = previousAnalysis.timeTaken
-                    val timeDifference = kotlin.math.abs(currentTime - prevTime)
-                    Log.d("Severity", " prevTime: $prevTime, currentTime: $currentTime, Time difference: $timeDifference")
-                    if (timeDifference > 1.0) { // if exceeds by 1 second, set as Flagged = True ( to trigger alert in Clinician)
-                        isFlagged = true
+        // create a WorkManager request to analyse the video
+        val workRequest = OneTimeWorkRequestBuilder<VideoAnalysisWorker>()
+            .setInputData(workDataOf("VIDEO_PATH" to videoFile.absolutePath))
+            .build()
+
+        workManager.enqueue(workRequest)
+
+        workManager.getWorkInfoByIdLiveData(workRequest.id).observeForever { workInfo ->
+            if (workInfo != null) {
+                when (workInfo.state) {
+                    WorkInfo.State.RUNNING -> {
+                        val p = workInfo.progress.getInt("PROGRESS", 0)
+                        progress = p
+                        analysisState = AnalysisState.Analyzing
                     }
-                }
 
-                val analysis = TUGAnalysis(
-                        severity = response.severity ?: "Unknown",
-                        timeTaken = tugMetrics?.totalTime ?: 0.0,
-                        stepCount = response.gaitMetrics?.stepCount ?: 0,
-                        sitToStand = tugMetrics?.sitToStandTime ?: 0.0,
-                        walkFromChair = tugMetrics?.walkFromChairTime ?: 0.0,
-                        turnFirst = tugMetrics?.turnFirstTime ?: 0.0,
-                        walkToChair = tugMetrics?.walkToChairTime ?: 0.0,
-                        turnSecond = tugMetrics?.turnSecondTime ?: 0.0,
-                        standToSit = tugMetrics?.standToSitTime ?: 0.0,
-                        isFlagged = isFlagged
-                )
+                    WorkInfo.State.SUCCEEDED -> {
+                        // retrieve the result
+                        val json = workInfo.outputData.getString("ANALYSIS_RESULT")
+                        //convert to gson
+                        val response = gson.fromJson(json, GaitAnalysisResponse::class.java)
+                        analysisResult = response
+                        analysisState = AnalysisState.Success
+                        CoroutineScope(Dispatchers.IO).launch {
+                            handleAnalysisSuccess(response, videoFile, tugDataViewModel, patientViewModel)
+                        }
+//                        handleAnalysisSuccess(response, videoFile, tugDataViewModel, patientViewModel)
+                    }
 
-                // Wait for database insertion to complete before navigating
-                tugDataViewModel.insertTugAnalysis(analysis)
-                tugDataViewModel.lastInsertedId?.toInt()?.let { newId ->
-                    Log.d("Severity", "Id is ${newId}")
-                    tugDataViewModel.saveAssessmentIDsforNotifications(newId) // trigger notification
-                    Log.d("Severity", "insertion complete")
-                    Log.d("Severity", "Mild severity detected for test:${newId}")
-                }
+                    WorkInfo.State.FAILED -> {
+                        val error = workInfo.outputData.getString("ERROR_MESSAGE") ?: "Unknown error"
+                        analysisState = AnalysisState.Error(error)
+                    }
 
-                if (analysis.severity == "Mild")
-                {
-                    // TODO: Decide what criteria then send a notification
-                    // Possible options for severity: "Normal", "Slight", "Mild", "Moderate", or "Severe"
+                    else -> {}
                 }
-                if (!patientViewModel.saveVideos.value && videoFile.exists()) {
-                    videoFile.delete()
-                }
-
-                analysisState = AnalysisState.Success
             }
-        } catch (e: Exception) {
-            analysisState = AnalysisState.Error("Unexpected error: ${e.message}")
         }
     }
 
-    // ✅ Navigate on success
+    // Navigate when success
     LaunchedEffect(analysisState) {
         if (analysisState == AnalysisState.Success) {
             navController.navigate("result_screen/${assessmentTitle}") {
@@ -151,11 +136,13 @@ fun LoadingScreen(
         }
     }
 
-    // 🧠 UI
+    // UI
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(Color(0xFFEDE7F6), Color(0xFFF3E5F5)))),
+            .background(
+                Brush.verticalGradient(listOf(Color(0xFFEDE7F6), Color(0xFFF3E5F5)))
+            ),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -173,27 +160,38 @@ fun LoadingScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            if (analysisState is AnalysisState.Analyzing) {
-                CircularProgressIndicator(color = Color(0xFF6A1B9A))
-                Spacer(modifier = Modifier.height(16.dp))
+            when (analysisState) {
+                is AnalysisState.Analyzing -> {
+                    CircularProgressIndicator(
+                        color = Color(0xFF6A1B9A),
+                        progress = progress / 100f
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "$progress% complete",
+                        color = Color(0xFF4A148C),
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                is AnalysisState.Error -> {
+                    Text(
+                        text = "❌ ${(analysisState as AnalysisState.Error).message}",
+                        color = Color.Red,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                else -> {}
             }
 
-            if (analysisState is AnalysisState.Error) {
-                Text(
-                    text = "❌ ${(analysisState as AnalysisState.Error).message}",
-                    color = Color.Red,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
+            Spacer(modifier = Modifier.height(20.dp))
 
             Card(
                 shape = RoundedCornerShape(16.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -214,13 +212,10 @@ fun LoadingScreen(
     }
 }
 
-/**
- * Convert TugResult to GaitAnalysisResponse for compatibility with existing UI components
- */
 private fun convertTugResultToGaitAnalysisResponse(tugResult: TugResult): GaitAnalysisResponse {
     // Check if this is an error result
     val isError = tugResult.riskAssessment.startsWith("ERROR:")
-    
+
     return if (isError) {
         // Return error response
         GaitAnalysisResponse(
@@ -244,7 +239,7 @@ private fun convertTugResultToGaitAnalysisResponse(tugResult: TugResult): GaitAn
             standToSitTime = tugResult.standToSitDuration,
             totalTime = tugResult.totalDuration
         )
-        
+
         // Create placeholder gait metrics
         val gaitMetrics = GaitMetrics(
             stepCount = 20, // Placeholder
@@ -258,17 +253,17 @@ private fun convertTugResultToGaitAnalysisResponse(tugResult: TugResult): GaitAn
             turn1Duration = tugMetrics.turnFirstTime,
             turn2Duration = tugMetrics.turnSecondTime
         )
-        
+
         // Use the ML-calculated severity from TugResult instead of hardcoded logic
         val severity = tugResult.riskAssessment
-        
+
         val processingInfo = ProcessingInfo(
             totalFrames = 100, // Placeholder
             processedFrames = 100, // Placeholder
             fps = 30.0,
             processingTimeSeconds = 0.0
         )
-        
+
         GaitAnalysisResponse(
             success = true,
             gaitMetrics = gaitMetrics,
@@ -279,5 +274,83 @@ private fun convertTugResultToGaitAnalysisResponse(tugResult: TugResult): GaitAn
             error = null,
             errorType = null
         )
+    }
+}
+
+class VideoAnalysisWorker(
+    context: Context,
+    params: WorkerParameters
+) : CoroutineWorker(context, params) {
+
+    override suspend fun doWork(): Result {
+        val videoPath = inputData.getString("VIDEO_PATH") ?: return Result.failure()
+        Log.d("VideoAnalysisWorker", "Started analysis for $videoPath")
+
+        val gaitClient = GaitAnalysisClient(applicationContext)
+        val videoFile = File(videoPath)
+        return try {
+            // Simulate progress reporting while analyzing (maybe can extract number of frames and display here if possible)
+            //TODO: replace totalSteps with total number of frames
+            // currently it is just a timer that updates 10% every 0.5s
+            val totalSteps = 10
+            for (i in 1..totalSteps) {
+                setProgress(workDataOf("PROGRESS" to (i * 10)))
+                Log.d("VideoAnalysisWorker", "Progress: ${i * 10}%")
+                kotlinx.coroutines.delay(500L) // need a flag here to update the progress after every 100(?) frames done
+            }
+
+            val tugResult: TugResult = gaitClient.analyzeVideoFile(videoFile)
+            Log.d("VideoAnalysisWorker", "Analysis complete: ${tugResult.riskAssessment}")
+            NotificationService(applicationContext).showCompleteVideoNotification("TUG")
+            val response: GaitAnalysisResponse = convertTugResultToGaitAnalysisResponse(tugResult)
+            val resultJson = Gson().toJson(response)
+            val output = workDataOf("ANALYSIS_RESULT" to resultJson)
+
+            Result.success(output)
+        } catch (e: Exception) {
+            Log.e("VideoAnalysisWorker", "Error during analysis", e)
+            val error = workDataOf("ERROR_MESSAGE" to (e.message ?: "Unknown error"))
+            Result.failure(error)
+        }
+    }
+}
+
+private suspend fun handleAnalysisSuccess(
+    response: GaitAnalysisResponse,
+    videoFile: File,
+    tugDataViewModel: TugDataViewModel,
+    patientViewModel: PatientViewModel
+) {
+    val tugMetrics = response.tugMetrics
+    val previousAnalysis = tugDataViewModel.getLatestTugAnalysis()
+    var isFlagged = false
+
+    if (previousAnalysis != null) {
+        val currentTime = tugMetrics?.totalTime ?: 0.0
+        val prevTime = previousAnalysis.timeTaken
+        val diff = kotlin.math.abs(currentTime - prevTime)
+        if (diff > 1.0) isFlagged = true
+    }
+
+    val analysis = TUGAnalysis(
+        severity = response.severity ?: "Unknown",
+        timeTaken = tugMetrics?.totalTime ?: 0.0,
+        stepCount = response.gaitMetrics?.stepCount ?: 0,
+        sitToStand = tugMetrics?.sitToStandTime ?: 0.0,
+        walkFromChair = tugMetrics?.walkFromChairTime ?: 0.0,
+        turnFirst = tugMetrics?.turnFirstTime ?: 0.0,
+        walkToChair = tugMetrics?.walkToChairTime ?: 0.0,
+        turnSecond = tugMetrics?.turnSecondTime ?: 0.0,
+        standToSit = tugMetrics?.standToSitTime ?: 0.0,
+        isFlagged = isFlagged
+    )
+
+    tugDataViewModel.insertTugAnalysis(analysis)
+    tugDataViewModel.lastInsertedId?.toInt()?.let { newId ->
+        tugDataViewModel.saveAssessmentIDsforNotifications(newId)
+    }
+
+    if (!patientViewModel.saveVideos.value && videoFile.exists()) {
+        videoFile.delete()
     }
 }
