@@ -49,11 +49,22 @@ class NotificationService(private val context: Context) {
         const val SEVERITY_ALERT_CHANNEL_ID = "severity_alert_channel"
     }
 
-    fun showCompleteVideoNotification(assessmentTitle: String)
+    fun showCompleteVideoNotification(assessmentTitle: String, isSuccess: Boolean)
     {
+        val destination = if (isSuccess) {
+            "result_screen/$assessmentTitle"
+        } else {
+            "loading_screen"
+        }
+        val contentText = if (isSuccess) {
+            "Your video for $assessmentTitle has been uploaded. Tap to view results."
+        } else {
+            "There was an error processing your video. Tap to try again."
+        }
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra("destination", "result_screen/$assessmentTitle")
+//            putExtra("destination", "result_screen/$assessmentTitle")
+            putExtra("destination", destination)
         }
 
         val pendingIntent = PendingIntent.getActivity(
@@ -66,7 +77,8 @@ class NotificationService(private val context: Context) {
         val notification = NotificationCompat.Builder(context, SEVERITY_ALERT_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("Video Upload Complete")
-            .setContentText("Your video for $assessmentTitle has been uploaded. Tap to view results.")
+//            .setContentText("Your video for $assessmentTitle has been uploaded. Tap to view results.")
+            .setContentText(contentText)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

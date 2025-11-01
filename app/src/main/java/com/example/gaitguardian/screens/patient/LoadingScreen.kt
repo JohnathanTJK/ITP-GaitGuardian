@@ -128,7 +128,16 @@ fun LoadingScreen(
                             tugDataViewModel.removeLastInsertedAssessment()
                             Log.d("LoadingScreen","SUCCESSFULLY REMOVED LAST ASSESSMENT BECAUSE FAILED")
                         }
+                        if (analysisState is AnalysisState.Success)
+                        {
+                            NotificationService(context).showCompleteVideoNotification("TUG", true)
+                        }
+                        else{
+                            NotificationService(context).showCompleteVideoNotification("TUG", false)
+                        }
+
 //                        handleAnalysisSuccess(response, videoFile, tugDataViewModel, patientViewModel)
+//                        NotificationService(context).showCompleteVideoNotification("TUG")
                     }
 
                     WorkInfo.State.FAILED -> {
@@ -324,7 +333,7 @@ class VideoAnalysisWorker(
 
             val tugResult: TugResult = gaitClient.analyzeVideoFile(videoFile)
             Log.d("VideoAnalysisWorker", "Analysis complete: ${tugResult.riskAssessment}")
-            NotificationService(applicationContext).showCompleteVideoNotification("TUG")
+//            NotificationService(applicationContext).showCompleteVideoNotification("TUG")
             val response: GaitAnalysisResponse = convertTugResultToGaitAnalysisResponse(tugResult)
             val resultJson = Gson().toJson(response)
             val output = workDataOf("ANALYSIS_RESULT" to resultJson)
