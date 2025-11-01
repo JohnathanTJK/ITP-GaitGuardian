@@ -106,14 +106,20 @@ class TugPrediction(private val context: Context) {
         
         Log.i(TAG, "Processing ${landmarksList.size} pose landmark frames with fixed Python port")
         
+        // Start overall timing
+        val overallStartTime = System.currentTimeMillis()
+        
         try {
             // Extract features using the fixed Python port - now returns frame-by-frame features
+            val featureExtractionStartTime = System.currentTimeMillis()
             val featureExtractor = FeatureExtraction()
             val frameFeatures = featureExtractor.extractTugFeatures(landmarksList, fps)
+            val featureExtractionEndTime = System.currentTimeMillis()
             
             Log.i(TAG, "Extracted ${frameFeatures.size} frame feature vectors from ${landmarksList.size} frames")
             
-            // Convert frame-by-frame features to model input format
+            // Convert frame-by-frame features to model input format and run predictions
+            val predictionStartTime = System.currentTimeMillis()
             val predictions = mutableListOf<String>()
             
             // Process each frame's features for real-time prediction
@@ -121,26 +127,50 @@ class TugPrediction(private val context: Context) {
                 // Convert feature map to ordered FloatArray for model input
                 val featureVector = convertFeatureMapToArray(featureMap)
                 
+                // Check if this frame has no movement detected
+                val noMovementDetected = featureMap["no_movement_detected"] == 1.0f
+                
                 val prediction = predictWithModel(featureVector, model)
-                val label = model.labelEncoder.getOrNull(prediction) ?: "Unknown"
+                
+                // CRITICAL FIX: Override prediction when no movement detected
+                // The model was trained on data with pose jitter, so it can predict movement
+                // phases even when all velocities are zero. Force Sit-To-Stand in this case.
+                val overriddenPrediction = if (noMovementDetected) {
+                    0  // Force Sit-To-Stand (class 0)
+                } else {
+                    prediction
+                }
+                
+                val label = model.labelEncoder.getOrNull(overriddenPrediction) ?: "Unknown"
                 predictions.add(label)
                 
                 if (frameIndex % 50 == 0) { // Log every 50th frame
-                    Log.d(TAG, "Frame $frameIndex: features=${featureVector.size}, prediction=$prediction, label=$label")
+                    Log.d(TAG, "Frame $frameIndex: features=${featureVector.size}, prediction=$prediction, overridden=$overriddenPrediction, label=$label, noMovement=$noMovementDetected")
                 }
             }
+            val predictionEndTime = System.currentTimeMillis()
             
             // Post-process predictions
+            val postProcessingStartTime = System.currentTimeMillis()
             Log.i(TAG, "🔧 Post-processing ${predictions.size} predictions...")
             val smoothed = smoothMajority(predictions, window = 5)
             val corrected = correctSequence(smoothed)
+            val postProcessingEndTime = System.currentTimeMillis()
             
             // Analyze phases
             val phaseAnalysis = analyzePhaseDurations(corrected, fps)
             val totalDuration = phaseAnalysis.sumOf { it.duration_sec.toDouble() }.toFloat()
             val phaseDurations = phaseAnalysis.associate { it.phase to it.duration_sec }
             
-            // Log results
+            val overallEndTime = System.currentTimeMillis()
+            
+            // Calculate timing metrics
+            val featureExtractionDuration = (featureExtractionEndTime - featureExtractionStartTime) / 1000.0
+            val predictionDuration = (predictionEndTime - predictionStartTime) / 1000.0
+            val postProcessingDuration = (postProcessingEndTime - postProcessingStartTime) / 1000.0
+            val totalProcessingTime = (overallEndTime - overallStartTime) / 1000.0
+            
+            // Log results with timing
             Log.i(TAG, "Raw predictions: ${predictions.groupingBy { it }.eachCount()}")
             Log.i(TAG, "Final sequence: ${corrected.groupingBy { it }.eachCount()}")
             Log.i(TAG, "Phase durations:")
@@ -148,6 +178,14 @@ class TugPrediction(private val context: Context) {
                 Log.i(TAG, "   ${phase.phase}: ${phase.duration_sec}s (${phase.frame_count} frames)")
             }
             Log.i(TAG, "Total TUG duration: ${totalDuration}s")
+            
+            // Log detailed timing breakdown
+            Log.e(TAG, "⏱️ ===== PROCESSING TIME BREAKDOWN =====")
+            Log.e(TAG, "⏱️ Feature Extraction: ${String.format("%.2f", featureExtractionDuration)} s (${String.format("%.1f", featureExtractionDuration/totalProcessingTime*100)}%)")
+            Log.e(TAG, "⏱️ ONNX Prediction: ${String.format("%.2f", predictionDuration)} s (${String.format("%.1f", predictionDuration/totalProcessingTime*100)}%)")
+            Log.e(TAG, "⏱️ Post-Processing: ${String.format("%.2f", postProcessingDuration)} s (${String.format("%.1f", postProcessingDuration/totalProcessingTime*100)}%)")
+            Log.e(TAG, "⏱️ TOTAL PROCESSING TIME: ${String.format("%.2f", totalProcessingTime)} s")
+            Log.e(TAG, "⏱️ =====================================")
             
             // Calculate severity using SeverityClassification
             val tugMetrics = createTugMetricsMap(phaseDurations, totalDuration.toDouble())
@@ -310,6 +348,10 @@ class TugPrediction(private val context: Context) {
             "task_progression", "progression_velocity", "sit_to_stand_likelihood", "walk_from_likelihood",
             "turn_first_likelihood", "walk_to_likelihood", "turn_second_likelihood", "stand_to_sit_likelihood",
             
+            // Movement phase indicators (NEW - sequence-aware cumulative tracking)
+            "is_strong_vertical", "is_strong_forward", "is_strong_turning",
+            "cumulative_vertical", "cumulative_forward", "cumulative_turning", "sequence_progression",
+            
             // Temporal smoothing features (rolling windows: 5, 10, 15, 30)
             "hip_y_velocity_smooth_5", "turn_score_smooth_5", "movement_complexity_smooth_5",
             "hip_height_std_5", "forward_momentum_std_5", "rotation_variation_5",
@@ -326,7 +368,7 @@ class TugPrediction(private val context: Context) {
         )
         
         // Convert to ordered FloatArray
-        val result = FloatArray(111) // Expected model input size
+        val result = FloatArray(111) // Expected model input size (updated from 111 to 111)
         for (i in expectedFeatures.indices.take(111)) { // Ensure we don't exceed 111 features
             val featureName = expectedFeatures[i]
             result[i] = featureMap[featureName] ?: 0f

@@ -153,12 +153,18 @@ class GaitAnalysisClient(private val context: Context) {
         Log.d(TAG, "Starting enhanced MediaPipe analysis with correct timing...")
         Log.d(TAG, "Video file: ${videoFile.name} (${videoFile.length()} bytes)")
 
+        // Start overall timing
+        val overallStartTime = System.currentTimeMillis()
+
         try {
             
             // Step 1: Extract pose landmarks using MediaPipe (Python-matched method)
             Log.d(TAG, "Extracting pose landmarks with MediaPipe...")
+            val poseExtractionStartTime = System.currentTimeMillis()
             val videoUri = Uri.fromFile(videoFile)
             val videoLandmarksResult = poseExtractor.processVideoToLandmarksWithMetadata(videoUri)
+            val poseExtractionEndTime = System.currentTimeMillis()
+            
             Log.e(TAG, "Extracted ${videoLandmarksResult?.landmarks?.size ?: 0} pose landmark frames")
 
             if (videoLandmarksResult == null || videoLandmarksResult.landmarks.isEmpty()) {
@@ -168,7 +174,31 @@ class GaitAnalysisClient(private val context: Context) {
 
             // Step 2: Run frame-by-frame TUG prediction using TugPrediction.processPoseLandmarks
             Log.d(TAG, "Running frame-by-frame ONNX model on all ${videoLandmarksResult.landmarks.size} frames...")
+            val mlProcessingStartTime = System.currentTimeMillis()
             val prediction = tugPredictor.processPoseLandmarks(videoLandmarksResult.landmarks, videoLandmarksResult.fps)
+            val mlProcessingEndTime = System.currentTimeMillis()
+            
+            val overallEndTime = System.currentTimeMillis()
+            
+            // Calculate timing metrics
+            val poseExtractionDuration = (poseExtractionEndTime - poseExtractionStartTime) / 1000.0
+            val mlProcessingDuration = (mlProcessingEndTime - mlProcessingStartTime) / 1000.0
+            val totalDuration = (overallEndTime - overallStartTime) / 1000.0
+            
+            // Log comprehensive timing breakdown
+            Log.e(TAG, " ========== COMPLETE VIDEO ANALYSIS TIMING ==========")
+            Log.e(TAG, " TOTAL TIME: ${String.format("%.2f", totalDuration)} s")
+            Log.e(TAG, " ")
+            Log.e(TAG, " Pose Extraction: ${String.format("%.2f", poseExtractionDuration)} s (${String.format("%.1f", poseExtractionDuration/totalDuration*100)}%)")
+            Log.e(TAG, " ML Processing: ${String.format("%.2f", mlProcessingDuration)} s (${String.format("%.1f", mlProcessingDuration/totalDuration*100)}%)")
+            Log.e(TAG, "    └─ Feature Extraction + ONNX Prediction + Post-Processing")
+            Log.e(TAG, "       (See detailed breakdown in TugPrediction logs above)")
+            Log.e(TAG, " ")
+            Log.e(TAG, " Video Stats:")
+            Log.e(TAG, "    Frames: ${videoLandmarksResult.landmarks.size}")
+            Log.e(TAG, "    FPS: ${videoLandmarksResult.fps}")
+            Log.e(TAG, "    Video Duration: ${String.format("%.2f", videoLandmarksResult.landmarks.size / videoLandmarksResult.fps)} s")
+            Log.e(TAG, "=====================================================")
 
             if (prediction.success) {
                 convertPredictionToTugResult(prediction)

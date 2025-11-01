@@ -4,6 +4,8 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.media.AudioManager
+import android.media.ToneGenerator
 import android.net.Uri
 import android.util.Log
 import android.view.OrientationEventListener
@@ -18,40 +20,17 @@ import androidx.camera.video.VideoRecordEvent
 import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.video.AudioConfig
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material3.BottomSheetScaffold
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.rememberBottomSheetScaffoldState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,18 +39,19 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessment
 import com.example.gaitguardian.viewmodels.PatientViewModel
 import com.example.gaitguardian.viewmodels.TugDataViewModel
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import java.io.File
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
 
 enum class DeviceOrientation {
     PORTRAIT, LANDSCAPE_LEFT, LANDSCAPE_RIGHT, PORTRAIT_UPSIDE_DOWN
@@ -115,28 +95,25 @@ fun rememberDeviceOrientation(): DeviceOrientation {
         }
     }
 
-// Timer to disable listener if landscape persists for 5 seconds
+    // Disable listener after 5s in landscape
     LaunchedEffect(orientation) {
         if (orientation == DeviceOrientation.LANDSCAPE_LEFT || orientation == DeviceOrientation.LANDSCAPE_RIGHT) {
             listenerStatus = "Landscape detected - Timer started (5s)"
             Log.d("oriListener", "Landscapedetected")
 
-            delay(5000) // Wait 5 seconds
+            delay(5000)
 
-            // Check if still in landscape after 5 seconds
             if (orientation == DeviceOrientation.LANDSCAPE_LEFT || orientation == DeviceOrientation.LANDSCAPE_RIGHT) {
-                isListenerEnabled = false // This will trigger DisposableEffect to clean up
+                isListenerEnabled = false
                 Log.d("oriListener", "Listener killed - Stayed in landscape for 5s")
             }
         } else {
-            // Reset status when not in landscape
             if (isListenerEnabled) {
                 listenerStatus = "Listener Active"
             }
         }
     }
 
-// Display the listener status on screen
     Text(
         text = listenerStatus,
         modifier = Modifier.padding(16.dp),
@@ -145,7 +122,6 @@ fun rememberDeviceOrientation(): DeviceOrientation {
     )
     return orientation
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -160,17 +136,16 @@ fun NewCameraScreen(
     val context = LocalContext.current
     val deviceOrientation = rememberDeviceOrientation()
 
-    // Add recording state
     var isRecording by remember { mutableStateOf(false) }
     val recordingTime = remember { mutableIntStateOf(0) }
 
-    // Add image analysis states
     var currentLuminance by remember { mutableStateOf(0.0) }
     var isTooDark by remember { mutableStateOf(false) }
     var isTooBright by remember { mutableStateOf(false) }
     var captureErrorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Show camera only when device is in landscape (either direction)
+    var countdownValue by remember { mutableStateOf<Int?>(null) }
+
     val isDeviceLandscape = deviceOrientation == DeviceOrientation.LANDSCAPE_LEFT ||
             deviceOrientation == DeviceOrientation.LANDSCAPE_RIGHT
 
@@ -181,14 +156,10 @@ fun NewCameraScreen(
                         CameraController.VIDEO_CAPTURE or
                         CameraController.IMAGE_ANALYSIS
             )
-            videoCaptureQualitySelector = QualitySelector.from(
-                Quality.HD // May need to confirm which aspect ratio
-            )
+            videoCaptureQualitySelector = QualitySelector.from(Quality.HD)
         }
     }
-    // TODO: More comprehensive version , after a certain time the prompt will not appear anymore.
-    //  Need to do manually through 'App Settings'
-    // Track permission state
+
     var hasPermissions by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(
@@ -198,7 +169,6 @@ fun NewCameraScreen(
         )
     }
 
-    // Launcher for requesting permission
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -207,7 +177,6 @@ fun NewCameraScreen(
     }
 
     LaunchedEffect(Unit) {
-        // Automatically prompt if not granted
         if (!hasPermissions) {
             permissionLauncher.launch(
                 arrayOf(
@@ -217,6 +186,7 @@ fun NewCameraScreen(
             )
         }
     }
+
     val configuration = LocalConfiguration.current
     val screenWidthDp = configuration.screenWidthDp
     val screenHeightDp = configuration.screenHeightDp
@@ -224,9 +194,7 @@ fun NewCameraScreen(
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
         sheetPeekHeight = 0.dp,
-        sheetContent = {
-            // Bottom sheet content
-        },
+        sheetContent = { },
     ) { padding ->
         Box(
             modifier = Modifier
@@ -234,7 +202,6 @@ fun NewCameraScreen(
                 .padding(padding)
         ) {
             if (isDeviceLandscape) {
-                // unrotated camera preview
                 CameraPreview2(
                     controller = controller,
                     modifier = Modifier.fillMaxSize(),
@@ -246,18 +213,42 @@ fun NewCameraScreen(
                     },
                 )
 
-                // Rotated UI
+                // Countdown
+                countdownValue?.let { value ->
+                    val scale by animateFloatAsState(
+                        targetValue = if (value != null) 3f else 0f,
+                        label = ""
+                    )
+
+                    AnimatedVisibility(
+                        visible = value != null,
+                        modifier = Modifier.align(Alignment.Center)
+                    ) {
+                        Text(
+                            text = "$value",
+                            color = Color.White,
+                            fontSize = 120.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.graphicsLayer(
+                                rotationZ = 90f,
+                                //scaleX = scale,
+                                //scaleY = scale,
+                                transformOrigin = TransformOrigin.Center
+                            )
+                        )
+                    }
+                }
+
                 Box(
                     modifier = Modifier
-                        .size(screenHeightDp.dp, screenWidthDp.dp) // Swap dimensions
+                        .size(screenHeightDp.dp, screenWidthDp.dp)
                         .align(Alignment.Center)
                         .graphicsLayer {
                             rotationZ = 90f
                             transformOrigin = TransformOrigin(0.5f, 0.5f)
                         }
                 ) {
-
-                    // Record button
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -277,7 +268,8 @@ fun NewCameraScreen(
                                     onRecordingStateChange = { recording ->
                                         isRecording = recording
                                     },
-                                    assessmentTitle = assessmentTitle
+                                    assessmentTitle = assessmentTitle,
+                                    countdownValueState = { countdownValue = it }
                                 )
                             },
                             modifier = Modifier.size(84.dp)
@@ -293,15 +285,12 @@ fun NewCameraScreen(
                                     imageVector = if (isRecording) Icons.Default.Stop else Icons.Default.Videocam,
                                     contentDescription = if (isRecording) "Stop Recording" else "Start Recording",
                                     tint = Color.White,
-                                    modifier = Modifier.size(46.dp) // icon size
+                                    modifier = Modifier.size(46.dp)
                                 )
                             }
                         }
-
-
                     }
 
-                    // Capture Error for Blur / Brightness
                     captureErrorMessage?.let { message ->
                         Card(
                             modifier = Modifier
@@ -318,7 +307,6 @@ fun NewCameraScreen(
                         }
                     }
 
-                    // Orientation Debug
                     Text(
                         text = "Device: ${deviceOrientation.name}",
                         modifier = Modifier
@@ -329,7 +317,6 @@ fun NewCameraScreen(
                     )
                 }
             } else {
-                // Portrait
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -367,7 +354,6 @@ fun NewCameraScreen(
     }
 }
 
-// Video recording
 private var recording: Recording? = null
 
 @SuppressLint("MissingPermission")
@@ -379,7 +365,8 @@ private fun recordVideo(
     patientViewModel: PatientViewModel,
     tugViewModel: TugDataViewModel,
     onRecordingStateChange: (Boolean) -> Unit,
-    assessmentTitle: String
+    assessmentTitle: String,
+    countdownValueState: (Int?) -> Unit
 ) {
     if (recording != null) {
         recording?.stop()
@@ -387,79 +374,78 @@ private fun recordVideo(
         onRecordingStateChange(false)
         return
     }
-    val outputFile = File(
-        context.getExternalFilesDir(android.os.Environment.DIRECTORY_MOVIES),
-        "my-recording-${System.currentTimeMillis()}.mp4"
-    )
 
-    var recordingStartTimeNanos = 0L // to track the start time
+    val toneGenerator = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100)
+    val mainExecutor = ContextCompat.getMainExecutor(context)
 
-    recording = controller.startRecording(
-        FileOutputOptions.Builder(outputFile).build(),
-        AudioConfig.AUDIO_DISABLED,
-        ContextCompat.getMainExecutor(context),
-    ) { event ->
-        when (event) {
-            is VideoRecordEvent.Start -> {
-                // Recording started successfully
-                onRecordingStateChange(true)
-                // get time in seconds
-                recordingStartTimeNanos = System.nanoTime()
-            }
+    GlobalScope.launch(Dispatchers.Main) {
+        for (i in 3 downTo 1) {
+            countdownValueState(i)
+            toneGenerator.startTone(ToneGenerator.TONE_PROP_BEEP, 300)
+            delay(1000)
+        }
 
-            is VideoRecordEvent.Finalize -> {
-                if (event.hasError()) {
-                    recording?.close()
-                    recording = null
-                    onRecordingStateChange(false)
-                    Toast.makeText(
-                        context,
-                        "Video capture failed",
-                        Toast.LENGTH_LONG
-                    ).show()
-                } else {
-                    // difference between current and start time = video duration
-                    val currentDateTime: String =
-                        SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
-                            .format(Date())
-                    val durationSeconds =
-                        ((System.nanoTime() - recordingStartTimeNanos) / 1_000_000_000).toInt()
-                    recordingTimeState.value = durationSeconds
-                    Log.d("recordingTime", recordingTimeState.value.toString())
-                    onRecordingStateChange(false)
-                    Toast.makeText(
-                        context,
-                        "Video capture succeeded",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    val encodedPath = Uri.encode(outputFile.absolutePath)
+        countdownValueState(null)
+        toneGenerator.release()
 
-                    if (patientViewModel.saveVideos.value) {
-                        Log.d("outputfile", " this is ${outputFile.name}")
-                        Log.d("encodedPath", " this is $encodedPath")
+        // Start recording
+        val outputFile = File(
+            context.getExternalFilesDir(android.os.Environment.DIRECTORY_MOVIES),
+            "my-recording-${System.currentTimeMillis()}.mp4"
+        )
 
-                        navController.navigate("loading_screen/${assessmentTitle}/${encodedPath}")
+        var recordingStartTimeNanos = 0L
 
-                        val newTug = TUGAssessment(
-                            dateTime = currentDateTime,
-                            videoDuration = recordingTimeState.value.toFloat(),
-                            videoTitle = outputFile.name,
-                            onMedication = tugViewModel.onMedication.value,
-//                            patientComments = tugViewModel.assessmentComment.value,
-                            patientComments = tugViewModel.selectedComments.value.joinToString(", ")
-                        )
-                        tugViewModel.insertNewAssessment(newTug)
-                        Log.d("tug", "tug inserted into db with video")
+        recording = controller.startRecording(
+            FileOutputOptions.Builder(outputFile).build(),
+            AudioConfig.AUDIO_DISABLED,
+            mainExecutor,
+        ) { event ->
+            when (event) {
+                is VideoRecordEvent.Start -> {
+                    onRecordingStateChange(true)
+                    recordingStartTimeNanos = System.nanoTime()
+                }
+
+                is VideoRecordEvent.Finalize -> {
+                    if (event.hasError()) {
+                        recording?.close()
+                        recording = null
+                        onRecordingStateChange(false)
+                        Toast.makeText(context, "Video capture failed", Toast.LENGTH_LONG).show()
                     } else {
-                        navController.navigate("loading_screen/${assessmentTitle}/${encodedPath}")
+                        val currentDateTime: String =
+                            SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
+                                .format(Date())
+                        val durationSeconds =
+                            ((System.nanoTime() - recordingStartTimeNanos) / 1_000_000_000).toInt()
+                        recordingTimeState.value = durationSeconds
+                        onRecordingStateChange(false)
+                        Toast.makeText(context, "Video capture succeeded", Toast.LENGTH_LONG).show()
 
-                        val newTugNoVideo = TUGAssessment(
-                            dateTime = currentDateTime,
-                            videoDuration = recordingTimeState.value.toFloat(),
-                            onMedication = tugViewModel.onMedication.value,
-                            patientComments = tugViewModel.assessmentComment.value
-                        )
-                        tugViewModel.insertNewAssessment(newTugNoVideo)
+                        val encodedPath = Uri.encode(outputFile.absolutePath)
+
+                        if (patientViewModel.saveVideos.value) {
+                            navController.navigate("loading_screen/${assessmentTitle}/${encodedPath}")
+
+                            val newTug = TUGAssessment(
+                                dateTime = currentDateTime,
+                                videoDuration = recordingTimeState.value.toFloat(),
+                                videoTitle = outputFile.name,
+                                onMedication = tugViewModel.onMedication.value,
+                                patientComments = tugViewModel.selectedComments.value.joinToString(", ")
+                            )
+                            tugViewModel.insertNewAssessment(newTug)
+                        } else {
+                            navController.navigate("loading_screen/${assessmentTitle}/${encodedPath}")
+                            val newTugNoVideo = TUGAssessment(
+                                dateTime = currentDateTime,
+                                videoDuration = recordingTimeState.value.toFloat(),
+                                onMedication = tugViewModel.onMedication.value,
+                                patientComments = tugViewModel.assessmentComment.value
+                            )
+                            tugViewModel.insertNewAssessment(newTugNoVideo)
+                        }
                     }
                 }
             }
