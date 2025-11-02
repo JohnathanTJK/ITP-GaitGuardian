@@ -5,6 +5,7 @@ import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.util.Log
 import com.example.gaitguardian.FeatureExtraction
+import com.example.gaitguardian.FrameProgressCallback
 import com.example.gaitguardian.PoseExtraction
 import com.example.gaitguardian.TugPrediction
 import com.example.gaitguardian.data.models.TugResult
@@ -70,7 +71,7 @@ class GaitAnalysisClient(private val context: Context) {
         true
     }
 
-    suspend fun analyzeVideo(videoUri: Uri): TugResult {
+    suspend fun analyzeVideo(videoUri: Uri, progressCallback: FrameProgressCallback? = null): TugResult {
         return try {
             Log.d(TAG, "STARTING URI ANALYSIS: $videoUri")
             Log.e(TAG, "ANALYSIS START")
@@ -86,7 +87,7 @@ class GaitAnalysisClient(private val context: Context) {
             Log.d(TAG, "Temp file created: ${videoFile.name} (${videoFile.length()} bytes)")
             
             // Process with existing File-based method
-            val result = analyzeVideoFile(videoFile)
+            val result = analyzeVideoFile(videoFile, progressCallback)
             
             // Cleanup temp file
             videoFile.delete()
@@ -113,7 +114,7 @@ class GaitAnalysisClient(private val context: Context) {
         tempFile
     }    
 
-    suspend fun analyzeVideoFile(videoFile: File): TugResult {
+    suspend fun analyzeVideoFile(videoFile: File, progressCallback: FrameProgressCallback? = null): TugResult {
         return try {
             Log.d(TAG, "ANALYZING VIDEO FILE: ${videoFile.name} (${videoFile.length()} bytes)")
             Log.d(TAG, "File exists: ${videoFile.exists()}")
@@ -128,7 +129,7 @@ class GaitAnalysisClient(private val context: Context) {
             
             // NEW APPROACH: Enhanced direct landmark processing with correct FPS
             Log.d(TAG, "Using enhanced analysis with correct FPS...")
-            val result = analyzeVideoWithCorrectFPS(videoFile)
+            val result = analyzeVideoWithCorrectFPS(videoFile, progressCallback)
             
             Log.d(TAG, "Enhanced analysis successful. Risk: ${result.riskAssessment}")
             
@@ -148,7 +149,7 @@ class GaitAnalysisClient(private val context: Context) {
     /**
      * Enhanced analysis method with correct FPS handling
      */
-    private suspend fun analyzeVideoWithCorrectFPS(videoFile: File): TugResult = withContext(Dispatchers.IO) {
+    private suspend fun analyzeVideoWithCorrectFPS(videoFile: File, progressCallback: FrameProgressCallback? = null): TugResult = withContext(Dispatchers.IO) {
         Log.e(TAG, "ENHANCED ANALYSIS WITH CORRECT FPS")
         Log.d(TAG, "Starting enhanced MediaPipe analysis with correct timing...")
         Log.d(TAG, "Video file: ${videoFile.name} (${videoFile.length()} bytes)")
@@ -162,7 +163,7 @@ class GaitAnalysisClient(private val context: Context) {
             Log.d(TAG, "Extracting pose landmarks with MediaPipe...")
             val poseExtractionStartTime = System.currentTimeMillis()
             val videoUri = Uri.fromFile(videoFile)
-            val videoLandmarksResult = poseExtractor.processVideoToLandmarksWithMetadata(videoUri)
+            val videoLandmarksResult = poseExtractor.processVideoToLandmarksWithMetadata(videoUri, progressCallback)
             val poseExtractionEndTime = System.currentTimeMillis()
             
             Log.e(TAG, "Extracted ${videoLandmarksResult?.landmarks?.size ?: 0} pose landmark frames")
@@ -175,7 +176,7 @@ class GaitAnalysisClient(private val context: Context) {
             // Step 2: Run frame-by-frame TUG prediction using TugPrediction.processPoseLandmarks
             Log.d(TAG, "Running frame-by-frame ONNX model on all ${videoLandmarksResult.landmarks.size} frames...")
             val mlProcessingStartTime = System.currentTimeMillis()
-            val prediction = tugPredictor.processPoseLandmarks(videoLandmarksResult.landmarks, videoLandmarksResult.fps)
+            val prediction = tugPredictor.processPoseLandmarks(videoLandmarksResult.landmarks, videoLandmarksResult.fps, progressCallback)
             val mlProcessingEndTime = System.currentTimeMillis()
             
             val overallEndTime = System.currentTimeMillis()

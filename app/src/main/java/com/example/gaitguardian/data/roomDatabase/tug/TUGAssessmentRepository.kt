@@ -73,6 +73,12 @@ class TUGAssessmentRepository(private val tugDao: TugDao, private val tugAnalysi
     suspend fun getLatestTugAnalysis(): TUGAnalysis? {
         return tugAnalysisDao.getLatestTugAnalysis()
     }
+    
+    @WorkerThread
+    suspend fun getTugAnalysisById(analysisId: Long): TUGAnalysis? {
+        return tugAnalysisDao.getTugAnalysisById(analysisId)
+    }
+    
     @WorkerThread
     suspend fun getLatestTwoTimes(): List<Double> {
         return tugAnalysisDao.getLatestTwoTimes()

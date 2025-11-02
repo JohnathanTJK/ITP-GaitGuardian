@@ -20,6 +20,13 @@ import java.io.FileWriter
  */
 
 /**
+ * Callback interface for frame progress updates
+ */
+fun interface FrameProgressCallback {
+    fun onProgress(currentFrame: Int, totalFrames: Int, stage: String)
+}
+
+/**
  * Data class to return both landmarks and video metadata
  */
 data class VideoLandmarksResult(
@@ -85,9 +92,16 @@ class PoseExtraction(private val context: Context) {
     }    /**
      * Process video to landmarks directly (like Python) - returns landmarks and metadata
      */
-    fun processVideoToLandmarksWithMetadata(videoUri: Uri): VideoLandmarksResult? {
+    fun processVideoToLandmarksWithMetadata(
+        videoUri: Uri,
+        progressCallback: FrameProgressCallback? = null
+    ): VideoLandmarksResult? {
         return try {
-            Log.d(TAG, "Processing video to extract landmarks: $videoUri")
+            Log.d(TAG, "========================================")
+            Log.d(TAG, "🎥 POSE EXTRACTION STARTING")
+            Log.d(TAG, "Video URI: $videoUri")
+            Log.d(TAG, "Timestamp: ${System.currentTimeMillis()}")
+            Log.d(TAG, "========================================")
             Log.e(TAG, "POSE_EXTRACTION_ENHANCED: processVideoToLandmarksWithMetadata CALLED")
             
             val mediaMetadataRetriever = MediaMetadataRetriever()
@@ -255,6 +269,9 @@ class PoseExtraction(private val context: Context) {
                         Log.w(TAG, "Failed to extract bitmap for frame $frameNumber")
                         landmarksList.add(emptyList())
                     }
+                    
+                    // Report progress
+                    progressCallback?.onProgress(frameNumber + 1, totalFrames, "Extracting poses")
                 } catch (e: Exception) {
                     Log.e(TAG, "Error at frame $frameNumber: ${e.message}")
                     landmarksList.add(emptyList())
@@ -266,6 +283,15 @@ class PoseExtraction(private val context: Context) {
             val successfulFrames = landmarksList.count { it.isNotEmpty() }
             Log.e(TAG, "POSE EXTRACTION SUMMARY: ${successfulFrames}/${landmarksList.size} frames had poses detected")
             Log.d(TAG, "Extracted landmarks for ${landmarksList.size} frames (${successfulFrames} successful)")
+            
+            // Calculate a hash of first and last successful frames to verify uniqueness
+            val firstSuccessfulFrame = landmarksList.firstOrNull { it.isNotEmpty() }
+            val lastSuccessfulFrame = landmarksList.lastOrNull { it.isNotEmpty() }
+            if (firstSuccessfulFrame != null && lastSuccessfulFrame != null) {
+                val firstHash = firstSuccessfulFrame.take(3).joinToString { "${it.x()},${it.y()}" }.hashCode()
+                val lastHash = lastSuccessfulFrame.take(3).joinToString { "${it.x()},${it.y()}" }.hashCode()
+                Log.e(TAG, "🔍 VIDEO UNIQUENESS CHECK - First frame hash: $firstHash, Last frame hash: $lastHash")
+            }
             
             if (successfulFrames == 0) {
                 Log.e(TAG, "NO POSES DETECTED IN ANY FRAME - Check video quality, lighting, and person visibility")

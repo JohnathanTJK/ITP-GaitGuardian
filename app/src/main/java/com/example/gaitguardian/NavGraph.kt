@@ -439,10 +439,11 @@ fun NavGraph(
 
                         }
                     }
-                    composable("result_screen/{assessmentTitle}") { backStackEntry ->
+                    composable("result_screen/{assessmentTitle}/{analysisId}") { backStackEntry ->
                         val time = backStackEntry.arguments?.getString("assessmentTitle")
+                        val analysisId = backStackEntry.arguments?.getString("analysisId")?.toLongOrNull()
                         if (time != null) {
-                            ResultScreen(navController, time, patientViewModel, tugDataViewModel)
+                            ResultScreen(navController, time, patientViewModel, tugDataViewModel, analysisId)
                         }
                     }
                 }

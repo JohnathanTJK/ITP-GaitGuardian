@@ -100,11 +100,18 @@ class TugPrediction(private val context: Context) {
      */
     suspend fun processPoseLandmarks(
         landmarksList: List<List<NormalizedLandmark>>,
-        fps: Float = DEFAULT_FPS
+        fps: Float = DEFAULT_FPS,
+        progressCallback: FrameProgressCallback? = null
     ): PredictionResult = withContext(Dispatchers.Default) {
         
         val model = modelData ?: throw IllegalStateException("❌ Model not initialized")
         
+        Log.i(TAG, "========================================")
+        Log.i(TAG, "🧠 TUG PREDICTION STARTING")
+        Log.i(TAG, "Total frames: ${landmarksList.size}")
+        Log.i(TAG, "FPS: $fps")
+        Log.i(TAG, "Timestamp: ${System.currentTimeMillis()}")
+        Log.i(TAG, "========================================")
         Log.i(TAG, "Processing ${landmarksList.size} pose landmark frames with fixed Python port")
         
         // Start overall timing
@@ -145,6 +152,11 @@ class TugPrediction(private val context: Context) {
                 val label = model.labelEncoder.getOrNull(overriddenPrediction) ?: "Unknown"
                 predictions.add(label)
                 
+                // Report progress every 10 frames for performance
+                if (frameIndex % 10 == 0) {
+                    progressCallback?.onProgress(frameIndex, frameFeatures.size, "Analyzing movement")
+                }
+                
                 if (frameIndex % 50 == 0) { // Log every 50th frame
                     Log.d(TAG, "Frame $frameIndex: features=${featureVector.size}, prediction=$prediction, overridden=$overriddenPrediction, label=$label, noMovement=$noMovementDetected")
                 }
@@ -179,6 +191,10 @@ class TugPrediction(private val context: Context) {
                 Log.i(TAG, "   ${phase.phase}: ${phase.duration_sec}s (${phase.frame_count} frames)")
             }
             Log.i(TAG, "Total TUG duration: ${totalDuration}s")
+            
+            // Log unique prediction fingerprint
+            val predictionFingerprint = predictions.take(10).joinToString(",") + "_" + predictions.takeLast(10).joinToString(",")
+            Log.e(TAG, "🔍 PREDICTION UNIQUENESS - First 10 + Last 10 predictions: $predictionFingerprint")
             
             // Log detailed timing breakdown
             Log.e(TAG, "⏱️ ===== PROCESSING TIME BREAKDOWN =====")

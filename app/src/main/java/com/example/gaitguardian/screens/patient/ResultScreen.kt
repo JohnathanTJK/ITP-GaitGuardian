@@ -38,29 +38,37 @@ fun ResultScreen(
     assessmentTitle: String,
     patientViewModel: PatientViewModel,
     tugViewModel: TugDataViewModel,
+    analysisId: Long? = null,  // NEW: Accept specific analysis ID
     modifier: Modifier = Modifier
 ) {
     var currentPage by remember { mutableStateOf(1) } // 1 = core results, 2 = breakdown
 
-    // Get severity from database instead of cached response to ensure accuracy
+    // Get severity from database - use specific analysis ID if provided
     var latestAnalysis by remember { mutableStateOf<TUGAnalysis?>(null) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(analysisId) {
         tugViewModel.getLatestTUGAssessment()
         tugViewModel.getLatestTwoDurations()
         tugViewModel.setAssessmentComment("")
-        // Fetch the latest analysis from database to get accurate severity
-        latestAnalysis = tugViewModel.getLatestTugAnalysis()
-        Log.d("ResultScreen", "Latest analysis fetched: severity=${latestAnalysis?.severity}, testId=${latestAnalysis?.testId}")
+        
+        // Fetch specific analysis if ID provided, otherwise get latest
+        latestAnalysis = if (analysisId != null) {
+            Log.d("ResultScreen", "Loading specific analysis with ID: $analysisId")
+            tugViewModel.getTugAnalysisById(analysisId)
+        } else {
+            Log.d("ResultScreen", "Loading latest analysis (no ID provided)")
+            tugViewModel.getLatestTugAnalysis()
+        }
+        Log.d("ResultScreen", "Analysis loaded: severity=${latestAnalysis?.severity}, testId=${latestAnalysis?.testId}, totalTime=${latestAnalysis?.timeTaken}")
 }
 
     val onMedication by tugViewModel.onMedication.collectAsState()
     val latestTugAssessment by tugViewModel.latestAssessment.collectAsState()
     val latestTwoDurations by tugViewModel.latestTwoDurations.collectAsState()
-    val analysisResult by tugViewModel.response.collectAsState()
 
+    // Use data from the specific analysis, not cached response
     val severity = latestAnalysis?.severity ?: ""
-    val totalTime = analysisResult?.tugMetrics?.totalTime ?: 0.0
+    val totalTime = latestAnalysis?.timeTaken ?: 0.0
 
     var previousTiming by remember { mutableFloatStateOf(0f) }
     var latestTiming by remember { mutableFloatStateOf(0f) }
@@ -134,7 +142,7 @@ fun ResultScreen(
             2 -> {
                 // Page 2 - Breakdown + Comments
                 TugBreakdownCard(
-                    tugMetrics = analysisResult?.tugMetrics,
+                    analysis = latestAnalysis,  // Pass the specific analysis instead of cached metrics
                     latestAssessment = latestTugAssessment
                 )
 
@@ -268,7 +276,7 @@ fun CoreResultsCard(
 
 @Composable
 fun TugBreakdownCard(
-    tugMetrics: TugMetrics?,
+    analysis: TUGAnalysis?,  // Changed from TugMetrics to TUGAnalysis
     latestAssessment: TUGAssessment?
 ) {
     Card(
@@ -286,12 +294,13 @@ fun TugBreakdownCard(
             Spacer(modifier = Modifier.height(12.dp))
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                TugPhaseRow("Sit-to-stand", tugMetrics?.sitToStandTime ?: 1.2)
-                TugPhaseRow("Walk-from-chair", tugMetrics?.walkFromChairTime ?: 0.7)
-                TugPhaseRow("Turn-first", tugMetrics?.turnFirstTime ?: 1.3)
-                TugPhaseRow("Walk-to-chair", tugMetrics?.walkToChairTime ?: 0.3)
-                TugPhaseRow("Turn-second", tugMetrics?.turnSecondTime ?: 1.1)
-                TugPhaseRow("Stand-to-sit", tugMetrics?.standToSitTime ?: 0.8)
+                // Use data from the specific TUGAnalysis database entry
+                TugPhaseRow("Sit-to-stand", analysis?.sitToStand ?: 0.0)
+                TugPhaseRow("Walk-from-chair", analysis?.walkFromChair ?: 0.0)
+                TugPhaseRow("Turn-first", analysis?.turnFirst ?: 0.0)
+                TugPhaseRow("Walk-to-chair", analysis?.walkToChair ?: 0.0)
+                TugPhaseRow("Turn-second", analysis?.turnSecond ?: 0.0)
+                TugPhaseRow("Stand-to-sit", analysis?.standToSit ?: 0.0)
             }
 
             Spacer(modifier = Modifier.height(16.dp))

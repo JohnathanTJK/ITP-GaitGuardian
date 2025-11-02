@@ -175,6 +175,11 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, priva
     suspend fun getLatestTugAnalysis(): TUGAnalysis? {
         return tugRepository.getLatestTugAnalysis()
     }
+    
+    // NEW: Get specific TUG analysis by ID
+    suspend fun getTugAnalysisById(analysisId: Long): TUGAnalysis? {
+        return tugRepository.getTugAnalysisById(analysisId)
+    }
 
     // Notification Storing of IDs
     fun saveAssessmentIDsforNotifications(testId: Int) {

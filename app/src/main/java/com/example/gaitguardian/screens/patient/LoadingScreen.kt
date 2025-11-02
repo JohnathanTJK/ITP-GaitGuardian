@@ -57,6 +57,7 @@ import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.UUID
@@ -76,6 +77,9 @@ fun LoadingScreen(
     val workRequestId = remember { mutableStateOf<UUID?>(null) }
     var analysisState by remember { mutableStateOf<AnalysisState>(AnalysisState.Idle) }
     var progress by remember { mutableStateOf(0) }
+    var currentFrame by remember { mutableStateOf(0) }
+    var totalFrames by remember { mutableStateOf(0) }
+    var processingStage by remember { mutableStateOf("Initializing...") }
     var analysisResult by remember { mutableStateOf<GaitAnalysisResponse?>(null) }
 
     val motivationalQuotes = listOf(
@@ -156,6 +160,9 @@ fun LoadingScreen(
                 WorkInfo.State.RUNNING -> {
                     val p = info.progress.getInt("PROGRESS", 0)
                     progress = p
+                    currentFrame = info.progress.getInt("CURRENT_FRAME", 0)
+                    totalFrames = info.progress.getInt("TOTAL_FRAMES", 0)
+                    processingStage = info.progress.getString("STAGE") ?: "Processing..."
                     analysisState = AnalysisState.Analyzing
                 }
 
@@ -166,9 +173,9 @@ fun LoadingScreen(
                     Log.d("result", "analysisResult is $analysisResult")
 
                     if (analysisResult.success) {
-                        analysisState = AnalysisState.Success
                         Log.d("result", "analysis state is success: inserting new entry now!")
 
+                        // Insert analysis and get the ID first
                         withContext(Dispatchers.IO) {
                             handleAnalysisSuccess(
                                 analysisResult,
@@ -177,6 +184,15 @@ fun LoadingScreen(
                                 patientViewModel
                             )
                         }
+                        
+                        // Now get the inserted ID and log it
+                        val insertedId = tugDataViewModel.lastInsertedId
+                        Log.d("LoadingScreen", "✅ New analysis inserted with ID: $insertedId")
+                        Log.d("LoadingScreen", "📊 TUG Result - Total Time: ${analysisResult.tugMetrics?.totalTime}s")
+                        Log.d("LoadingScreen", "📊 Severity: ${analysisResult.severity}")
+                        
+                        // Set success state AFTER getting the ID
+                        analysisState = AnalysisState.Success
                     } else {
                         analysisResult.error?.let {
                             analysisState = AnalysisState.Error(it)
@@ -205,7 +221,10 @@ fun LoadingScreen(
     // Navigate when success
     LaunchedEffect(analysisState) {
         if (analysisState == AnalysisState.Success) {
-            navController.navigate("result_screen/${assessmentTitle}") {
+            // Use the lastInsertedId to navigate to the specific analysis
+            val analysisId = tugDataViewModel.lastInsertedId
+            Log.d("LoadingScreen", "🧭 Navigating to result_screen with ID: $analysisId")
+            navController.navigate("result_screen/${assessmentTitle}/${analysisId}") {
                 popUpTo("loading_screen") { inclusive = true }
             }
         }
@@ -247,6 +266,22 @@ fun LoadingScreen(
                         color = Color(0xFF4A148C),
                         fontWeight = FontWeight.SemiBold
                     )
+                    
+                    // Display frame progress details
+                    if (totalFrames > 0) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Frame $currentFrame of $totalFrames",
+                            color = Color(0xFF6A1B9A),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = processingStage,
+                            color = Color(0xFF9C27B0),
+                            style = MaterialTheme.typography.bodySmall,
+                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                        )
+                    }
                 }
 
                 is AnalysisState.Error -> {
@@ -367,23 +402,54 @@ class VideoAnalysisWorker(
 
     override suspend fun doWork(): Result {
         val videoPath = inputData.getString("VIDEO_PATH") ?: return Result.failure()
-        Log.d("VideoAnalysisWorker", "Started analysis for $videoPath")
+        Log.d("VideoAnalysisWorker", "========================================")
+        Log.d("VideoAnalysisWorker", "🎬 NEW VIDEO ANALYSIS STARTED")
+        Log.d("VideoAnalysisWorker", "Video Path: $videoPath")
+        Log.d("VideoAnalysisWorker", "Work Request ID: $id")
+        Log.d("VideoAnalysisWorker", "Timestamp: ${System.currentTimeMillis()}")
+        Log.d("VideoAnalysisWorker", "========================================")
 
         val gaitClient = GaitAnalysisClient(applicationContext)
         val videoFile = File(videoPath)
+        
+        if (!videoFile.exists()) {
+            Log.e("VideoAnalysisWorker", "❌ ERROR: Video file does not exist: $videoPath")
+            return Result.failure()
+        }
+        
+        Log.d("VideoAnalysisWorker", "Video file size: ${videoFile.length()} bytes")
+        Log.d("VideoAnalysisWorker", "Video file last modified: ${videoFile.lastModified()}")
         return try {
-            // Simulate progress reporting while analyzing (maybe can extract number of frames and display here if possible)
-            //TODO: replace totalSteps with total number of frames
-            // currently it is just a timer that updates 10% every 0.5s
-            val totalSteps = 10
-            for (i in 1..totalSteps) {
-                setProgress(workDataOf("PROGRESS" to (i * 10)))
-                Log.d("VideoAnalysisWorker", "Progress: ${i * 10}%")
-                kotlinx.coroutines.delay(500L) // need a flag here to update the progress after every 100(?) frames done
+            // Real-time progress reporting using FrameProgressCallback
+            val tugResult: TugResult = gaitClient.analyzeVideoFile(videoFile) { currentFrame: Int, totalFrames: Int, stage: String ->
+                // Calculate percentage (0-100)
+                val progressPercent = ((currentFrame.toFloat() / totalFrames.toFloat()) * 100f).toInt().coerceIn(0, 100)
+                
+                // Update WorkManager progress (needs runBlocking since setProgress is suspend)
+                runBlocking {
+                    setProgress(workDataOf(
+                        "PROGRESS" to progressPercent,
+                        "CURRENT_FRAME" to currentFrame,
+                        "TOTAL_FRAMES" to totalFrames,
+                        "STAGE" to stage
+                    ))
+                }
+                
+                // Log progress every 50 frames
+                if (currentFrame % 50 == 0 || currentFrame == totalFrames - 1) {
+                    Log.d("VideoAnalysisWorker", "$stage: $currentFrame/$totalFrames ($progressPercent%)")
+                }
             }
-
-            val tugResult: TugResult = gaitClient.analyzeVideoFile(videoFile)
+            
             Log.d("VideoAnalysisWorker", "Analysis complete: ${tugResult.riskAssessment}")
+            Log.d("VideoAnalysisWorker", "========================================")
+            Log.d("VideoAnalysisWorker", "📊 TUG RESULT DETAILS:")
+            Log.d("VideoAnalysisWorker", "Risk: ${tugResult.riskAssessment}")
+            Log.d("VideoAnalysisWorker", "Total Duration: ${tugResult.totalDuration}s")
+            Log.d("VideoAnalysisWorker", "Sit-to-Stand: ${tugResult.sitToStandDuration}s")
+            Log.d("VideoAnalysisWorker", "Stand-to-Sit: ${tugResult.standToSitDuration}s")
+            Log.d("VideoAnalysisWorker", "Phase Breakdown: ${tugResult.phaseBreakdown}")
+            Log.d("VideoAnalysisWorker", "========================================")
 //            NotificationService(applicationContext).showCompleteVideoNotification("TUG")
             val response: GaitAnalysisResponse = convertTugResultToGaitAnalysisResponse(tugResult)
             if (response.success)
