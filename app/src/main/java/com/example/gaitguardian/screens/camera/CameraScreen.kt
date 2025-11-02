@@ -4,9 +4,8 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
-import android.media.AudioManager
-import android.media.ToneGenerator
 import android.net.Uri
+import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.view.OrientationEventListener
 import android.widget.Toast
@@ -386,18 +385,34 @@ private fun recordVideo(
         return
     }
 
-    val toneGenerator = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100)
+    // Initialize TextToSpeech
+    var tts: TextToSpeech? = null
+    tts = TextToSpeech(context) { status ->
+        if (status == TextToSpeech.SUCCESS) {
+            tts?.language = Locale.US
+        } else {
+            Log.e("TTS", "Initialization failed")
+        }
+    }
     val mainExecutor = ContextCompat.getMainExecutor(context)
 
     GlobalScope.launch(Dispatchers.Main) {
+        delay(500)
         for (i in 3 downTo 1) {
             countdownValueState(i)
-            toneGenerator.startTone(ToneGenerator.TONE_PROP_BEEP, 300)
+
+            // Speak countdown number
+            tts?.speak(
+                i.toString(),
+                TextToSpeech.QUEUE_FLUSH,
+                null,
+                null
+            )
+
             delay(1000)
         }
 
         countdownValueState(null)
-        toneGenerator.release()
 
         // Start recording
         val outputFile = File(
@@ -462,5 +477,8 @@ private fun recordVideo(
                 }
             }
         }
+        // Release TTS when done
+        tts?.stop()
+        tts?.shutdown()
     }
 }

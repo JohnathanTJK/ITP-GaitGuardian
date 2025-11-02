@@ -126,6 +126,7 @@ fun NavGraph(
 //    modifier: Modifier = Modifier,
     initialId: Int?,
     patientViewModel: PatientViewModel,
+    destinationIntent: String?,
     clinicianViewModel: ClinicianViewModel,
     tugDataViewModel: TugDataViewModel
 ) {

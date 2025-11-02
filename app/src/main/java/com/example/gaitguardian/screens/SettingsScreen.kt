@@ -286,18 +286,44 @@ fun VideoPrivacyDialog(
     var showClearVideosDialog by remember { mutableStateOf(false) }
 
     // Function to check if videos exist
+//    fun hasExistingVideos(): Boolean {
+//        val videoFolder = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
+//        val videoFiles = videoFolder?.listFiles()?.filter { it.extension == "mp4" }
+//        return !videoFiles.isNullOrEmpty()
+//    }
     fun hasExistingVideos(): Boolean {
         val videoFolder = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
-        val videoFiles = videoFolder?.listFiles()?.filter { it.extension == "mp4" }
+        val videoFiles = videoFolder?.listFiles()?.filter {
+            it.extension == "mp4" && !it.path.contains(".hidden_videos")
+        }
         return !videoFiles.isNullOrEmpty()
     }
 
     // Function to clear videos
-    fun clearExistingVideos() {
+//    fun clearExistingVideos() {
+//        val videoFolder = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
+//        val videoFiles = videoFolder?.listFiles()?.filter { it.extension == "mp4" }
+//        videoFiles?.forEach { it.delete() }
+//    }
+
+    fun hideExistingVideos() {
         val videoFolder = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
-        val videoFiles = videoFolder?.listFiles()?.filter { it.extension == "mp4" }
-        videoFiles?.forEach { it.delete() }
+        val hiddenFolder = videoFolder?.resolve(".hidden_videos")
+
+        if (hiddenFolder != null && !hiddenFolder.exists()) {
+            hiddenFolder.mkdirs()
+        }
+
+        val videoFiles = videoFolder?.listFiles()?.filter {
+            it.extension == "mp4" && !it.path.contains(".hidden_videos")
+        }
+
+        videoFiles?.forEach { file ->
+            val hiddenFile = hiddenFolder?.resolve(file.name)
+            file.renameTo(hiddenFile)
+        }
     }
+
 
     // Main privacy dialog
     if (!showClearVideosDialog) {
@@ -364,7 +390,7 @@ fun VideoPrivacyDialog(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    clearExistingVideos()
+                    hideExistingVideos()
                     onConfirm(false) // Turn off saving
                     showClearVideosDialog = false
                 },
