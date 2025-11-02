@@ -395,6 +395,9 @@ private fun recordVideo(
         }
     }
     val mainExecutor = ContextCompat.getMainExecutor(context)
+    // Delete incomplete file if user leaves abruptly
+    var recordingStarted = false
+    var finalized = false
 
     GlobalScope.launch(Dispatchers.Main) {
         delay(500)
@@ -429,6 +432,7 @@ private fun recordVideo(
         ) { event ->
             when (event) {
                 is VideoRecordEvent.Start -> {
+                    recordingStarted = true
                     onRecordingStateChange(true)
                     recordingStartTimeNanos = System.nanoTime()
                 }
@@ -439,6 +443,7 @@ private fun recordVideo(
                         recording?.close()
                         recording = null
                         onRecordingStateChange(false)
+                        if (outputFile.exists()) outputFile.delete() // Delete Video
                         Toast.makeText(context, "Video capture failed", Toast.LENGTH_LONG).show()
                     } else {
                         val currentDateTime: String =
@@ -477,6 +482,17 @@ private fun recordVideo(
                 }
             }
         }
+        // Delete Video
+        (context as? androidx.activity.ComponentActivity)?.lifecycle?.addObserver(
+            object : androidx.lifecycle.DefaultLifecycleObserver {
+                override fun onDestroy(owner: androidx.lifecycle.LifecycleOwner) {
+                    if (!finalized && outputFile.exists()) {
+                        outputFile.delete()
+                        Log.d("CameraCleanup", "Deleted incomplete recording: ${outputFile.name}")
+                    }
+                }
+            }
+        )
         // Release TTS when done
         tts?.stop()
         tts?.shutdown()
