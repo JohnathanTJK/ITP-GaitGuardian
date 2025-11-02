@@ -47,6 +47,15 @@ class TUGAssessmentRepository(private val tugDao: TugDao, private val tugAnalysi
         return tugDao.removeLastInsertedAssessment()
     }
 
+    @WorkerThread
+    suspend fun removeAllAssessments() {
+        return tugDao.removeAllAssessment()
+    }
+
+    @WorkerThread
+    suspend fun removeAllTUGAnalysis() {
+        return tugAnalysisDao.removeAllTugAnalysis()
+    }
     // ML Analysis
 //    @WorkerThread
 //    suspend fun insertTugAnalysis(tugAnalysis: TUGAnalysis) {

@@ -24,4 +24,9 @@ interface TugAnalysisDao {
 
     @Query("SELECT sitToStand, walkFromChair, turnFirst, walkToChair, turnSecond, standToSit FROM tug_analysis_table WHERE testId = :id ")
     suspend fun getSubtaskById(id: Int): subtaskDuration
+
+    // REMOVE ALL
+//    @Query("DELETE FROM tug_analysis_table")
+    @Query("DELETE FROM sqlite_sequence WHERE name= 'tug_analysis_table'")
+    suspend fun removeAllTugAnalysis()
 }

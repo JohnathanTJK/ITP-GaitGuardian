@@ -95,7 +95,12 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, priva
         }
     }
     // END PATIENT
-
+    fun removeAllAssessments(){
+        viewModelScope.launch(Dispatchers.IO) {
+            tugRepository.removeAllAssessments()
+            tugRepository.removeAllTUGAnalysis()
+        }
+    }
     // Clinician
     private val _allTUGAssessments = MutableStateFlow<List<TUGAssessment>>(emptyList())
     val allTUGAssessments: StateFlow<List<TUGAssessment>> = _allTUGAssessments

@@ -72,6 +72,7 @@ dependencies {
     implementation(libs.androidx.foundation)
     implementation(libs.androidx.room.external.antlr)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.compose.runtime.livedata)
 //    implementation(libs.ads.mobile.sdk)
 //    implementation(libs.androidx.room.compiler)
 //    implementation(libs.androidx.room.common.jvm)

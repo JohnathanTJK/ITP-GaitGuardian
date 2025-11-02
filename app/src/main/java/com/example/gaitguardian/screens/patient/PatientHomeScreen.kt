@@ -1,23 +1,37 @@
 package com.example.gaitguardian.screens.patient
 
+import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight.Companion.ExtraBold
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -34,7 +49,10 @@ import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.ui.theme.body
 import com.example.gaitguardian.viewmodels.PatientViewModel
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAnalysis
 import com.example.gaitguardian.ui.theme.ButtonActive
 import com.example.gaitguardian.viewmodels.TugDataViewModel
@@ -67,10 +85,25 @@ fun PatientHomeScreen(
         tugViewModel.getLatestTUGAssessment()
         latestAnalysis = tugViewModel.getLatestTugAnalysis()
     }
-
+    Log.d("patienthomescreen", "latest tug analysis : $latestAnalysis")
     if (latestTwoDurations.size >= 2) {
         latestTiming = latestTwoDurations[0]
         previousTiming = latestTwoDurations[1]
+    }
+    // WorkManager to check if got ongoing jobs / jobs not completed (for vid analysis)
+    val context = LocalContext.current
+    val workManager = WorkManager.getInstance(context)
+
+    // Observe all video analysis work
+    val workInfoList by workManager
+        .getWorkInfosByTagLiveData("video_analysis")
+        .observeAsState(initial = emptyList())
+
+    val ongoingWork = remember(workInfoList) {
+        workInfoList.filter {
+            it.state == WorkInfo.State.RUNNING ||
+                    it.state == WorkInfo.State.ENQUEUED
+        }
     }
 
     Box(
@@ -99,6 +132,12 @@ fun PatientHomeScreen(
                     fontSize = Heading1,
                     color = Color.Black
                 )
+                Button(
+                    onClick = {tugViewModel.removeAllAssessments()}
+                )
+                {
+                    Text("delete all info")
+                }
             }
 
             // Core Results Card
@@ -115,29 +154,18 @@ fun PatientHomeScreen(
             )
 
             if (showButton) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Button(
-                        onClick = { navController.navigate("gait_assessment_screen") },
-                        //onClick = { navController.navigate("result_screen/TestAssessment") },
-                        colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(60.dp),
-                        shape = RoundedCornerShape(12.dp)
+                if (ongoingWork.isNotEmpty()) // if there's ongoing jobs , display a circular loader
+                {
+                    VideoProcessingBanner(ongoingWork)
+                }
+                else {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = "Record Video",
-                            color = DefaultColor,
-                            fontSize = Heading1,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    if (showButton) {
                         Button(
-                            onClick = { showTutorial = true }, // <-- show overlay
+                            onClick = { navController.navigate("gait_assessment_screen") },
+                            //onClick = { navController.navigate("result_screen/TestAssessment") },
                             colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -145,15 +173,31 @@ fun PatientHomeScreen(
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text(
-                                text = "How to use",
+                                text = "Record Video",
                                 color = DefaultColor,
                                 fontSize = Heading1,
                                 fontWeight = FontWeight.Bold
                             )
                         }
+                        if (showButton) {
+                            Button(
+                                onClick = { showTutorial = true }, // <-- show overlay
+                                colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(60.dp),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    text = "How to use",
+                                    color = DefaultColor,
+                                    fontSize = Heading1,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
                     }
                 }
-
             }
         }
         // --- Full-screen tutorial overlay using Dialog ---
@@ -162,6 +206,87 @@ fun PatientHomeScreen(
                 PatientTutorialScreen(
                     onClose = { showTutorial = false }
                 )
+            }
+        }
+    }
+}
+
+
+@Composable
+fun VideoProcessingBanner(
+    ongoingWork: List<WorkInfo>,
+) {
+    val context = LocalContext.current
+    val workManager = WorkManager.getInstance(context)
+
+    // Observe all video analysis work
+    val workInfoList by workManager
+        .getWorkInfosByTagLiveData("video_analysis")
+        .observeAsState(initial = emptyList())
+
+//    val ongoingWork = remember(workInfoList) {
+//        workInfoList.filter {
+//            it.state == WorkInfo.State.RUNNING ||
+//                    it.state == WorkInfo.State.ENQUEUED
+//        }
+//    }
+    // for check
+    LaunchedEffect(ongoingWork) {
+        Log.d("VideoProcessingBanner", "Ongoing work count: ${ongoingWork.size}")
+    }
+    // Only show banner if there's ongoing work
+    AnimatedVisibility(
+        visible = ongoingWork.isNotEmpty(),
+        enter = slideInVertically() + fadeIn(),
+        exit = slideOutVertically() + fadeOut()
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+//                .then(
+//                    if (onBannerClick != null) {
+//                        Modifier.clickable { onBannerClick() }
+//                    } else Modifier
+//                ),
+            colors = CardDefaults.cardColors(
+                containerColor = Color(0xFF6A1B9A)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(32.dp),
+                        color = Color.White,
+                        strokeWidth = 3.dp
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Processing Video",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                        Text(
+                            text = "${ongoingWork.size} analysis in progress",
+                            color = Color.White.copy(alpha = 0.8f),
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+
             }
         }
     }

@@ -35,4 +35,8 @@ interface TugDao {
 
     @Query("DELETE FROM tug_assessment_table WHERE testId = (SELECT testId FROM tug_assessment_table ORDER BY testId DESC LIMIT 1)")
     suspend fun removeLastInsertedAssessment()
+
+//    @Query("DELETE FROM tug_assessment_table")
+    @Query("DELETE FROM sqlite_sequence WHERE name= 'tug_assessment_table'")
+    suspend fun removeAllAssessment()
 }
