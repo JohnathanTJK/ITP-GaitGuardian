@@ -30,7 +30,8 @@ interface TugAnalysisDao {
     suspend fun getSubtaskById(id: Int): subtaskDuration
 
     // REMOVE ALL
-//    @Query("DELETE FROM tug_analysis_table")
-    @Query("DELETE FROM sqlite_sequence WHERE name= 'tug_analysis_table'")
+    @Query("DELETE FROM tug_analysis_table")
     suspend fun removeAllTugAnalysis()
+    @Query("DELETE FROM sqlite_sequence WHERE name= 'tug_analysis_table'")
+    suspend fun removeAllTugAnalysisId()
 }

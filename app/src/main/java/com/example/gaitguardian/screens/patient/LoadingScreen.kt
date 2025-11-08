@@ -224,8 +224,10 @@ fun LoadingScreen(
             // Use the lastInsertedId to navigate to the specific analysis
             val analysisId = tugDataViewModel.lastInsertedId
             Log.d("LoadingScreen", "🧭 Navigating to result_screen with ID: $analysisId")
-            navController.navigate("result_screen/${assessmentTitle}/${analysisId}") {
-                popUpTo("loading_screen") { inclusive = true }
+//            navController.navigate("result_screen/${assessmentTitle}/${analysisId}") {
+            navController.navigate("result_screen/${assessmentTitle}") {
+//                popUpTo("loading_screen") { inclusive = true }
+                popUpTo("gait_assessment_screen") {inclusive = false}
             }
         }
     }
@@ -454,10 +456,10 @@ class VideoAnalysisWorker(
             val response: GaitAnalysisResponse = convertTugResultToGaitAnalysisResponse(tugResult)
             if (response.success)
             {
-                NotificationService(applicationContext).showCompleteVideoNotification("TUG", true)
+                NotificationService(applicationContext).showCompleteVideoNotification("Timed Up and Go", true)
             }
             else {
-                NotificationService(applicationContext).showCompleteVideoNotification("TUG",false)
+                NotificationService(applicationContext).showCompleteVideoNotification("Timed Up and Go",false)
             }
             Log.d("VideoAnalysisWorker", "your response now: $response")
             val resultJson = Gson().toJson(response)

@@ -38,7 +38,7 @@ fun ResultScreen(
     assessmentTitle: String,
     patientViewModel: PatientViewModel,
     tugViewModel: TugDataViewModel,
-    analysisId: Long? = null,  // NEW: Accept specific analysis ID
+//    analysisId: Long? = null,  // NEW: Accept specific analysis ID
     modifier: Modifier = Modifier
 ) {
     var currentPage by remember { mutableStateOf(1) } // 1 = core results, 2 = breakdown
@@ -46,19 +46,12 @@ fun ResultScreen(
     // Get severity from database - use specific analysis ID if provided
     var latestAnalysis by remember { mutableStateOf<TUGAnalysis?>(null) }
 
-    LaunchedEffect(analysisId) {
+    LaunchedEffect(Unit) {
         tugViewModel.getLatestTUGAssessment()
         tugViewModel.getLatestTwoDurations()
         tugViewModel.setAssessmentComment("")
-        
-        // Fetch specific analysis if ID provided, otherwise get latest
-        latestAnalysis = if (analysisId != null) {
-            Log.d("ResultScreen", "Loading specific analysis with ID: $analysisId")
-            tugViewModel.getTugAnalysisById(analysisId)
-        } else {
-            Log.d("ResultScreen", "Loading latest analysis (no ID provided)")
-            tugViewModel.getLatestTugAnalysis()
-        }
+        latestAnalysis = tugViewModel.getLatestTugAnalysis()
+
         Log.d("ResultScreen", "Analysis loaded: severity=${latestAnalysis?.severity}, testId=${latestAnalysis?.testId}, totalTime=${latestAnalysis?.timeTaken}")
 }
 

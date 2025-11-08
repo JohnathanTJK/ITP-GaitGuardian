@@ -162,6 +162,12 @@ fun NavGraph(
 //                }
 //            }
 //    }
+    LaunchedEffect(destinationIntent) {
+        if (destinationIntent != null)
+        {
+            navController.navigate(destinationIntent)
+        }
+    }
     LaunchedEffect(currentUserView, initialId) {
         if (!hasNavigated && currentDestination == "splash_screen") {
             delay(4000)
@@ -439,11 +445,17 @@ fun NavGraph(
 
                         }
                     }
-                    composable("result_screen/{assessmentTitle}/{analysisId}") { backStackEntry ->
+//                    composable("result_screen/{assessmentTitle}/{analysisId}") { backStackEntry ->
+//                        val time = backStackEntry.arguments?.getString("assessmentTitle")
+//                        val analysisId = backStackEntry.arguments?.getString("analysisId")?.toLongOrNull()
+//                        if (time != null) {
+//                            ResultScreen(navController, time, patientViewModel, tugDataViewModel, analysisId)
+//                        }
+//                    }
+                    composable("result_screen/{assessmentTitle}") { backStackEntry ->
                         val time = backStackEntry.arguments?.getString("assessmentTitle")
-                        val analysisId = backStackEntry.arguments?.getString("analysisId")?.toLongOrNull()
                         if (time != null) {
-                            ResultScreen(navController, time, patientViewModel, tugDataViewModel, analysisId)
+                            ResultScreen(navController, time, patientViewModel, tugDataViewModel)
                         }
                     }
                 }
