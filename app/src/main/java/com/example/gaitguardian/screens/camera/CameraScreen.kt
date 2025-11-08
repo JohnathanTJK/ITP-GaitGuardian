@@ -456,28 +456,39 @@ private fun recordVideo(
                         Toast.makeText(context, "Video capture succeeded", Toast.LENGTH_LONG).show()
 
                         val encodedPath = Uri.encode(outputFile.absolutePath)
+                        // now change to just navigate with url since not necessary to delete video anymore /
+                        // no need to check save videos boolean state
+                        navController.navigate("loading_screen/${assessmentTitle}/${encodedPath}")
 
-                        if (patientViewModel.saveVideos.value) {
-                            navController.navigate("loading_screen/${assessmentTitle}/${encodedPath}")
-
-                            val newTug = TUGAssessment(
-                                dateTime = currentDateTime,
-                                videoDuration = recordingTimeState.value.toFloat(),
-                                videoTitle = outputFile.name,
-                                onMedication = tugViewModel.onMedication.value,
-                                patientComments = tugViewModel.selectedComments.value.joinToString(", ")
-                            )
-                            tugViewModel.insertNewAssessment(newTug)
-                        } else {
-                            navController.navigate("loading_screen/${assessmentTitle}/${encodedPath}")
-                            val newTugNoVideo = TUGAssessment(
-                                dateTime = currentDateTime,
-                                videoDuration = recordingTimeState.value.toFloat(),
-                                onMedication = tugViewModel.onMedication.value,
-                                patientComments = tugViewModel.assessmentComment.value
-                            )
-                            tugViewModel.insertNewAssessment(newTugNoVideo)
-                        }
+                        val newTug = TUGAssessment(
+                            dateTime = currentDateTime,
+                            videoDuration = recordingTimeState.value.toFloat(),
+                            videoTitle = outputFile.name,
+                            onMedication = tugViewModel.onMedication.value,
+                            patientComments = tugViewModel.selectedComments.value.joinToString(", ")
+                        )
+                        tugViewModel.insertNewAssessment(newTug)
+//                        if (patientViewModel.saveVideos.value) {
+//                            navController.navigate("loading_screen/${assessmentTitle}/${encodedPath}")
+//
+//                            val newTug = TUGAssessment(
+//                                dateTime = currentDateTime,
+//                                videoDuration = recordingTimeState.value.toFloat(),
+//                                videoTitle = outputFile.name,
+//                                onMedication = tugViewModel.onMedication.value,
+//                                patientComments = tugViewModel.selectedComments.value.joinToString(", ")
+//                            )
+//                            tugViewModel.insertNewAssessment(newTug)
+//                        } else {
+//                            navController.navigate("loading_screen/${assessmentTitle}/${encodedPath}")
+//                            val newTugNoVideo = TUGAssessment(
+//                                dateTime = currentDateTime,
+//                                videoDuration = recordingTimeState.value.toFloat(),
+//                                onMedication = tugViewModel.onMedication.value,
+//                                patientComments = tugViewModel.assessmentComment.value
+//                            )
+//                            tugViewModel.insertNewAssessment(newTugNoVideo)
+//                        }
                     }
                 }
             }

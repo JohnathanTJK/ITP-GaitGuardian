@@ -509,8 +509,8 @@ private suspend fun handleAnalysisSuccess(
     tugDataViewModel.lastInsertedId?.toInt()?.let { newId ->
         tugDataViewModel.saveAssessmentIDsforNotifications(newId)
     }
-
-    if (!patientViewModel.saveVideos.value && videoFile.exists()) {
-        videoFile.delete()
-    }
+//
+//    if (!patientViewModel.saveVideos.value && videoFile.exists()) {
+//        videoFile.delete()
+//    }
 }

@@ -286,18 +286,18 @@ fun VideoPrivacyDialog(
     var showClearVideosDialog by remember { mutableStateOf(false) }
 
     // Function to check if videos exist
-//    fun hasExistingVideos(): Boolean {
-//        val videoFolder = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
-//        val videoFiles = videoFolder?.listFiles()?.filter { it.extension == "mp4" }
-//        return !videoFiles.isNullOrEmpty()
-//    }
     fun hasExistingVideos(): Boolean {
         val videoFolder = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
-        val videoFiles = videoFolder?.listFiles()?.filter {
-            it.extension == "mp4" && !it.path.contains(".hidden_videos")
-        }
+        val videoFiles = videoFolder?.listFiles()?.filter { it.extension == "mp4" }
         return !videoFiles.isNullOrEmpty()
     }
+//    fun hasExistingVideos(): Boolean {
+//        val videoFolder = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
+//        val videoFiles = videoFolder?.listFiles()?.filter {
+//            it.extension == "mp4" && !it.path.contains(".hidden_videos")
+//        }
+//        return !videoFiles.isNullOrEmpty()
+//    }
 
     // Function to clear videos
 //    fun clearExistingVideos() {
@@ -306,23 +306,23 @@ fun VideoPrivacyDialog(
 //        videoFiles?.forEach { it.delete() }
 //    }
 
-    fun hideExistingVideos() {
-        val videoFolder = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
-        val hiddenFolder = videoFolder?.resolve(".hidden_videos")
-
-        if (hiddenFolder != null && !hiddenFolder.exists()) {
-            hiddenFolder.mkdirs()
-        }
-
-        val videoFiles = videoFolder?.listFiles()?.filter {
-            it.extension == "mp4" && !it.path.contains(".hidden_videos")
-        }
-
-        videoFiles?.forEach { file ->
-            val hiddenFile = hiddenFolder?.resolve(file.name)
-            file.renameTo(hiddenFile)
-        }
-    }
+//    fun hideExistingVideos() {
+//        val videoFolder = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
+//        val hiddenFolder = videoFolder?.resolve(".hidden_videos")
+//
+//        if (hiddenFolder != null && !hiddenFolder.exists()) {
+//            hiddenFolder.mkdirs()
+//        }
+//
+//        val videoFiles = videoFolder?.listFiles()?.filter {
+//            it.extension == "mp4" && !it.path.contains(".hidden_videos")
+//        }
+//
+//        videoFiles?.forEach { file ->
+//            val hiddenFile = hiddenFolder?.resolve(file.name)
+//            file.renameTo(hiddenFile)
+//        }
+//    }
 
 
     // Main privacy dialog
@@ -390,7 +390,8 @@ fun VideoPrivacyDialog(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    hideExistingVideos()
+//                    hideExistingVideos()
+                    // To update dataStore with new saveVideos boolean
                     onConfirm(false) // Turn off saving
                     showClearVideosDialog = false
                 },
@@ -400,12 +401,13 @@ fun VideoPrivacyDialog(
                     ),
                     shape = RoundedCornerShape(8.dp)
                     ) {
-                    Text("Yes, Clear Videos", color = Color.White)
+                    Text("Yes, Hide Videos", color = Color.White)
                 }
             },
             dismissButton = {
+                // This click means user choose to NOT turn off video saving ( KEEP IT ENABLED)
                 TextButton(onClick = {
-                    onConfirm(false) // Turn off saving but keep videos
+//                    onConfirm(false) // Turn off saving but keep videos
                     showClearVideosDialog = false
                 },
                     colors = ButtonDefaults.buttonColors(
@@ -417,9 +419,9 @@ fun VideoPrivacyDialog(
                     Text("No, Keep Videos", color = Color.White)
                 }
             },
-            title = { Text("Clear Existing Videos?", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black) },
+            title = { Text("Hide Existing Videos?", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black) },
             text = {
-                Text("You have existing saved videos. Do you want to clear them when turning off video saving?", fontSize = 16.sp, color = Color.Black)
+                Text("Do you confirm to hide all existing videos?", fontSize = 16.sp, color = Color.Black)
             }
         )
     }
