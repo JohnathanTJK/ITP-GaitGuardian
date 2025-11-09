@@ -294,7 +294,8 @@ fun LoadingScreen(
                     )
                     Button(
                         onClick = {
-                            navController.navigate("camera_screen/$assessmentTitle")
+                            navController.navigate("new_cam_screen")
+//                            navController.navigate("camera_screen/$assessmentTitle")
                         }
                     )
                     {

@@ -73,6 +73,7 @@ dependencies {
     implementation(libs.androidx.room.external.antlr)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.compose.runtime.livedata)
+    implementation(libs.androidx.compose.material3)
 //    implementation(libs.ads.mobile.sdk)
 //    implementation(libs.androidx.room.compiler)
 //    implementation(libs.androidx.room.common.jvm)
@@ -110,6 +111,7 @@ dependencies {
 //    implementation("com.google.ar:core-ktx:1.36.0")
 //    implementation("io.github.sceneview:arsceneview:2.3.0")
     implementation ("androidx.camera:camera-camera2:1.3.0")
+
 
     // Add these for API communication
     implementation ("com.squareup.retrofit2:retrofit:2.9.0")

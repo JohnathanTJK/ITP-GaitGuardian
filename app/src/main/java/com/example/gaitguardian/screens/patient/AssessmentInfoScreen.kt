@@ -142,7 +142,8 @@ fun AssessmentInfoScreen(
                     navController.navigate("video_privacy_screen/${assessmentTitle}")
                 }
                 else{
-                    navController.navigate("camera_screen/${assessmentTitle}")
+                    navController.navigate("new_cam_screen")
+//                    navController.navigate("camera_screen/${assessmentTitle}")
                 }
             },
             colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
