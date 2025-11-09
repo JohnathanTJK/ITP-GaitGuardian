@@ -1,19 +1,13 @@
-"""
-MLP Severity Classification for GaitGuardian
-Handles severe class imbalance with multiple training strategies:
-1. Binary classification (Severity 0 vs Severity 1+) - RECOMMENDED for your dataset
-2. Multi-class (0-4) with heavy class rebalancing
-"""
-
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.model_selection import train_test_split, StratifiedKFold, GridSearchCV
+from sklearn.preprocessing import StandardScaler, RobustScaler
 from sklearn.neural_network import MLPClassifier
-from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, f1_score
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, VotingClassifier
+from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, f1_score, make_scorer
+from sklearn.feature_selection import SelectKBest, f_classif, mutual_info_classif
 from imblearn.over_sampling import SMOTE, BorderlineSMOTE, ADASYN
-from imblearn.under_sampling import RandomUnderSampler
-from imblearn.combine import SMOTETomek
+from imblearn.pipeline import Pipeline as ImbPipeline
 from collections import Counter
 import joblib
 import json
@@ -22,40 +16,15 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # ==================== CONFIGURATION ====================
-DATASET_PATH = "dataset_labelling.xlsx"  # Your labeled dataset
-RAW_LANDMARKS_DIR = "raw_landmarks_test"  # Directory with landmark CSVs
-OUTPUT_DIR = "severity_models"
+DATASET_PATH = "dataset_labelling.xlsx"
+OUTPUT_DIR = "severity_models_enhanced"
 FPS = 30
-
-# Training mode: 'binary' (0 vs 1+) or 'multiclass' (0-4)
-TRAINING_MODE = 'binary'  # RECOMMENDED for your imbalanced dataset
+TRAINING_MODE = 'binary'  # 'binary' or 'multiclass'
+RANDOM_STATE = 42
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# ==================== DATA LOADING ====================
-
-def load_labels(excel_path):
-    """Load and clean severity labels from Excel"""
-    df = pd.read_excel(excel_path)
-    
-    # Clean severity labels
-    df = df[df['Severity Classification'].notna()].copy()
-    df = df[df['Severity Classification'] != '0-4']  # Remove ambiguous label
-    
-    # Convert to integer
-    df['Severity'] = df['Severity Classification'].astype(int)
-    
-    # Clean video names
-    df['VideoID'] = df['Video Name'].str.replace('.mp4', '').str.strip()
-    
-    print(f"📊 Loaded {len(df)} labeled videos")
-    print(f"\nSeverity distribution:")
-    severity_dist = df['Severity'].value_counts().sort_index()
-    for sev, count in severity_dist.items():
-        pct = (count / len(df)) * 100
-        print(f"  Severity {sev}: {count:3d} videos ({pct:5.1f}%)")
-    
-    return df[['VideoID', 'Severity']]
+# ==================== ENHANCED FEATURE ENGINEERING ====================
 
 def calculate_phase_durations(row, fps=30):
     """Calculate phase durations from frame annotations"""
@@ -87,10 +56,112 @@ def calculate_phase_durations(row, fps=30):
     
     return phases
 
+def extract_enhanced_features(row, fps=30):
+    """
+    Extract comprehensive features from TUG phase data
+    Inspired by clinical TUG research and biomechanical analysis
+    """
+    phases = calculate_phase_durations(row, fps)
+    
+    # Basic phase durations
+    sit_to_stand = phases.get('sit_to_stand', 0)
+    walk_from = phases.get('walk_from_chair', 0)
+    turn_first = phases.get('turn_first', 0)
+    walk_to = phases.get('walk_to_chair', 0)
+    turn_second = phases.get('turn_second', 0)
+    stand_to_sit = phases.get('stand_to_sit', 0)
+    
+    # Aggregate metrics
+    total_time = sum(phases.values())
+    walk_time = walk_from + walk_to
+    turn_time = turn_first + turn_second
+    transition_time = sit_to_stand + stand_to_sit
+    
+    # Avoid division by zero
+    eps = 1e-6
+    
+    features = {
+        # ===== BASIC TIMING FEATURES =====
+        'total_duration': total_time,
+        'sit_to_stand_time': sit_to_stand,
+        'walk_from_chair_time': walk_from,
+        'turn_first_time': turn_first,
+        'walk_to_chair_time': walk_to,
+        'turn_second_time': turn_second,
+        'stand_to_sit_time': stand_to_sit,
+        'total_walk_time': walk_time,
+        'total_turn_time': turn_time,
+        'total_transition_time': transition_time,
+        
+        # ===== RATIO FEATURES (PHASE PROPORTIONS) =====
+        'sit_to_stand_ratio': sit_to_stand / (total_time + eps),
+        'walk_ratio': walk_time / (total_time + eps),
+        'turn_ratio': turn_time / (total_time + eps),
+        'transition_ratio': transition_time / (total_time + eps),
+        'stand_to_sit_ratio': stand_to_sit / (total_time + eps),
+        
+        # ===== CLINICAL RATIOS (KEY DISCRIMINATORS) =====
+        'turn_walk_ratio': turn_time / (walk_time + eps),  # Higher = worse turning
+        'transition_walk_ratio': transition_time / (walk_time + eps),
+        'sit_stand_asymmetry': abs(sit_to_stand - stand_to_sit) / (transition_time + eps),
+        
+        # ===== AVERAGE PHASE TIMES =====
+        'avg_walk_time': walk_time / 2 if walk_time > 0 else 0,
+        'avg_turn_time': turn_time / 2 if turn_time > 0 else 0,
+        
+        # ===== PHASE VARIABILITY =====
+        'walk_asymmetry': abs(walk_from - walk_to) / (walk_time + eps),
+        'turn_asymmetry': abs(turn_first - turn_second) / (turn_time + eps),
+        
+        # ===== PACE FEATURES =====
+        'walk_pace': walk_time / (total_time + eps),  # Proportion spent walking
+        'turn_pace': turn_time / (total_time + eps),  # Proportion spent turning
+        
+        # ===== SPEED INDICATORS (inverse of time) =====
+        'sit_to_stand_speed': 1 / (sit_to_stand + eps),
+        'walk_from_speed': 1 / (walk_from + eps),
+        'turn_first_speed': 1 / (turn_first + eps),
+        'walk_to_speed': 1 / (walk_to + eps),
+        'turn_second_speed': 1 / (turn_second + eps),
+        'stand_to_sit_speed': 1 / (stand_to_sit + eps),
+        'overall_speed': 1 / (total_time + eps),
+        
+        # ===== CLINICAL THRESHOLDS =====
+        # Binary flags based on clinical cutoffs
+        'exceeds_normal_threshold': 1 if total_time > 10 else 0,  # >10s is abnormal
+        'exceeds_risk_threshold': 1 if total_time > 13.5 else 0,  # >13.5s is fall risk
+        'slow_sit_to_stand': 1 if sit_to_stand > 2.5 else 0,
+        'slow_walking': 1 if walk_time > 5 else 0,
+        'slow_turning': 1 if turn_time > 4 else 0,
+        'slow_stand_to_sit': 1 if stand_to_sit > 3 else 0,
+        
+        # ===== INTERACTION FEATURES =====
+        'turn_walk_product': turn_time * walk_time,
+        'transition_turn_product': transition_time * turn_time,
+        'sit_walk_product': sit_to_stand * walk_time,
+        
+        # ===== PHASE SEQUENCE FEATURES =====
+        'first_half_time': sit_to_stand + walk_from + turn_first,
+        'second_half_time': walk_to + turn_second + stand_to_sit,
+        'first_second_asymmetry': abs((sit_to_stand + walk_from + turn_first) - 
+                                      (walk_to + turn_second + stand_to_sit)) / (total_time + eps),
+        
+        # ===== POLYNOMIAL FEATURES (for non-linear relationships) =====
+        'total_duration_squared': total_time ** 2,
+        'turn_walk_ratio_squared': (turn_time / (walk_time + eps)) ** 2,
+        'sit_to_stand_squared': sit_to_stand ** 2,
+        
+        # ===== LOG FEATURES (for skewed distributions) =====
+        'log_total_duration': np.log1p(total_time),
+        'log_turn_walk_ratio': np.log1p(turn_time / (walk_time + eps)),
+        'log_sit_to_stand': np.log1p(sit_to_stand),
+    }
+    
+    return features
+
 def load_features_from_excel(excel_path, fps=30):
     """
-    Extract features directly from Excel annotations
-    This avoids needing the raw CSV files
+    Extract enhanced features directly from Excel annotations
     """
     df = pd.read_excel(excel_path)
     df = df[df['Severity Classification'].notna()].copy()
@@ -101,36 +172,10 @@ def load_features_from_excel(excel_path, fps=30):
     for idx, row in df.iterrows():
         video_id = row['Video Name'].replace('.mp4', '').strip()
         
-        # Calculate phase durations
-        phases = calculate_phase_durations(row, fps)
-        
-        # Calculate total duration and derived metrics
-        total_time = sum(phases.values())
-        walk_time = phases.get('walk_from_chair', 0) + phases.get('walk_to_chair', 0)
-        turn_time = phases.get('turn_first', 0) + phases.get('turn_second', 0)
-        turn_walk_ratio = turn_time / (walk_time + 1e-6)
-        
-        # Create feature vector
-        features = {
-            'video_id': video_id,
-            'total_duration': total_time,
-            'sit_to_stand_time': phases.get('sit_to_stand', 0),
-            'walk_from_chair_time': phases.get('walk_from_chair', 0),
-            'turn_first_time': phases.get('turn_first', 0),
-            'walk_to_chair_time': phases.get('walk_to_chair', 0),
-            'turn_second_time': phases.get('turn_second', 0),
-            'stand_to_sit_time': phases.get('stand_to_sit', 0),
-            'total_walk_time': walk_time,
-            'total_turn_time': turn_time,
-            'turn_walk_ratio': turn_walk_ratio,
-            'avg_walk_time': walk_time / 2 if walk_time > 0 else 0,
-            'avg_turn_time': turn_time / 2 if turn_time > 0 else 0,
-            'sit_to_stand_ratio': phases.get('sit_to_stand', 0) / (total_time + 1e-6),
-            'walk_ratio': walk_time / (total_time + 1e-6),
-            'turn_ratio': turn_time / (total_time + 1e-6),
-            'stand_to_sit_ratio': phases.get('stand_to_sit', 0) / (total_time + 1e-6),
-            'severity': int(row['Severity Classification'])
-        }
+        # Extract enhanced features
+        features = extract_enhanced_features(row, fps)
+        features['video_id'] = video_id
+        features['severity'] = int(row['Severity Classification'])
         
         features_list.append(features)
     
@@ -140,13 +185,13 @@ def load_features_from_excel(excel_path, fps=30):
     
     return df_features
 
-# ==================== TRAINING FUNCTIONS ====================
+# ==================== DATA PREPARATION ====================
 
 def prepare_data_binary(df_features):
-    """Prepare data for binary classification: Severity 0 vs Severity 1+"""
+    """Prepare data for binary classification"""
     df = df_features.copy()
     
-    # Convert to binary: 0 = Normal, 1 = Impaired (any severity > 0)
+    # Convert to binary: 0 = Normal, 1 = Impaired
     df['binary_severity'] = (df['severity'] > 0).astype(int)
     
     print("\n🔵 BINARY CLASSIFICATION MODE")
@@ -161,7 +206,7 @@ def prepare_data_binary(df_features):
     return X, y, feature_cols, ['Normal', 'Impaired']
 
 def prepare_data_multiclass(df_features):
-    """Prepare data for multi-class classification: Severity 0-4"""
+    """Prepare data for multi-class classification"""
     df = df_features.copy()
     
     print("\n🌈 MULTI-CLASS CLASSIFICATION MODE")
@@ -169,7 +214,6 @@ def prepare_data_multiclass(df_features):
     for sev, count in severity_counts.items():
         print(f"Severity {sev}: {count} videos")
     
-    # Extract features
     feature_cols = [col for col in df.columns if col not in ['video_id', 'severity']]
     X = df[feature_cols].values
     y = df['severity'].values
@@ -178,224 +222,260 @@ def prepare_data_multiclass(df_features):
     
     return X, y, feature_cols, class_names
 
-def handle_class_imbalance(X_train, y_train, strategy='smote'):
+# ==================== TRAINING WITH HYPERPARAMETER TUNING ====================
+
+def train_mlp_with_tuning(X_train, y_train, X_test, y_test, mode='binary'):
     """
-    Handle severe class imbalance with multiple strategies
-    
-    Strategies:
-    - 'smote': Standard SMOTE oversampling
-    - 'borderline': Borderline-SMOTE (focuses on boundary cases)
-    - 'adasyn': ADASYN (adaptive synthetic sampling)
-    - 'smotetomek': SMOTE + Tomek links cleaning
-    - 'undersample': Random undersampling of majority class
-    - 'combined': SMOTE + undersampling
+    Train MLP with comprehensive hyperparameter tuning
     """
-    print(f"\n⚖️ Handling class imbalance with strategy: {strategy}")
-    print(f"Original distribution: {Counter(y_train)}")
+    print("\n🔧 HYPERPARAMETER TUNING")
     
-    # Determine k_neighbors based on smallest class
+    # Define pipeline with SMOTE + Scaler + MLP
+    # Determine k_neighbors for SMOTE
     min_samples = min(Counter(y_train).values())
     k_neighbors = min(5, min_samples - 1) if min_samples > 1 else 1
     
-    if strategy == 'smote':
-        sampler = SMOTE(random_state=42, k_neighbors=k_neighbors)
-    elif strategy == 'borderline':
-        sampler = BorderlineSMOTE(random_state=42, k_neighbors=k_neighbors)
-    elif strategy == 'adasyn':
-        sampler = ADASYN(random_state=42, n_neighbors=k_neighbors)
-    elif strategy == 'smotetomek':
-        sampler = SMOTETomek(random_state=42, smote=SMOTE(k_neighbors=k_neighbors))
-    elif strategy == 'undersample':
-        sampler = RandomUnderSampler(random_state=42)
-    elif strategy == 'combined':
-        # SMOTE to oversample minorities + undersample majority
-        from imblearn.combine import SMOTEENN
-        sampler = SMOTEENN(random_state=42, smote=SMOTE(k_neighbors=k_neighbors))
-    else:
-        raise ValueError(f"Unknown strategy: {strategy}")
+    pipeline = ImbPipeline([
+        ('sampling', SMOTE(k_neighbors=k_neighbors, random_state=RANDOM_STATE)),
+        ('scaler', RobustScaler()),  # RobustScaler is better for outliers
+        ('classifier', MLPClassifier(random_state=RANDOM_STATE, max_iter=1000, early_stopping=True))
+    ])
     
-    X_resampled, y_resampled = sampler.fit_resample(X_train, y_train)
-    
-    print(f"Resampled distribution: {Counter(y_resampled)}")
-    print(f"Training samples: {len(X_train)} → {len(X_resampled)}")
-    
-    return X_resampled, y_resampled
-
-def train_mlp_classifier(X_train, y_train, X_test, y_test, class_names, mode='binary'):
-    """Train MLP with optimized architecture for your dataset size"""
-    
-    print(f"\n🧠 Training MLP Classifier ({mode} mode)...")
-    print(f"Training samples: {len(X_train)}")
-    print(f"Test samples: {len(X_test)}")
-    print(f"Features: {X_train.shape[1]}")
-    
-    # Standardize features
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
-    
-    # Architecture choices for small dataset (100 videos)
-    # Using smaller networks to prevent overfitting
-    architectures = [
-        (32,),           # Single layer - simplest
-        (64, 32),        # Two layers - moderate
-        (32, 16),        # Two layers - smaller
-    ]
-    
-    best_model = None
-    best_score = 0
-    best_arch = None
-    
-    for arch in architectures:
-        print(f"\n  Testing architecture: {arch}")
-        
-        # Use lighter regularization for small dataset
-        mlp = MLPClassifier(
-            hidden_layer_sizes=arch,
-            activation='relu',
-            solver='adam',
-            alpha=0.001,  # L2 regularization
-            learning_rate_init=0.001,
-            max_iter=500,
-            early_stopping=True,
-            validation_fraction=0.15,
-            n_iter_no_change=20,
-            random_state=42,
-            verbose=False
-        )
-        
-        # Cross-validation on training set
-        cv_scores = cross_val_score(mlp, X_train_scaled, y_train, cv=5, scoring='f1_weighted')
-        avg_cv_score = cv_scores.mean()
-        
-        print(f"    CV F1 Score: {avg_cv_score:.4f} (±{cv_scores.std():.4f})")
-        
-        if avg_cv_score > best_score:
-            best_score = avg_cv_score
-            best_arch = arch
-            best_model = mlp
-    
-    print(f"\n✅ Best architecture: {best_arch} (CV F1: {best_score:.4f})")
-    
-    # Train final model on full training set
-    best_model.fit(X_train_scaled, y_train)
-    
-    # Evaluate on test set
-    y_pred = best_model.predict(X_test_scaled)
-    y_pred_proba = best_model.predict_proba(X_test_scaled)
-    
-    print("\n📊 TEST SET PERFORMANCE:")
-    print(classification_report(y_test, y_pred, target_names=class_names, zero_division=0))
-    
-    print("\n📊 Confusion Matrix:")
-    cm = confusion_matrix(y_test, y_pred)
-    print(cm)
-    
-    # Additional metrics for binary classification
-    if mode == 'binary' and len(class_names) == 2:
-        try:
-            auc = roc_auc_score(y_test, y_pred_proba[:, 1])
-            print(f"\n🎯 ROC-AUC Score: {auc:.4f}")
-        except:
-            pass
-    
-    return best_model, scaler, best_arch
-
-def save_model_artifacts(model, scaler, feature_names, class_names, mode, architecture):
-    """Save all model artifacts for deployment"""
-    
-    print(f"\n💾 Saving model artifacts to {OUTPUT_DIR}/...")
-    
-    # Save model
-    model_path = os.path.join(OUTPUT_DIR, f"mlp_severity_{mode}.pkl")
-    joblib.dump(model, model_path)
-    print(f"✅ Model saved: {model_path}")
-    
-    # Save scaler
-    scaler_path = os.path.join(OUTPUT_DIR, f"severity_scaler_{mode}.pkl")
-    joblib.dump(scaler, scaler_path)
-    print(f"✅ Scaler saved: {scaler_path}")
-    
-    # Save metadata
-    metadata = {
-        'mode': mode,
-        'feature_names': feature_names,
-        'class_names': class_names,
-        'num_features': len(feature_names),
-        'num_classes': len(class_names),
-        'architecture': list(architecture),
-        'scaler_mean': scaler.mean_.tolist(),
-        'scaler_scale': scaler.scale_.tolist()
+    # Hyperparameter grid
+    param_grid = {
+        'classifier__hidden_layer_sizes': [
+            (64,),
+            (128,),
+            (64, 32),
+            (128, 64),
+            (128, 64, 32),
+            (256, 128),
+        ],
+        'classifier__activation': ['relu', 'tanh'],
+        'classifier__alpha': [0.0001, 0.001, 0.01],  # L2 regularization
+        'classifier__learning_rate_init': [0.001, 0.01],
+        'classifier__solver': ['adam'],
     }
     
-    metadata_path = os.path.join(OUTPUT_DIR, f"severity_metadata_{mode}.json")
-    with open(metadata_path, 'w') as f:
-        json.dump(metadata, f, indent=2)
-    print(f"✅ Metadata saved: {metadata_path}")
+    # Use F1-score for optimization (better for imbalanced data)
+    scorer = make_scorer(f1_score, average='weighted')
     
-    return model_path, scaler_path, metadata_path
+    # Grid search with stratified K-fold
+    grid_search = GridSearchCV(
+        pipeline,
+        param_grid,
+        cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE),
+        scoring=scorer,
+        n_jobs=-1,
+        verbose=1
+    )
+    
+    print("🚀 Running GridSearchCV (this may take a few minutes)...")
+    grid_search.fit(X_train, y_train)
+    
+    print(f"\n✅ Best parameters found:")
+    for param, value in grid_search.best_params_.items():
+        print(f"  {param}: {value}")
+    print(f"\n📊 Best CV F1 Score: {grid_search.best_score_:.4f}")
+    
+    # Evaluate on test set
+    y_pred = grid_search.predict(X_test)
+    
+    return grid_search.best_estimator_, y_pred, grid_search.best_params_
+
+def train_ensemble(X_train, y_train, X_test, y_test):
+    """
+    Train ensemble of classifiers for better robustness
+    """
+    print("\n🎭 TRAINING ENSEMBLE")
+    
+    # Handle imbalance
+    min_samples = min(Counter(y_train).values())
+    k_neighbors = min(5, min_samples - 1) if min_samples > 1 else 1
+    smote = SMOTE(k_neighbors=k_neighbors, random_state=RANDOM_STATE)
+    X_train_resampled, y_train_resampled = smote.fit_resample(X_train, y_train)
+    
+    # Scale data
+    scaler = RobustScaler()
+    X_train_scaled = scaler.fit_transform(X_train_resampled)
+    X_test_scaled = scaler.transform(X_test)
+    
+    # Individual classifiers
+    mlp = MLPClassifier(
+        hidden_layer_sizes=(128, 64),
+        activation='relu',
+        alpha=0.001,
+        learning_rate_init=0.001,
+        max_iter=1000,
+        early_stopping=True,
+        random_state=RANDOM_STATE
+    )
+    
+    rf = RandomForestClassifier(
+        n_estimators=200,
+        max_depth=10,
+        min_samples_split=5,
+        random_state=RANDOM_STATE
+    )
+    
+    gb = GradientBoostingClassifier(
+        n_estimators=100,
+        learning_rate=0.1,
+        max_depth=5,
+        random_state=RANDOM_STATE
+    )
+    
+    # Voting ensemble
+    ensemble = VotingClassifier(
+        estimators=[('mlp', mlp), ('rf', rf), ('gb', gb)],
+        voting='soft'
+    )
+    
+    print("🚀 Training ensemble...")
+    ensemble.fit(X_train_scaled, y_train_resampled)
+    
+    y_pred = ensemble.predict(X_test_scaled)
+    
+    return ensemble, y_pred, scaler
+
+# ==================== FEATURE IMPORTANCE ====================
+
+def analyze_feature_importance(X_train, y_train, feature_names, top_k=20):
+    """
+    Analyze feature importance using Random Forest
+    """
+    print(f"\n🔍 FEATURE IMPORTANCE ANALYSIS (Top {top_k})")
+    
+    # Handle imbalance
+    min_samples = min(Counter(y_train).values())
+    k_neighbors = min(5, min_samples - 1) if min_samples > 1 else 1
+    smote = SMOTE(k_neighbors=k_neighbors, random_state=RANDOM_STATE)
+    X_resampled, y_resampled = smote.fit_resample(X_train, y_train)
+    
+    # Train Random Forest
+    rf = RandomForestClassifier(n_estimators=200, random_state=RANDOM_STATE)
+    rf.fit(X_resampled, y_resampled)
+    
+    # Get feature importances
+    importances = rf.feature_importances_
+    indices = np.argsort(importances)[::-1]
+    
+    print("\nTop features:")
+    for i in range(min(top_k, len(feature_names))):
+        idx = indices[i]
+        print(f"  {i+1}. {feature_names[idx]:<30} {importances[idx]:.4f}")
+    
+    return importances, indices
 
 # ==================== MAIN TRAINING PIPELINE ====================
 
 def main():
-    print("="*60)
-    print("🎯 MLP SEVERITY CLASSIFICATION TRAINING")
-    print("="*60)
+    print("=" * 60)
+    print("🎯 MLP SEVERITY CLASSIFICATION")
+    print("=" * 60)
     
-    # Load features from Excel
+    # Load and prepare data
     print(f"\n📂 Loading dataset from {DATASET_PATH}...")
     df_features = load_features_from_excel(DATASET_PATH, FPS)
     
-    # Choose training mode
+    # Prepare data based on mode
     if TRAINING_MODE == 'binary':
         X, y, feature_cols, class_names = prepare_data_binary(df_features)
-        imbalance_strategy = 'smote'  # Works well for binary with moderate imbalance
     else:
         X, y, feature_cols, class_names = prepare_data_multiclass(df_features)
-        imbalance_strategy = 'smotetomek'  # More aggressive for severe multiclass imbalance
     
-    # Train/test split (80/20) with stratification
-    print("\n📊 Splitting data (80% train, 20% test)...")
+    # Train-test split
+    print(f"\n📊 Splitting data (80% train, 20% test)...")
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, stratify=y, random_state=42
+        X, y, test_size=0.2, random_state=RANDOM_STATE, stratify=y
     )
     
     print(f"Training set: {len(X_train)} samples")
     print(f"Test set: {len(X_test)} samples")
+    print(f"Features: {len(feature_cols)}")
     
-    # Handle class imbalance
-    X_train_balanced, y_train_balanced = handle_class_imbalance(
-        X_train, y_train, strategy=imbalance_strategy
+    # Feature importance analysis
+    importances, indices = analyze_feature_importance(X_train, y_train, feature_cols)
+    
+    # Train with hyperparameter tuning
+    best_model, y_pred_tuned, best_params = train_mlp_with_tuning(
+        X_train, y_train, X_test, y_test, TRAINING_MODE
     )
     
-    # Train model
-    model, scaler, architecture = train_mlp_classifier(
-        X_train_balanced, y_train_balanced, 
-        X_test, y_test, 
-        class_names, 
-        mode=TRAINING_MODE
+    # Train ensemble
+    ensemble, y_pred_ensemble, scaler = train_ensemble(
+        X_train, y_train, X_test, y_test
     )
+    
+    # Evaluate both models
+    print("\n" + "=" * 60)
+    print("📊 TUNED MLP PERFORMANCE:")
+    print("=" * 60)
+    print(classification_report(y_test, y_pred_tuned, target_names=class_names))
+    print("\nConfusion Matrix:")
+    print(confusion_matrix(y_test, y_pred_tuned))
+    if TRAINING_MODE == 'binary':
+        print(f"\n🎯 ROC-AUC Score: {roc_auc_score(y_test, y_pred_tuned):.4f}")
+    
+    print("\n" + "=" * 60)
+    print("📊 ENSEMBLE PERFORMANCE:")
+    print("=" * 60)
+    print(classification_report(y_test, y_pred_ensemble, target_names=class_names))
+    print("\nConfusion Matrix:")
+    print(confusion_matrix(y_test, y_pred_ensemble))
+    if TRAINING_MODE == 'binary':
+        print(f"\n🎯 ROC-AUC Score: {roc_auc_score(y_test, y_pred_ensemble):.4f}")
+    
+    # Save best model (choose based on F1 score)
+    f1_tuned = f1_score(y_test, y_pred_tuned, average='weighted')
+    f1_ensemble = f1_score(y_test, y_pred_ensemble, average='weighted')
+    
+    if f1_tuned >= f1_ensemble:
+        print("\n💾 Saving tuned MLP model...")
+        best_pipeline = best_model
+        model_type = 'mlp_tuned'
+        best_f1 = f1_tuned
+    else:
+        print("\n💾 Saving ensemble model...")
+        best_pipeline = ensemble
+        model_type = 'ensemble'
+        best_f1 = f1_ensemble
     
     # Save artifacts
-    save_model_artifacts(model, scaler, feature_cols, class_names, TRAINING_MODE, architecture)
+    model_path = os.path.join(OUTPUT_DIR, f'{model_type}_severity_{TRAINING_MODE}.pkl')
+    joblib.dump(best_pipeline, model_path)
+    print(f"✅ Model saved: {model_path}")
     
-    print("\n" + "="*60)
+    # Save metadata
+    metadata = {
+        'mode': TRAINING_MODE,
+        'model_type': model_type,
+        'n_features': len(feature_cols),
+        'feature_names': feature_cols,
+        'class_names': class_names,
+        'test_f1_score': float(best_f1),
+        'best_params': best_params if model_type == 'mlp_tuned' else 'ensemble',
+        'top_features': [feature_cols[idx] for idx in indices[:20]]
+    }
+    
+    metadata_path = os.path.join(OUTPUT_DIR, f'{model_type}_metadata_{TRAINING_MODE}.json')
+    with open(metadata_path, 'w') as f:
+        json.dump(metadata, f, indent=2)
+    print(f"✅ Metadata saved: {metadata_path}")
+    
+    print("\n" + "=" * 60)
     print("🎉 TRAINING COMPLETE!")
-    print("="*60)
-    print(f"\n📁 Model artifacts saved to: {OUTPUT_DIR}/")
+    print("=" * 60)
+    print(f"📁 Model artifacts saved to: {OUTPUT_DIR}/")
     print(f"📊 Mode: {TRAINING_MODE}")
-    print(f"🏗️ Architecture: {architecture}")
-    print(f"📦 Ready for ONNX conversion and Android deployment")
+    print(f"🏆 Best Model: {model_type}")
+    print(f"📈 Test F1 Score: {best_f1:.4f}")
+    print(f"🔬 Total Features: {len(feature_cols)}")
     
-    # Recommendations
-    print("\n💡 RECOMMENDATIONS:")
-    if TRAINING_MODE == 'binary':
-        print("✅ Binary classification (0 vs 1+) is RECOMMENDED for your dataset")
-        print("   due to severe class imbalance in higher severity levels.")
-    else:
-        print("⚠️  Multi-class (0-4) classification may suffer from low precision")
-        print("   on Severity 2-4 due to limited training samples.")
-        print("   Consider using binary mode or collecting more high-severity videos.")
+    print("\n💡 TOP 10 MOST IMPORTANT FEATURES:")
+    for i in range(min(10, len(feature_cols))):
+        idx = indices[i]
+        print(f"  {i+1}. {feature_cols[idx]}")
 
 if __name__ == "__main__":
     main()
