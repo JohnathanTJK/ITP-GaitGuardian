@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,6 +36,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.gaitguardian.ui.theme.bgColor
+import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -44,6 +46,7 @@ fun PinEntryScreen(
     pinLength: Int = 4,
     onPinComplete: (String) -> Unit,
     onPinChange: (String) -> Unit = {},
+    errorMessage: String = "",
     modifier: Modifier = Modifier
 ) {
     var pin by remember { mutableStateOf("") }
@@ -113,6 +116,16 @@ fun PinEntryScreen(
             }
         }
 
+        // Show error message if any
+        if (errorMessage.isNotEmpty()) {
+            Text(
+                text = errorMessage,
+                color = Color.Red,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 16.dp),
+                textAlign = TextAlign.Center
+            )
+        }
 
         if (pin.isNotEmpty()) {
             TextButton(
@@ -216,11 +229,15 @@ fun PinDigitBox(
 }
 
 @Composable
-fun PinEntryExample(navController: NavController, notificationId: Int? = null) { // for testing now
+fun PinEntryExample(navController: NavController,
+                    clinicianViewModel: ClinicianViewModel,
+                    notificationId: Int? = null)
+{ // for testing now
     var showSuccess by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     val coroutineScope = rememberCoroutineScope()
-
+    val clinicianInfo by clinicianViewModel.clinician.collectAsState()
+    val clinicianPin = clinicianInfo?.pin
     if (showSuccess) {
         Column(
             modifier = Modifier
@@ -240,9 +257,11 @@ fun PinEntryExample(navController: NavController, notificationId: Int? = null) {
         Column {
             PinEntryScreen(
                 pinLength = 4,
+                errorMessage = errorMessage,
                 onPinComplete = { pin ->
                     // Validate PIN here, for now just 1234
-                    if (pin == "1234") { // validation
+//                    if (pin == "1234") { // validation
+                    if (pin == clinicianPin) {
                         showSuccess = true
                         coroutineScope.launch {
                             delay(1500)
@@ -274,19 +293,6 @@ fun PinEntryExample(navController: NavController, notificationId: Int? = null) {
                     }
                 }
             )
-
-            // Show error message if any
-            if (errorMessage.isNotEmpty()) {
-                Text(
-                    text = errorMessage,
-                    color = Color.Black,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 8.dp),
-                    textAlign = TextAlign.Center
-                )
-            }
         }
     }
 }

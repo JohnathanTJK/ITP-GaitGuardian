@@ -319,7 +319,7 @@ fun NavGraph(
                     })
                 ) { backStackEntry ->
                     val notifId = backStackEntry.arguments?.getInt("notifId")?.takeIf { it != -1 }
-                    PinEntryExample(navController, notifId)
+                    PinEntryExample(navController, clinicianViewModel,notifId)
                 }
 
                 // Clinician-Specific Screens here
