@@ -446,11 +446,38 @@ fun VideoRecordingOverlay(
     onRecordingFinished: (Uri?) -> Unit,
     deviceOrientation: devOrientationState
 ) {
+    // Initialize TTS
+    val tts = remember {
+        android.speech.tts.TextToSpeech(context.applicationContext) { status ->
+            if (status != android.speech.tts.TextToSpeech.SUCCESS) {
+                Log.e("TTS", "Initialization failed")
+            }
+        }
+    }
+    LaunchedEffect(tts) {
+        tts.language = Locale.getDefault()
+    }
+
+    // Countdown state
+    var countdown by remember { mutableStateOf<Int?>(null) }
+    var startCountdown by remember { mutableStateOf(false) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Transparent)
     ) {
+        // Countdown display (only numbers)
+        countdown?.let { number ->
+            Text(
+                text = number.toString(),
+                color = Color.White,
+                fontSize = 64.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
+
         // Recording indicator at top
         if (isRecording) {
             Row(
@@ -477,18 +504,7 @@ fun VideoRecordingOverlay(
                     recording?.stop()
                     onRecordingStateChange(null, false)
                 } else {
-                    if (videoCapture != null) {
-                        startRecording(
-                            context,
-                            lifecycleOwner,
-                            videoCapture,
-                            tugDataViewModel,
-                            navController,
-                            onRecordingStateChange,
-                            onRecordingFinished,
-                            deviceOrientation
-                        )
-                    }
+                    startCountdown = true
                 }
             },
             colors = ButtonDefaults.buttonColors(
@@ -507,7 +523,59 @@ fun VideoRecordingOverlay(
             )
         }
     }
+
+    // Countdown effect
+    if (startCountdown) {
+        LaunchedEffect(startCountdown) {
+            val executor = ContextCompat.getMainExecutor(context)
+
+            // Countdown 3, 2, 1 with TTS
+            for (i in 3 downTo 1) {
+                countdown = i
+                executor.execute {
+                    tts.speak(
+                        i.toString(),
+                        android.speech.tts.TextToSpeech.QUEUE_FLUSH,
+                        null,
+                        "COUNTDOWN_$i"
+                    )
+                }
+                delay(1000)
+            }
+
+            // Hide countdown
+            countdown = null
+
+            // Speak "Start" via TTS (not displayed)
+            executor.execute {
+                tts.speak(
+                    "Start",
+                    android.speech.tts.TextToSpeech.QUEUE_FLUSH,
+                    null,
+                    "COUNTDOWN_START"
+                )
+            }
+
+            startCountdown = false
+
+            // Start recording
+            if (videoCapture != null) {
+                startRecording(
+                    context,
+                    lifecycleOwner,
+                    videoCapture,
+                    tugDataViewModel,
+                    navController,
+                    onRecordingStateChange,
+                    onRecordingFinished,
+                    deviceOrientation
+                )
+            }
+        }
+    }
 }
+
+
 
 
 private fun startRecording(
