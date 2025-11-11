@@ -120,7 +120,7 @@ dependencies {
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
     // ONNX Runtime for ML model inference
-    implementation ("com.microsoft.onnxruntime:onnxruntime-android:1.16.3")
+    implementation ("com.microsoft.onnxruntime:onnxruntime-android:1.18.0")
     
     // Kotlinx Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")

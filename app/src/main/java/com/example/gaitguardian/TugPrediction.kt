@@ -203,12 +203,29 @@ class TugPrediction(private val context: Context) {
             Log.e(TAG, "⏱️ Post-Processing: ${String.format("%.2f", postProcessingDuration)} s (${String.format("%.1f", postProcessingDuration/totalProcessingTime*100)}%)")
             Log.e(TAG, "⏱️ TOTAL PROCESSING TIME: ${String.format("%.2f", totalProcessingTime)} s")
             Log.e(TAG, "⏱️ =====================================")
-            
-            // Calculate severity using SeverityClassification
-            val tugMetrics = createTugMetricsMap(phaseDurations, totalDuration.toDouble())
-            val severity = SeverityClassification.classifyGaitSeverity(tugMetrics)
-            Log.i(TAG, "Calculated severity: $severity")
-            
+
+            // Calculate severity using MLP model with fallback to rule-based
+            val severity = try {
+                val severityPredictor = SeverityPrediction(context)
+                if (severityPredictor.initializeModel()) {
+                    val mlpSeverity = severityPredictor.predictSeverity(phaseDurations)
+                    severityPredictor.cleanup()
+                    Log.i(TAG, "✅ MLP Severity: $mlpSeverity")
+                    mlpSeverity
+                } else {
+                    Log.w(TAG, "⚠️ MLP model failed to initialize, falling back to rule-based")
+                    val tugMetrics = createTugMetricsMap(phaseDurations, totalDuration.toDouble())
+                    val fallbackSeverity = SeverityClassification.classifyGaitSeverity(tugMetrics)
+                    Log.i(TAG, "📋 Rule-based Severity (fallback): $fallbackSeverity")
+                    fallbackSeverity
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ MLP prediction error, using rule-based fallback", e)
+                val tugMetrics = createTugMetricsMap(phaseDurations, totalDuration.toDouble())
+                val fallbackSeverity = SeverityClassification.classifyGaitSeverity(tugMetrics)
+                Log.i(TAG, "📋 Rule-based Severity (fallback): $fallbackSeverity")
+                fallbackSeverity
+            }
             PredictionResult(
                 filename = "pose_landmarks",
                 total_frames = landmarksList.size,
@@ -294,12 +311,29 @@ class TugPrediction(private val context: Context) {
                 Log.i(TAG, "   ${phase.phase}: ${phase.duration_sec}s (${phase.frame_count} frames)")
             }
             Log.i(TAG, "Total TUG duration: ${totalDuration}s")
-            
-            // Calculate severity using SeverityClassification
-            val tugMetrics = createTugMetricsMap(phaseDurations, totalDuration.toDouble())
-            val severity = SeverityClassification.classifyGaitSeverity(tugMetrics)
-            Log.i(TAG, "Calculated severity: $severity")
-            
+
+            // Calculate severity using MLP model with fallback to rule-based
+            val severity = try {
+                val severityPredictor = SeverityPrediction(context)
+                if (severityPredictor.initializeModel()) {
+                    val mlpSeverity = severityPredictor.predictSeverity(phaseDurations)
+                    severityPredictor.cleanup()
+                    Log.i(TAG, "✅ MLP Severity: $mlpSeverity")
+                    mlpSeverity
+                } else {
+                    Log.w(TAG, "⚠️ MLP model failed to initialize, falling back to rule-based")
+                    val tugMetrics = createTugMetricsMap(phaseDurations, totalDuration.toDouble())
+                    val fallbackSeverity = SeverityClassification.classifyGaitSeverity(tugMetrics)
+                    Log.i(TAG, "📋 Rule-based Severity (fallback): $fallbackSeverity")
+                    fallbackSeverity
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ MLP prediction error, using rule-based fallback", e)
+                val tugMetrics = createTugMetricsMap(phaseDurations, totalDuration.toDouble())
+                val fallbackSeverity = SeverityClassification.classifyGaitSeverity(tugMetrics)
+                Log.i(TAG, "📋 Rule-based Severity (fallback): $fallbackSeverity")
+                fallbackSeverity
+            }
             PredictionResult(
                 filename = "python_features",
                 total_frames = features.size,
