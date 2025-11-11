@@ -262,6 +262,7 @@ fun PinEntryExample(navController: NavController,
                     // Validate PIN here, for now just 1234
 //                    if (pin == "1234") { // validation
                     if (pin == clinicianPin) {
+                        clinicianViewModel.saveCurrentUserView("clinician")
                         showSuccess = true
                         coroutineScope.launch {
                             delay(1500)

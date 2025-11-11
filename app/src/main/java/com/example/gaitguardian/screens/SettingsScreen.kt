@@ -69,7 +69,7 @@ fun SettingsScreen(
                 launchSingleTop = true
             }
         } else {
-            clinicianViewModel.saveCurrentUserView("clinician")
+//            clinicianViewModel.saveCurrentUserView("clinician")
 //            navController.navigate("clinician_graph"){
             navController.navigate("clinician_pin_verification_screen/-1") {
 //                popUpTo("patient_graph") { inclusive = true }
