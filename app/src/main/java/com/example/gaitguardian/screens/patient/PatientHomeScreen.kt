@@ -136,7 +136,17 @@ fun PatientHomeScreen(
                     onClick = {tugViewModel.removeAllAssessments()}
                 )
                 {
-                    Text("delete all info")
+                    Text("delete all tug info")
+                }
+                Button(
+                    onClick = {patientViewModel.setSaveVideos(true)}
+                ) {
+                    Text("enable save videos")
+                }
+                Button(
+                    onClick = {navController.navigate("start_screen")}
+                ){
+                    Text("start screen (set name and pin)")
                 }
             }
 

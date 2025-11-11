@@ -76,7 +76,7 @@ fun ClinicianHomeScreen(
     LaunchedEffect(pendingIds) {
         Log.d("Clinician","this is ${pendingIds}")
         pendingIds.forEach { testId ->
-            NotificationService(context).showNotification(testId)
+//            NotificationService(context).showNotification(testId)
         }
     }
 
@@ -84,8 +84,8 @@ fun ClinicianHomeScreen(
     val clinicianInfo by clinicianViewModel.clinician.collectAsState()
     val uploadedAssesssments by tugViewModel.allTUGAssessments.collectAsState()
     val allTugAnalysis by tugViewModel.allTUGAnalysis.collectAsState()
-    Log.d("ClinicianHome", "$allTugAnalysis")
-
+    Log.d("ClinicianHome", " number of analysis: ${allTugAnalysis.size}, $allTugAnalysis")
+    Log.d("ClinicianHome", "number of uplaoadassesmsents: ${uploadedAssesssments.size}, $uploadedAssesssments")
     val pendingReviews = uploadedAssesssments.count { !it.watchStatus }
 
     // Calculate critical reviews
@@ -128,16 +128,6 @@ fun ClinicianHomeScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            item {
-                Button(
-                    onClick = {
-                        navController.navigate("video_screen")
-                    }
-                )
-                {
-                    Text("test video")
-                }
-            }
             item {
                 ClinicianHeader(
                     clinicianName = clinicianInfo?.name ?: "Clinician",

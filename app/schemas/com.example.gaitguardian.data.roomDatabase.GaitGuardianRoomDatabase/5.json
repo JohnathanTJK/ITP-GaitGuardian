@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 5,
-    "identityHash": "2fd1f6d7a3449822a88c12842a805acc",
+    "identityHash": "4161c4ecaff92c8778c34daf79c80491",
     "entities": [
       {
         "tableName": "patients_table",
@@ -105,7 +105,7 @@
       },
       {
         "tableName": "clinician_table",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `pin` TEXT NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -116,6 +116,12 @@
           {
             "fieldPath": "name",
             "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pin",
+            "columnName": "pin",
             "affinity": "TEXT",
             "notNull": true
           }
@@ -208,7 +214,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2fd1f6d7a3449822a88c12842a805acc')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4161c4ecaff92c8778c34daf79c80491')"
     ]
   }
 }

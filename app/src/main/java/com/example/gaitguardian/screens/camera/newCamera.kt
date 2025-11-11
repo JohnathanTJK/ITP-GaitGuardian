@@ -1,10 +1,10 @@
 package com.example.gaitguardian.screens.camera
 
-import DistanceViewModel
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Rect
 import android.net.Uri
 import android.util.Log
 import android.view.OrientationEventListener
@@ -26,7 +26,9 @@ import androidx.camera.video.Recording
 import androidx.camera.video.VideoCapture
 import androidx.camera.video.VideoRecordEvent
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,11 +43,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ScreenRotation
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -60,7 +65,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -75,6 +84,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessment
+import com.example.gaitguardian.viewmodels.DistanceViewModel
 import com.example.gaitguardian.viewmodels.TugDataViewModel
 import kotlinx.coroutines.delay
 import java.io.File
@@ -91,6 +101,20 @@ data class devOrientationState (
     val orientation: devOrientation,
     val lockedLandscape: Boolean
 )
+@Composable
+fun BoundingBoxOverlay(box: Rect?, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier.fillMaxSize()) {
+        box?.let {
+            drawRect(
+                color = Color.Red,
+                topLeft = Offset(it.left.toFloat(), it.top.toFloat()),
+                size = Size(it.width().toFloat(), it.height().toFloat()),
+                style = Stroke(width = 4f)
+            )
+        }
+    }
+}
+
 @Composable
 fun rembDeviceOrientation(): devOrientationState {
     val context = LocalContext.current
@@ -145,6 +169,7 @@ fun rembDeviceOrientation(): devOrientationState {
     }
     return devOrientationState(orientation, lockedLandscape)
 }
+
 @androidx.annotation.OptIn(ExperimentalCamera2Interop::class)
 @SuppressLint("RestrictedApi")
 @Composable
@@ -164,13 +189,18 @@ fun CameraScreen(viewModel: DistanceViewModel = viewModel(), navController: NavC
                 deviceOrientation.orientation == devOrientation.LANDSCAPE_LEFT ||
                 deviceOrientation.orientation == devOrientation.LANDSCAPE_RIGHT
 
+    val box = viewModel.boundingBox.collectAsState().value
+
     Box(modifier = Modifier.fillMaxSize()) {
         if (isDeviceLandscape) {
+            // Camera preview
             AndroidView({ previewView }, modifier = Modifier.fillMaxSize())
 
+            // Overlays
             when (cameraPhase) {
                 DistanceViewModel.CameraPhase.CheckingDistance -> {
                     DistanceTestOverlay(viewModel)
+                    BoundingBoxOverlay(box = box)
                 }
 
                 DistanceViewModel.CameraPhase.CheckingLuminosity -> {
@@ -288,10 +318,13 @@ fun CameraScreen(viewModel: DistanceViewModel = viewModel(), navController: NavC
                 override fun onGlobalLayout() {
                     previewView.viewTreeObserver.removeOnGlobalLayoutListener(this)
                     val widthPx = previewView.width.takeIf { it > 0 } ?: 1920
+                    val heightPx = previewView.height.takeIf { it > 0 } ?: 1080
                     if (focalLengths != null && focalLengths.isNotEmpty() && sensorSize != null) {
                         viewModel.setCameraParams(
                             focalLengthMeters = focalLengths[0] / 1000f,
                             sensorWidthMeters = sensorSize.width / 1000f,
+                            sensorHeightMeters = sensorSize.height / 1000f,
+                            imageHeightPx = heightPx,
                             imageWidthPx = widthPx
                         )
                     }
@@ -300,66 +333,6 @@ fun CameraScreen(viewModel: DistanceViewModel = viewModel(), navController: NavC
         }, ContextCompat.getMainExecutor(context))
     }
 }
-
-@Composable
-fun LuminosityCheckOverlay(viewModel: DistanceViewModel) {
-    val luminance by viewModel.luminance.collectAsState()
-    val error by viewModel.luminosityError.collectAsState()
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.6f)),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Text(
-            "Checking Lighting Conditions",
-            color = Color.White,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            "Luminance: %.1f".format(luminance),
-            color = Color.White,
-            fontSize = 18.sp
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (error != null) {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color.Red.copy(alpha = 0.8f)),
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    error!!,
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    modifier = Modifier.padding(16.dp),
-                    textAlign = TextAlign.Center
-                )
-            }
-        } else {
-            Text(
-                "✅ Lighting conditions are good",
-                color = Color.Green,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-    }
-}
-
 @Composable
 fun DistanceTestOverlay(viewModel: DistanceViewModel) {
     val personDistance by viewModel.personDistance.collectAsState()
@@ -432,6 +405,66 @@ fun DistanceTestOverlay(viewModel: DistanceViewModel) {
         }
     }
 }
+@Composable
+fun LuminosityCheckOverlay(viewModel: DistanceViewModel) {
+    val luminance by viewModel.luminance.collectAsState()
+    val error by viewModel.luminosityError.collectAsState()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.6f)),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            "Checking Lighting Conditions",
+            color = Color.White,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            "Luminance: %.1f".format(luminance),
+            color = Color.White,
+            fontSize = 18.sp
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (error != null) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.Red.copy(alpha = 0.8f)),
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    error!!,
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(16.dp),
+                    textAlign = TextAlign.Center
+                )
+            }
+        } else {
+            Text(
+                "✅ Lighting conditions are good",
+                color = Color.Green,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+    }
+}
+
+
 
 @Composable
 fun VideoRecordingOverlay(
@@ -496,32 +529,56 @@ fun VideoRecordingOverlay(
                 Text("Recording", color = Color.White, fontWeight = FontWeight.Bold)
             }
         }
-
-        // Record button at bottom
-        Button(
-            onClick = {
-                if (isRecording) {
-                    recording?.stop()
-                    onRecordingStateChange(null, false)
-                } else {
-                    startCountdown = true
-                }
-            },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = if (isRecording) Color.Red else Color.Green
-            ),
-            shape = CircleShape,
+        // similar to old screen
+        Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(24.dp)
                 .size(80.dp)
+                .clip(CircleShape)
+                .background(if (isRecording) Color.Red else Color.DarkGray)
+                .clickable {
+                    if (isRecording) {
+                        recording?.stop()
+                        onRecordingStateChange(null, false)
+                    } else {
+                        startCountdown = true
+                    }
+                },
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                if (isRecording) "Stop" else "Record",
-                color = Color.White,
-                fontWeight = FontWeight.Bold
+            Icon(
+                imageVector = if (isRecording) Icons.Default.Stop else Icons.Default.Videocam,
+                contentDescription = if (isRecording) "Stop Recording" else "Start Recording",
+                tint = Color.White,
+                modifier = Modifier.size(40.dp)
             )
         }
+//        // Record button at bottom
+//        Button(
+//            onClick = {
+//                if (isRecording) {
+//                    recording?.stop()
+//                    onRecordingStateChange(null, false)
+//                } else {
+//                    startCountdown = true
+//                }
+//            },
+//            colors = ButtonDefaults.buttonColors(
+//                containerColor = if (isRecording) Color.Red else Color.Green
+//            ),
+//            shape = CircleShape,
+//            modifier = Modifier
+//                .align(Alignment.BottomCenter)
+//                .padding(24.dp)
+//                .size(80.dp)
+//        ) {
+//            Text(
+//                if (isRecording) "Stop" else "Record",
+//                color = Color.White,
+//                fontWeight = FontWeight.Bold
+//            )
+//        }
     }
 
     // Countdown effect

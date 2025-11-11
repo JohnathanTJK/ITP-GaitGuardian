@@ -10,6 +10,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,13 +61,14 @@ class MainActivity : ComponentActivity() {
         )[TugDataViewModel::class.java]
     }
 
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         TestApiConnection.testConnection(this)
 
         if (!hasRequiredPermissions()) {
-            ActivityCompat.requestPermissions(this, CAMERAX_PERMISSIONS, 0)
+            ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, 0)
         }
 
         createNotificationChannel()
@@ -84,7 +86,7 @@ class MainActivity : ComponentActivity() {
                 val activity = this
                 // Attach listener directly to navController
                 DisposableEffect(navController) {
-                    val unspecifiedScreens = setOf("video_screen", "camera_screen", "camera_test") // screens that DO NOT enforce strict orientation
+                    val unspecifiedScreens = setOf("video_screen", "camera_screen", "camera_test", "new_cam_screen") // screens that DO NOT enforce strict orientation
                     // check the currentdestination route, and orientate screen accordingly
                     val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
                         activity.requestedOrientation = if (destination.route in unspecifiedScreens) {
@@ -120,8 +122,9 @@ class MainActivity : ComponentActivity() {
 //        }
     }
 
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private fun hasRequiredPermissions(): Boolean {
-        return CAMERAX_PERMISSIONS.all {
+        return REQUIRED_PERMISSIONS.all {
             ContextCompat.checkSelfPermission(applicationContext, it) ==
                     PackageManager.PERMISSION_GRANTED
         }
@@ -158,9 +161,11 @@ class MainActivity : ComponentActivity() {
     }
 
     companion object {
-        private val CAMERAX_PERMISSIONS = arrayOf(
+        @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+        private val REQUIRED_PERMISSIONS = arrayOf(
             android.Manifest.permission.CAMERA,
-            android.Manifest.permission.RECORD_AUDIO
+            android.Manifest.permission.RECORD_AUDIO,
+            android.Manifest.permission.POST_NOTIFICATIONS
         )
     }
 }
