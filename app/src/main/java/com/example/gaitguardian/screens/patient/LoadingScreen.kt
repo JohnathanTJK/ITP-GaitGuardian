@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -327,6 +328,24 @@ fun LoadingScreen(
                             color = Color(0xFF6A1B9A)
                         )
                     )
+                }
+            }
+            if (analysisState is AnalysisState.Analyzing) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = {
+                        // Cancel the work
+                        workRequestId.value?.let { id ->
+                            workManager.cancelWorkById(id)
+                            Log.d("LoadingScreen", "ANALYSIS SKIP/ WORK MANAGER STOP")
+                        }
+
+
+                        analysisState = AnalysisState.Success
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9C27B0))
+                ) {
+                    Text("Skip Analysis", color = Color.White)
                 }
             }
         }
