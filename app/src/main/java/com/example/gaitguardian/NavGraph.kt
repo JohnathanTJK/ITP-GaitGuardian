@@ -53,10 +53,6 @@ import com.example.gaitguardian.screens.SplashScreen
 import com.example.gaitguardian.screens.StartScreen
 import com.example.gaitguardian.screens.VideoPlaybackScreen
 import com.example.gaitguardian.screens.camera.CameraScreen
-import com.example.gaitguardian.screens.camera.ChairDetectionCameraScreen
-import com.example.gaitguardian.screens.camera.ChairPersonCameraScreen
-import com.example.gaitguardian.screens.camera.ChairPersonPoseCameraScreen
-//import com.example.gaitguardian.screens.camera.DistanceTestScreen
 import com.example.gaitguardian.screens.camera.NewCameraScreen
 import com.example.gaitguardian.screens.clinician.ClinicianDetailedPatientViewScreen
 import com.example.gaitguardian.screens.clinician.ClinicianHomeScreen
@@ -381,11 +377,6 @@ fun NavGraph(
                     composable("video_screen") {
                         VideoPlaybackScreen(tugDataViewModel,navController)
                     }
-//                    composable("camera_test") {
-////                        ChairDetectionCameraScreen()
-////                        ChairPersonPoseCameraScreen()
-//                        ChairPersonCameraScreen()
-//                    }
                 }
 
                 // Patient-Specific Screens here
