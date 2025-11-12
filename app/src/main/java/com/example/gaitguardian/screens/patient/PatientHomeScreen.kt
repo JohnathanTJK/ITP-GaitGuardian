@@ -132,22 +132,22 @@ fun PatientHomeScreen(
                     fontSize = Heading1,
                     color = Color.Black
                 )
-//                Button(
-//                    onClick = {tugViewModel.removeAllAssessments()}
-//                )
-//                {
-//                    Text("delete all tug info")
-//                }
+                Button(
+                    onClick = {tugViewModel.removeAllAssessments()}
+                )
+                {
+                    Text("delete all tug info")
+                }
 //                Button(
 //                    onClick = {patientViewModel.setSaveVideos(true)}
 //                ) {
 //                    Text("enable save videos")
 //                }
-//                Button(
-//                    onClick = {navController.navigate("start_screen")}
-//                ){
-//                    Text("start screen (set name and pin)")
-//                }
+                Button(
+                    onClick = {navController.navigate("start_screen")}
+                ){
+                    Text("start screen (set name and pin)")
+                }
             }
 
             // Core Results Card
