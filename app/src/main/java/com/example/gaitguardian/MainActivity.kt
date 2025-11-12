@@ -7,6 +7,7 @@ import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -28,7 +29,7 @@ import com.example.gaitguardian.api.TestApiConnection
 
 class MainActivity : ComponentActivity() {
     private val _assessmentId = mutableStateOf<Int?>(null)
-    private val _destinationFromIntent = mutableStateOf<String?>(null)
+//    private val _destinationFromIntent = mutableStateOf<String?>(null)
 
     // Initialize ViewModels at the top
     private val patientViewModel by lazy {
@@ -64,7 +65,9 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        Log.d("MainActivity", "=== onCreate called ===")
+        Log.d("MainActivity", "savedInstanceState is null: ${savedInstanceState == null}")
+        Log.d("MainActivity", "intent destination: ${intent?.getStringExtra("destination")}")
         TestApiConnection.testConnection(this)
 
         if (!hasRequiredPermissions()) {
@@ -75,7 +78,17 @@ class MainActivity : ComponentActivity() {
         requestNotificationPermissionIfNeeded()
 
         _assessmentId.value = intent?.getIntExtra("assessmentId", -1)?.takeIf { it != -1 }
-        _destinationFromIntent.value = intent?.getStringExtra("destination")
+
+        val destinationFromIntent = if (savedInstanceState == null) {
+            intent?.getStringExtra("destination")?.also {
+                Log.d("MainActivity", "Fresh launch - destination: $it")
+                // Clear from intent so it doesn't get reused
+                intent.removeExtra("destination")
+            }
+        } else {
+            Log.d("MainActivity", "Config change - ignoring intent")
+            null
+        }
 
         // ✅ handle notification tap (cold start)
 //        handleNotificationIntent(intent)
@@ -99,11 +112,14 @@ class MainActivity : ComponentActivity() {
                     onDispose { navController.removeOnDestinationChangedListener(listener) }
                 }
 //                val destinationFromIntent = intent?.getStringExtra("destination")
-                val destinationFromIntent by _destinationFromIntent
+//                val destinationFromIntent by _destinationFromIntent
                 NavGraph(
                     navController = navController,
                     initialId = _assessmentId.value,
                     destinationIntent = destinationFromIntent,
+//                    onDestinationReached = {
+//                        _destinationFromIntent.value = null
+//                    },
                     patientViewModel = patientViewModel,
                     clinicianViewModel = clinicianViewModel,
                     tugDataViewModel = tugDataViewModel
@@ -112,16 +128,22 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+//    override fun onNewIntent(intent: Intent) {
+//        super.onNewIntent(intent)
+//        setIntent(intent)
+//        _destinationFromIntent.value = intent.getStringExtra("destination")
+////        val destination = intent.getStringExtra("destination")
+////        if (destination != null) {
+////            navController.navigate(destination)
+////        }
+//    }
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        Log.d("MainActivity", "=== onNewIntent called ===")
+        Log.d("MainActivity", "new intent destination: ${intent.getStringExtra("destination")}")
         setIntent(intent)
-        _destinationFromIntent.value = intent.getStringExtra("destination")
-//        val destination = intent.getStringExtra("destination")
-//        if (destination != null) {
-//            navController.navigate(destination)
-//        }
+//        _destinationFromIntent.value = intent.getStringExtra("destination")
     }
-
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private fun hasRequiredPermissions(): Boolean {
         return REQUIRED_PERMISSIONS.all {

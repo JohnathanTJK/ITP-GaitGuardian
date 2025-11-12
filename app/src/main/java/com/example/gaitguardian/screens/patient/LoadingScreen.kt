@@ -104,50 +104,6 @@ fun LoadingScreen(
 
         workManager.enqueue(workRequest)
         workRequestId.value = workRequest.id
-//        workManager.getWorkInfoByIdLiveData(workRequest.id).observeForever() { workInfo ->
-//            if (workInfo != null) {
-//                when (workInfo.state) {
-//                    WorkInfo.State.RUNNING -> {
-//                        val p = workInfo.progress.getInt("PROGRESS", 0)
-//                        progress = p
-//                        analysisState = AnalysisState.Analyzing
-//                    }
-//
-//                    WorkInfo.State.SUCCEEDED -> {
-//                        // retrieve the result
-//                        val json = workInfo.outputData.getString("ANALYSIS_RESULT")
-//                        //convert to gson
-//                        val analysisResult = gson.fromJson(json, GaitAnalysisResponse::class.java)
-//                        // if analysis success , set State to Success else set as Error
-//                        Log.d("result", "analysisResult is $analysisResult")
-//                        if (analysisResult.success) analysisState = AnalysisState.Success else analysisResult.error?.let { analysisState = AnalysisState.Error(it) }
-//
-//                        if (analysisResult.success) {
-//                            Log.d("result", "analysis state is success: inserting new entry now!")
-//                            CoroutineScope(Dispatchers.IO).launch {
-//                                handleAnalysisSuccess(
-//                                    analysisResult,
-//                                    videoFile,
-//                                    tugDataViewModel,
-//                                    patientViewModel
-//                                )
-//                            }
-//                        }
-//                        if (analysisState is AnalysisState.Error) {
-//                            tugDataViewModel.removeLastInsertedAssessment()
-//                            Log.d("LoadingScreen","SUCCESSFULLY REMOVED LAST ASSESSMENT BECAUSE FAILED")
-//                        }
-//                    }
-//
-//                    WorkInfo.State.FAILED -> {
-//                        val error = workInfo.outputData.getString("ERROR_MESSAGE") ?: "Unknown error"
-//                        analysisState = AnalysisState.Error(error)
-//                    }
-//
-//                    else -> {}
-//                }
-//            }
-//        }
     }
 
     val workInfo by workRequestId.value?.let { id ->

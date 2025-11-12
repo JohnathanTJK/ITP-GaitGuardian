@@ -164,9 +164,14 @@ fun NavGraph(
 //            }
 //    }
     LaunchedEffect(destinationIntent) {
-        if (destinationIntent != null)
-        {
-            navController.navigate(destinationIntent)
+        Log.d("NavGraph", "LaunchedEffect triggered")
+        Log.d("NavGraph", "destinationIntent: $destinationIntent")
+        if (destinationIntent != null) {
+            Log.d("NavGraph", "Navigating to: $destinationIntent")
+            navController.navigate(destinationIntent) {
+                launchSingleTop = true
+            }
+            Log.d("NavGraph", "Navigation complete, destination cleared")
         }
     }
     LaunchedEffect(currentUserView, initialId) {
