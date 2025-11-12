@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Rect
+import android.graphics.RectF
 import android.net.Uri
 import android.util.Log
 import android.view.OrientationEventListener
@@ -12,6 +13,7 @@ import android.view.OrientationEventListener.ORIENTATION_UNKNOWN
 import android.view.Surface
 import android.view.ViewTreeObserver
 import android.widget.Toast
+import androidx.annotation.OptIn
 import androidx.camera.camera2.interop.Camera2CameraInfo
 import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.CameraSelector
@@ -26,6 +28,7 @@ import androidx.camera.video.Recording
 import androidx.camera.video.VideoCapture
 import androidx.camera.video.VideoRecordEvent
 import androidx.camera.view.PreviewView
+import androidx.camera.view.TransformExperimental
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -114,6 +117,26 @@ fun BoundingBoxOverlay(box: Rect?, modifier: Modifier = Modifier) {
         }
     }
 }
+//@OptIn(TransformExperimental::class)
+//@Composable
+//fun BoundingBoxOverlay(box: Rect?, previewView: PreviewView, modifier: Modifier = Modifier) {
+//    Canvas(modifier = modifier.fillMaxSize()) {
+//        val transform = previewView.outputTransform ?: return@Canvas
+//        val matrix = transform.getMatrix()
+//
+//        box?.let {
+//            val rectF = RectF(it)
+//            matrix.mapRect(rectF) // Transforms image-space rect to view-space rect
+//
+//            drawRect(
+//                color = Color.Red,
+//                topLeft = Offset(rectF.left, rectF.top),
+//                size = Size(rectF.width(), rectF.height()),
+//                style = Stroke(width = 4f)
+//            )
+//        }
+//    }
+//}
 
 @Composable
 fun rembDeviceOrientation(): devOrientationState {
@@ -177,8 +200,13 @@ fun CameraScreen(viewModel: DistanceViewModel = viewModel(), navController: NavC
     val cameraPhase by viewModel.cameraPhase.collectAsState()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val previewView = remember { PreviewView(context) }
-
+//    val previewView = remember { PreviewView(context) }
+    val previewView = remember {
+        PreviewView(context).apply {
+            scaleType = PreviewView.ScaleType.FILL_CENTER
+//            implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+        }
+    }
     var recording by remember { mutableStateOf<Recording?>(null) }
     var isRecording by remember { mutableStateOf(false) }
     var videoCapture by remember { mutableStateOf<VideoCapture<Recorder>?>(null) }
@@ -201,6 +229,7 @@ fun CameraScreen(viewModel: DistanceViewModel = viewModel(), navController: NavC
                 DistanceViewModel.CameraPhase.CheckingDistance -> {
                     DistanceTestOverlay(viewModel)
                     BoundingBoxOverlay(box = box)
+//                    BoundingBoxOverlay(box = box, previewView = previewView)
                 }
 
                 DistanceViewModel.CameraPhase.CheckingLuminosity -> {
@@ -304,6 +333,7 @@ fun CameraScreen(viewModel: DistanceViewModel = viewModel(), navController: NavC
                 analyzer,
                 videoCapture!!
             )
+            camera.cameraControl.cancelFocusAndMetering()
 
             val cameraInfo = Camera2CameraInfo.from(camera.cameraInfo)
             val focalLengths = cameraInfo.getCameraCharacteristic(
