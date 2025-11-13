@@ -4,48 +4,163 @@ import android.util.Log
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import kotlin.math.*
 
-/**
- * Direct Python-to-Kotlin port of extract_tug_features() function
- * This is a line-by-line translation of the Python featureextraction.py
- */
 class FeatureExtraction {
     
     companion object {
         private const val TAG = "FeatureExtraction"
+        // Expected ONNX feature order (copied from models/onnx_metadata.json)
+        val FEATURE_ORDER = listOf(
+            "hip_height",
+            "hip_y_velocity",
+            "hip_x_velocity",
+            "hip_vertical_acceleration",
+            "hip_horizontal_acceleration",
+            "com_x",
+            "com_y",
+            "com_x_velocity",
+            "com_y_velocity",
+            "com_acceleration",
+            "left_knee_angle",
+            "right_knee_angle",
+            "left_hip_angle",
+            "right_hip_angle",
+            "left_ankle_angle",
+            "right_ankle_angle",
+            "torso_angle",
+            "torso_angle_velocity",
+            "knee_coordination",
+            "hip_coordination",
+            "ankle_coordination",
+            "knee_extension_power",
+            "hip_extension_power",
+            "ankle_power",
+            "left_knee_velocity",
+            "right_knee_velocity",
+            "vertical_momentum",
+            "sit_to_stand_power",
+            "trunk_flexion_velocity",
+            "forward_momentum",
+            "forward_acceleration",
+            "ankle_distance",
+            "heel_distance",
+            "toe_distance",
+            "base_of_support_width",
+            "base_of_support_length",
+            "lheel_y_velocity",
+            "rheel_y_velocity",
+            "lheel_x_velocity",
+            "rheel_x_velocity",
+            "step_asymmetry",
+            "stride_asymmetry",
+            "time_since_last_step",
+            "step_frequency",
+            "step_timing_variability",
+            "stride_length_variation",
+            "shoulder_angle",
+            "shoulder_rotation_velocity",
+            "hip_rotation",
+            "hip_rotation_velocity",
+            "axial_dissociation",
+            "axial_dissociation_velocity",
+            "head_yaw",
+            "head_yaw_velocity",
+            "torso_twist",
+            "torso_twist_velocity",
+            "direction_change_magnitude",
+            "turn_preparation_score",
+            "mediolateral_sway",
+            "anteroposterior_sway",
+            "weight_shift_x",
+            "weight_shift_y",
+            "stability_margin",
+            "body_sway",
+            "postural_control",
+            "movement_complexity",
+            "kinetic_energy",
+            "potential_energy",
+            "total_mechanical_energy",
+            "rotational_energy",
+            "concentric_power",
+            "eccentric_power",
+            "total_body_momentum",
+            "task_progression",
+            "progression_velocity",
+            "sit_to_stand_likelihood",
+            "walk_from_likelihood",
+            "turn_first_likelihood",
+            "walk_to_likelihood",
+            "turn_second_likelihood",
+            "stand_to_sit_likelihood",
+            "hip_y_velocity_smooth_5",
+            "turn_score_smooth_5",
+            "movement_complexity_smooth_5",
+            "hip_height_std_5",
+            "forward_momentum_std_5",
+            "rotation_variation_5",
+            "hip_y_velocity_smooth_10",
+            "turn_score_smooth_10",
+            "movement_complexity_smooth_10",
+            "hip_height_std_10",
+            "forward_momentum_std_10",
+            "rotation_variation_10",
+            "hip_y_velocity_smooth_15",
+            "turn_score_smooth_15",
+            "movement_complexity_smooth_15",
+            "hip_height_std_15",
+            "forward_momentum_std_15",
+            "rotation_variation_15",
+            "hip_y_velocity_smooth_30",
+            "turn_score_smooth_30",
+            "movement_complexity_smooth_30",
+            "hip_height_std_30",
+            "forward_momentum_std_30",
+            "rotation_variation_30",
+            "hip_y_acceleration",
+            "movement_jerk",
+            "rotation_acceleration",
+            "sustained_vertical_movement",
+            "sustained_forward_movement",
+            "sustained_turning"
+        )
+        const val EXPECTED_NUM_FEATURES = 111
+
+        // Helper to build ordered feature array for ONNX input
+        fun buildOrderedFeatureArray(frameFeatures: Map<String, Float>): FloatArray {
+            val out = FloatArray(FEATURE_ORDER.size)
+            for (j in FEATURE_ORDER.indices) {
+                out[j] = frameFeatures[FEATURE_ORDER[j]] ?: 0f
+            }
+            return out
+        }
+
+        fun validateFeatureArray(vec: FloatArray): Boolean {
+            if (vec.size != EXPECTED_NUM_FEATURES) {
+                Log.e(TAG, "Feature vector size mismatch: ${vec.size} != $EXPECTED_NUM_FEATURES")
+                return false
+            }
+            return true
+        }
     }
     
-    // Python equivalent: def angle_between(a, b, c):
     private fun angleBetween(a: FloatArray, b: FloatArray, c: FloatArray): Float {
-        // ba = a - b
         val baX = a[0] - b[0]
         val baY = a[1] - b[1]
         
-        // bc = c - b  
         val bcX = c[0] - b[0]
         val bcY = c[1] - b[1]
         
-        // norm(ba) * norm(bc)
         val normBa = sqrt(baX * baX + baY * baY)
         val normBc = sqrt(bcX * bcX + bcY * bcY)
         
         if (normBa == 0f || normBc == 0f) return 0f
         
-        // np.dot(ba, bc) / (norm(ba) * norm(bc) + 1e-6)
         val dotProduct = baX * bcX + baY * bcY
         val cosAngle = (dotProduct / (normBa * normBc + 1e-6f)).coerceIn(-1f, 1f)
         
-        // degrees(acos(cos_angle))
         return acos(cosAngle) * 180f / PI.toFloat()
     }
     
-    /**
-     * Direct port of Python extract_tug_features(df) function
-     * Input: List of pose landmarks for each frame (639 frames)
-     * Output: List of feature vectors, one per frame (639 vectors × ~80 features each)
-     */
     fun extractTugFeatures(landmarksList: List<List<NormalizedLandmark>>, fps: Float): List<Map<String, Float>> {
-        Log.d(TAG, "Direct Python port: extracting TUG features from ${landmarksList.size} frames")
-        
         if (landmarksList.isEmpty()) {
             Log.w(TAG, "Empty landmarks list, returning empty feature list")
             return emptyList()
@@ -53,31 +168,26 @@ class FeatureExtraction {
         
         val features = mutableListOf<Map<String, Float>>()
         
-        // Python: prev_vals = {'hip_y': 0, 'hip_x': 0, ...}
         val prevVals = mutableMapOf<String, Float>(
             "hip_y" to 0f, "hip_x" to 0f, "shoulder_angle" to 0f, "torso_angle" to 0f,
             "head_yaw" to 0f, "com_x" to 0f, "com_y" to 0f, "com_x_velocity" to 0f, "com_y_velocity" to 0f,
             "forward_momentum" to 0f, "hip_rotation" to 0f, "left_knee_angle" to 0f, "right_knee_angle" to 0f
         )
         
-        // Python: last_step_frame = 0, step_frames = []
         var lastStepFrame = 0
         val stepFrames = mutableListOf<Int>()
         
-        Log.d(TAG, "Processing ${landmarksList.size} frames...")
         
-        // Python: for i in range(len(df)):
         for (i in landmarksList.indices) {
             val landmarks = landmarksList[i]
             if (landmarks.size < 33) continue
             
             val prevLandmarks = if (i > 0 && landmarksList[i - 1].size >= 33) landmarksList[i - 1] else landmarks
             
-            // Python helper functions - def point(coord, idx):
             fun point(idx: Int): FloatArray = floatArrayOf(landmarks[idx].x(), landmarks[idx].y())
             fun prevPoint(idx: Int): FloatArray = floatArrayOf(prevLandmarks[idx].x(), prevLandmarks[idx].y())
             
-            // Python: Key Body Points
+            //  Key Body Points
             val lh = point(23)  // left hip
             val rh = point(24)  // right hip  
             val lk = point(25)  // left knee
@@ -95,24 +205,20 @@ class FeatureExtraction {
             // Previous frame points
             val prevLh = prevPoint(23)
             val prevRh = prevPoint(24)
-            
-            // Python: hip_y = (row['y_23'] + row['y_24']) / 2
+        
             val hipY = (lh[1] + rh[1]) / 2f
             val hipX = (lh[0] + rh[0]) / 2f
             
-            // Python: prev_hip_y = (prev['y_23'] + prev['y_24']) / 2
             val prevHipY = (prevLh[1] + prevRh[1]) / 2f
             val prevHipX = (prevLh[0] + prevRh[0]) / 2f
             
-            // Python: hip_y_velocity = (hip_y - prev_hip_y) * fps
             val hipYVelocity = (hipY - prevHipY) * fps
             val hipXVelocity = (hipX - prevHipX) * fps
             
-            // Python: hip_vertical_acceleration = hip_y_velocity - prev_vals['hip_y'] if i > 0 else 0
             val hipVerticalAcceleration = if (i > 0) hipYVelocity - prevVals["hip_y"]!! else 0f
             val hipHorizontalAcceleration = if (i > 0) hipXVelocity - prevVals["hip_x"]!! else 0f
             
-            // Python: Clinical joint angles
+            //  Clinical joint angles
             val leftKneeAngle = angleBetween(lh, lk, la)
             val rightKneeAngle = angleBetween(rh, rk, ra)
             val leftHipAngle = angleBetween(ls, lh, lk)
@@ -120,11 +226,11 @@ class FeatureExtraction {
             val leftAnkleAngle = angleBetween(lk, la, ltoe)
             val rightAnkleAngle = angleBetween(rk, ra, rtoe)
             
-            // Python: Trunk kinematics
+            //  Trunk kinematics
             val shoulderMid = floatArrayOf((ls[0] + rs[0]) / 2f, (ls[1] + rs[1]) / 2f)
             val hipMid = floatArrayOf((lh[0] + rh[0]) / 2f, (lh[1] + rh[1]) / 2f)
             
-            // Python: torso_angle = angle_between(hip_mid + np.array([0, -1]), hip_mid, shoulder_mid)
+            //  torso_angle = angle_between(hip_mid + np.array([0, -1]), hip_mid, shoulder_mid)
             val torsoAngle = angleBetween(
                 floatArrayOf(hipMid[0], hipMid[1] - 1f), 
                 hipMid, 
@@ -132,42 +238,43 @@ class FeatureExtraction {
             )
             val torsoAngleVelocity = torsoAngle - prevVals["torso_angle"]!!
             
-            // Python: Center of mass trajectory
+            //  Center of mass trajectory
             val comX = (lh[0] + rh[0] + ls[0] + rs[0]) / 4f
             val comY = (lh[1] + rh[1] + ls[1] + rs[1]) / 4f
             val comXVelocity = if (i > 0) (comX - prevVals["com_x"]!!) * fps else 0f
             val comYVelocity = if (i > 0) (comY - prevVals["com_y"]!!) * fps else 0f
             val comAcceleration = sqrt(comXVelocity * comXVelocity + comYVelocity * comYVelocity)
             
-            // Python: Base of support
+            //  Base of support
             val baseOfSupportWidth = abs(lheel[0] - rheel[0])
             val baseOfSupportLength = abs(lheel[1] - rheel[1])
             
-            // Python: Multi-joint coordination patterns
+            //  Multi-joint coordination patterns
             val kneeCoordination = abs(leftKneeAngle - rightKneeAngle)
             val hipCoordination = abs(leftHipAngle - rightHipAngle)
             val ankleCoordination = abs(leftAnkleAngle - rightAnkleAngle)
             
-            // Python: Sagittal plane kinematics
+            //  Sagittal plane kinematics
             val kneeExtensionPower = leftKneeAngle + rightKneeAngle
             val hipExtensionPower = leftHipAngle + rightHipAngle
             val anklePower = leftAnkleAngle + rightAnkleAngle
             
-            // Python: Joint velocity patterns
+            //  Joint velocity patterns
+            val leftKneeVoltage = 0f // placeholder to avoid unused warnings (kept to match shape)
             val leftKneeVelocity = if (i > 0) (leftKneeAngle - prevVals["left_knee_angle"]!!) * fps else 0f
             val rightKneeVelocity = if (i > 0) (rightKneeAngle - prevVals["right_knee_angle"]!!) * fps else 0f
             
-            // Python: Phase-specific features
+            //  Phase-specific features
             val verticalMomentum = abs(hipYVelocity)
             val sitToStandPower = (kneeExtensionPower * verticalMomentum) / (torsoAngle + 1e-6f)
             val trunkFlexionVelocity = abs(torsoAngleVelocity)
             
-            // Python: Walking phase features
+            //  Walking phase features
             val ankleDistance = abs(la[0] - ra[0])
             val heelDistance = abs(lheel[0] - rheel[0])
             val toeDistance = abs(ltoe[0] - rtoe[0])
             
-            // Python: Step detection velocities
+            //  Step detection velocities
             val prevLheel = prevPoint(29)
             val prevRheel = prevPoint(30)
             val lheelYVelocity = (lheel[1] - prevLheel[1]) * fps
@@ -175,23 +282,23 @@ class FeatureExtraction {
             val lheelXVelocity = (lheel[0] - prevLheel[0]) * fps
             val rheelXVelocity = (rheel[0] - prevRheel[0]) * fps
             
-            // Python: Gait asymmetry
+            //  Gait asymmetry
             val stepAsymmetry = abs(lheelYVelocity - rheelYVelocity)
             val strideAsymmetry = abs(lheelXVelocity - rheelXVelocity)
             
-            // Python: Forward progression
+            //  Forward progression
             val forwardMomentum = (lheelXVelocity + rheelXVelocity) / 2f
             val forwardAcceleration = if (i > 0) forwardMomentum - prevVals["forward_momentum"]!! else 0f
             
-            // Python: Turning kinematics - degrees(atan2(y, x))
+            //  Turning kinematics - degrees(atan2(y, x))
             val shoulderAngle = atan2(ls[1] - rs[1], ls[0] - rs[0]) * 180f / PI.toFloat()
             val hipRotation = atan2(lh[1] - rh[1], lh[0] - rh[0]) * 180f / PI.toFloat()
             
-            // Python: Angular velocities with wraparound
+            //  Angular velocities with wraparound
             var shoulderRotationVelocity = shoulderAngle - prevVals["shoulder_angle"]!!
             var hipRotationVelocity = hipRotation - prevVals["hip_rotation"]!!
             
-            // Python: Handle angle wraparound (-180 to 180)
+            //  Handle angle wraparound (-180 to 180)
             if (abs(shoulderRotationVelocity) > 180f) {
                 shoulderRotationVelocity = shoulderRotationVelocity - 360f * sign(shoulderRotationVelocity)
             }
@@ -199,28 +306,28 @@ class FeatureExtraction {
                 hipRotationVelocity = hipRotationVelocity - 360f * sign(hipRotationVelocity)
             }
             
-            // Python: Axial dissociation
+            //  Axial dissociation
             val axialDissociation = abs(shoulderAngle - hipRotation)
             val axialDissociationVelocity = abs(shoulderRotationVelocity - hipRotationVelocity)
             
-            // Python: Head-trunk coordination
+            //  Head-trunk coordination
             val headVec = floatArrayOf(nose[0] - shoulderMid[0], nose[1] - shoulderMid[1])
             val headYaw = atan2(headVec[1], headVec[0]) * 180f / PI.toFloat()
             var headYawVelocity = headYaw - prevVals["head_yaw"]!!
             
-            // Python: Handle head yaw wraparound
+            //  Handle head yaw wraparound
             if (abs(headYawVelocity) > 180f) {
                 headYawVelocity = headYawVelocity - 360f * sign(headYawVelocity)
             }
             
-            // Python: Balance and stability metrics
+            //  Balance and stability metrics
             val mediolateralSway = abs(comX - hipX)
             val anteroposteriorSway = abs(comY - hipY)
             val weightShiftX = abs(lh[0] - rh[0])
             val weightShiftY = abs(lh[1] - rh[1])
             val stabilityMargin = baseOfSupportWidth - abs(comX - hipX)
             
-            // Python: Step detection logic
+            //  Step detection logic
             var isStep = false
             if (i > 2) {
                 val prevAnkleDistance = abs(landmarksList[i-1][27].x() - landmarksList[i-1][28].x())
@@ -235,7 +342,7 @@ class FeatureExtraction {
             val recentStepCount = stepFrames.count { i - it < 2 * fps }
             val stepFrequency = recentStepCount / 2f
             
-            // Python: Cadence variability - need at least some steps for std calculation
+            //  Cadence variability - need at least some steps for std calculation
             val recentStepTimes = stepFrames.takeLast(5).map { (i - it).toFloat() / fps }
             val stepTimingVariability = if (recentStepTimes.size > 1) {
                 val allTimes = listOf(timeSinceLastStep) + recentStepTimes
@@ -244,7 +351,7 @@ class FeatureExtraction {
                 sqrt(variance)
             } else 0f
             
-            // Python: Energy and power metrics
+            //  Energy and power metrics
             val kineticEnergy = (hipXVelocity * hipXVelocity + hipYVelocity * hipYVelocity) / 2f
             val potentialEnergy = hipY
             val totalMechanicalEnergy = kineticEnergy + potentialEnergy
@@ -253,7 +360,7 @@ class FeatureExtraction {
             val concentricPower = maxOf(0f, hipYVelocity * verticalMomentum)
             val eccentricPower = maxOf(0f, -hipYVelocity * verticalMomentum)
             
-            // Python: Turn preparation score (needed for movement detection)
+            //  Turn preparation score (needed for movement detection)
             val turnPreparationScore = (
                 abs(shoulderRotationVelocity) * 0.3f +
                 abs(hipRotationVelocity) * 0.3f +
@@ -261,7 +368,7 @@ class FeatureExtraction {
                 axialDissociationVelocity * 0.2f
             )
             
-            // Python: Movement activity detection - only give temporal priors if actually moving
+            //  Movement activity detection - only give temporal priors if actually moving
             val isActivelyMoving = (
                 abs(hipYVelocity) > 0.01f ||      // Vertical movement
                 abs(hipXVelocity) > 0.01f ||      // Horizontal movement
@@ -271,7 +378,7 @@ class FeatureExtraction {
                 verticalMomentum > 0.02f           // Any significant momentum
             )
             
-            // Python: Movement intensity over recent history (last 30 frames = 1 second)
+            //  Movement intensity over recent history (last 30 frames = 1 second)
             var recentMovementIntensity = 0f
             if (i >= 30) {
                 val recentFrames = landmarksList.subList(i - 30, i)
@@ -282,18 +389,11 @@ class FeatureExtraction {
                 recentMovementIntensity = recentHipYRange + recentHipXRange
             }
             
-            // Python: Only activate temporal priors if significant movement detected
+            //  Only activate temporal priors if significant movement detected
             val movementMultiplier = if (isActivelyMoving && recentMovementIntensity > 0.05f) 1.0f else 0.0f
             
-            // Debug movement detection every 30 frames
-            if (i % 30 == 0) {
-                Log.d(TAG, "Frame $i: isActivelyMoving=$isActivelyMoving, recentMovementIntensity=$recentMovementIntensity, movementMultiplier=$movementMultiplier")
-                Log.d(TAG, "  hipYVel=${abs(hipYVelocity)}, hipXVel=${abs(hipXVelocity)}, forwardMom=${abs(forwardMomentum)}")
-                Log.d(TAG, "  shoulderRotVel=${abs(shoulderRotationVelocity)}, hipRotVel=${abs(hipRotationVelocity)}, vertMom=$verticalMomentum")
-            }
             
             // ========== TEMPORAL LIKELIHOODS WITH MOVEMENT DETECTION ==========
-            // Python port: Prevents false positives when user sits still
             
             // Task progression (0.0 to 1.0)
             val taskProgression = i.toFloat() / landmarksList.size.toFloat()
@@ -331,15 +431,9 @@ class FeatureExtraction {
                 standToSitLikelihood = 0.3f
             }
             
-            // Debug temporal likelihoods every 30 frames
-            if (i % 30 == 0) {
-                Log.d(TAG, "Frame $i temporal likelihoods: sitToStand=$sitToStandLikelihood, walkFrom=$walkFromLikelihood, turnFirst=$turnFirstLikelihood, walkTo=$walkToLikelihood, turnSecond=$turnSecondLikelihood, standToSit=$standToSitLikelihood")
-                Log.d(TAG, "Frame $i shouldZeroMotionFeatures=$shouldZeroMotionFeatures")
-            }
-            
             // ========== END TEMPORAL LIKELIHOODS ==========
             
-            // Python: Derived features - stride length variation
+            //  Derived features - stride length variation
             val recentAnkleDistances = (maxOf(0, i - 10) until i).mapNotNull { j ->
                 val lmarks = landmarksList[j]
                 if (lmarks.size >= 33) abs(lmarks[27].x() - lmarks[28].x()) else null
@@ -351,11 +445,11 @@ class FeatureExtraction {
                 sqrt(variance)
             } else 0f
             
-            // Python: More derived features
+            //  More derived features
             val torsoTwist = abs(shoulderAngle - hipRotation)
             val torsoTwistVelocity = abs(shoulderRotationVelocity - hipRotationVelocity)
             
-            // Python: Direction change
+            //  Direction change
             val forwardDirection = if (comXVelocity != 0f) atan2(comYVelocity, comXVelocity) * 180f / PI.toFloat() else 0f
             val prevForwardDirection = if (prevVals["com_x_velocity"]!! != 0f) 
                 atan2(prevVals["com_y_velocity"]!!, prevVals["com_x_velocity"]!!) * 180f / PI.toFloat() else 0f
@@ -364,7 +458,7 @@ class FeatureExtraction {
                 directionChangeMagnitude = 360f - directionChangeMagnitude
             }
             
-            // Python: Body sway - std of lateral positions
+            //  Body sway - std of lateral positions
             val bodySway = if (i > 5) {
                 val recentShoulderX = (maxOf(0, i - 5) until i).mapNotNull { j ->
                     val lmarks = landmarksList[j]
@@ -384,7 +478,7 @@ class FeatureExtraction {
             
             val posturalControl = 1f / (comAcceleration + 1e-6f)
             
-            // Python: Movement complexity
+            //  Movement complexity
             val movementComplexity = (
                 abs(hipYVelocity) * 0.2f +
                 abs(forwardMomentum) * 0.2f +
@@ -394,123 +488,6 @@ class FeatureExtraction {
             )
             
             val totalBodyMomentum = sqrt(comXVelocity * comXVelocity + comYVelocity * comYVelocity)
-            
-            // Debug frame 630 specifically - show ALL feature values for comparison
-            if (i == 630) {
-                Log.d(TAG, "=== FRAME 630 DEBUG - COORDINATE ANALYSIS ===")
-                Log.d(TAG, "Raw coordinates - hipY: $hipY, prevHipY: $prevHipY")
-                Log.d(TAG, "Raw difference - (hipY - prevHipY): ${hipY - prevHipY}")
-                Log.d(TAG, "fps: $fps")
-                Log.d(TAG, "velocity calculation: (${hipY - prevHipY}) * $fps = $hipYVelocity")
-                Log.d(TAG, "Expected Python hip_y_velocity: 0.0004157423973083496")
-                Log.d(TAG, "Our hip_y_velocity: $hipYVelocity")
-                Log.d(TAG, "Ratio (ours/python): ${hipYVelocity / 0.0004157423973083496}")
-                
-                Log.d(TAG, "=== COM VELOCITY DEBUG ===")
-                Log.d(TAG, "Raw comX: $comX, prevComX: ${prevVals["com_x"]}")
-                Log.d(TAG, "Raw comY: $comY, prevComY: ${prevVals["com_y"]}")
-                Log.d(TAG, "Raw COM X diff: ${comX - prevVals["com_x"]!!}")
-                Log.d(TAG, "Raw COM Y diff: ${comY - prevVals["com_y"]!!}")
-                Log.d(TAG, "COM X velocity: $comXVelocity (expected: 0.03682108595967293)")
-                Log.d(TAG, "COM Y velocity: $comYVelocity (expected: -0.00408366322517395)")
-                
-                Log.d(TAG, "=== ALL FEATURES ===")
-                Log.d(TAG, "Frame: $i")
-                
-                // Clinical gait parameters
-                Log.d(TAG, "hip_height: $hipY")
-                Log.d(TAG, "hip_y_velocity: $hipYVelocity")
-                Log.d(TAG, "hip_x_velocity: $hipXVelocity")
-                Log.d(TAG, "hip_vertical_acceleration: $hipVerticalAcceleration")
-                Log.d(TAG, "hip_horizontal_acceleration: $hipHorizontalAcceleration")
-                Log.d(TAG, "com_x: $comX, com_y: $comY")
-                Log.d(TAG, "com_x_velocity: $comXVelocity, com_y_velocity: $comYVelocity")
-                Log.d(TAG, "com_acceleration: $comAcceleration")
-                
-                // Joint kinematics
-                Log.d(TAG, "left_knee_angle: $leftKneeAngle, right_knee_angle: $rightKneeAngle")
-                Log.d(TAG, "left_hip_angle: $leftHipAngle, right_hip_angle: $rightHipAngle")
-                Log.d(TAG, "left_ankle_angle: $leftAnkleAngle, right_ankle_angle: $rightAnkleAngle")
-                Log.d(TAG, "torso_angle: $torsoAngle, torso_angle_velocity: $torsoAngleVelocity")
-                
-                // Joint coordination
-                Log.d(TAG, "knee_coordination: $kneeCoordination, hip_coordination: $hipCoordination")
-                Log.d(TAG, "ankle_coordination: $ankleCoordination")
-                Log.d(TAG, "knee_extension_power: $kneeExtensionPower, hip_extension_power: $hipExtensionPower")
-                Log.d(TAG, "ankle_power: $anklePower")
-                Log.d(TAG, "left_knee_velocity: $leftKneeVelocity, right_knee_velocity: $rightKneeVelocity")
-                
-                // Phase-specific features
-                Log.d(TAG, "vertical_momentum: $verticalMomentum")
-                Log.d(TAG, "sit_to_stand_power: $sitToStandPower")
-                Log.d(TAG, "trunk_flexion_velocity: $trunkFlexionVelocity")
-                Log.d(TAG, "forward_momentum: $forwardMomentum, forward_acceleration: $forwardAcceleration")
-                
-                // Gait analysis
-                Log.d(TAG, "ankle_distance: $ankleDistance, heel_distance: $heelDistance, toe_distance: $toeDistance")
-                Log.d(TAG, "base_of_support_width: $baseOfSupportWidth, base_of_support_length: $baseOfSupportLength")
-                Log.d(TAG, "lheel_y_velocity: $lheelYVelocity, rheel_y_velocity: $rheelYVelocity")
-                Log.d(TAG, "lheel_x_velocity: $lheelXVelocity, rheel_x_velocity: $rheelXVelocity")
-                Log.d(TAG, "step_asymmetry: $stepAsymmetry, stride_asymmetry: $strideAsymmetry")
-                Log.d(TAG, "time_since_last_step: $timeSinceLastStep, step_frequency: $stepFrequency")
-                Log.d(TAG, "step_timing_variability: $stepTimingVariability, stride_length_variation: $strideLength")
-                
-                // Turning kinematics
-                Log.d(TAG, "shoulder_angle: $shoulderAngle, shoulder_rotation_velocity: $shoulderRotationVelocity")
-                Log.d(TAG, "hip_rotation: $hipRotation, hip_rotation_velocity: $hipRotationVelocity")
-                Log.d(TAG, "axial_dissociation: $axialDissociation, axial_dissociation_velocity: $axialDissociationVelocity")
-                Log.d(TAG, "head_yaw: $headYaw, head_yaw_velocity: $headYawVelocity")
-                Log.d(TAG, "torso_twist: $torsoTwist, torso_twist_velocity: $torsoTwistVelocity")
-                Log.d(TAG, "direction_change_magnitude: $directionChangeMagnitude")
-                Log.d(TAG, "turn_preparation_score: $turnPreparationScore")
-                
-                // Balance and stability
-                Log.d(TAG, "mediolateral_sway: $mediolateralSway, anteroposterior_sway: $anteroposteriorSway")
-                Log.d(TAG, "weight_shift_x: $weightShiftX, weight_shift_y: $weightShiftY")
-                Log.d(TAG, "stability_margin: $stabilityMargin, body_sway: $bodySway")
-                Log.d(TAG, "postural_control: $posturalControl, movement_complexity: $movementComplexity")
-                
-                // Energy and power
-                Log.d(TAG, "kinetic_energy: $kineticEnergy, potential_energy: $potentialEnergy")
-                Log.d(TAG, "total_mechanical_energy: $totalMechanicalEnergy, rotational_energy: $rotationalEnergy")
-                Log.d(TAG, "concentric_power: $concentricPower, eccentric_power: $eccentricPower")
-                Log.d(TAG, "total_body_momentum: $totalBodyMomentum")
-                
-                // Temporal context
-                Log.d(TAG, "task_progression: $taskProgression, progression_velocity: $progressionVelocity")
-                Log.d(TAG, "sit_to_stand_likelihood: $sitToStandLikelihood")
-                Log.d(TAG, "walk_from_likelihood: $walkFromLikelihood, turn_first_likelihood: $turnFirstLikelihood")
-                Log.d(TAG, "walk_to_likelihood: $walkToLikelihood, turn_second_likelihood: $turnSecondLikelihood")
-                Log.d(TAG, "stand_to_sit_likelihood: $standToSitLikelihood")
-                
-                Log.d(TAG, "=== END FRAME 630 DEBUG ===")
-            }
-            
-            // Update prevVals for next iteration (this was missing!)
-            prevVals["hip_x"] = hipX
-            prevVals["hip_y"] = hipY
-            prevVals["com_x"] = comX
-            prevVals["com_y"] = comY
-            prevVals["torso_angle"] = torsoAngle
-            prevVals["shoulder_angle"] = shoulderAngle
-            prevVals["hip_rotation"] = hipRotation
-            prevVals["axial_dissociation"] = axialDissociation
-            prevVals["head_yaw"] = headYaw
-            prevVals["torso_twist"] = torsoTwist
-            prevVals["left_knee_angle"] = leftKneeAngle
-            prevVals["right_knee_angle"] = rightKneeAngle
-            prevVals["left_heel_x"] = lheel[0]
-            prevVals["left_heel_y"] = lheel[1]
-            prevVals["right_heel_x"] = rheel[0]
-            prevVals["right_heel_y"] = rheel[1]
-            prevVals["vertical_momentum"] = verticalMomentum
-            prevVals["forward_momentum"] = forwardMomentum
-            
-            // Python: Note - prev_vals is NEVER updated in Python code, stays at initial values
-            
-            // Python: Build feature map exactly matching Python dictionary structure
-            // CRITICAL FIX: Zero out ALL velocity features when no movement detected
-            // This prevents false positives from pose estimation jitter
             val effectiveHipYVelocity = if (shouldZeroMotionFeatures) 0f else hipYVelocity
             val effectiveHipXVelocity = if (shouldZeroMotionFeatures) 0f else hipXVelocity
             val effectiveHipVerticalAcceleration = if (shouldZeroMotionFeatures) 0f else hipVerticalAcceleration
@@ -634,17 +611,11 @@ class FeatureExtraction {
                 "turn_first_likelihood" to turnFirstLikelihood,
                 "walk_to_likelihood" to walkToLikelihood,
                 "turn_second_likelihood" to turnSecondLikelihood,
-                "stand_to_sit_likelihood" to standToSitLikelihood,
-                
-                // MOVEMENT DETECTION FLAG (for post-prediction override)
-                "no_movement_detected" to if (shouldZeroMotionFeatures) 1.0f else 0.0f
+                "stand_to_sit_likelihood" to standToSitLikelihood
             )
             
             features.add(frameFeatures)
         }
-        
-        // Python: Add temporal smoothing and multi-scale features
-        Log.d(TAG, "🔧 Adding temporal features...")
         
         // Convert to DataFrame-like structure for rolling window operations
         val featureKeys = features[0].keys.toList()
@@ -662,12 +633,12 @@ class FeatureExtraction {
             }
         }
         
-        // Python: Multi-scale rolling windows for temporal patterns
+        //  Multi-scale rolling windows for temporal patterns
         val windows = listOf(5, 10, 15, 30)
         val rollingFeatures = mutableMapOf<String, MutableList<Float>>()
         
         for (window in windows) {
-            // Python: df_features[f'hip_y_velocity_smooth_{window}'] = df_features['hip_y_velocity'].rolling(window, center=True).mean()
+            //  df_features[f'hip_y_velocity_smooth_{window}'] = df_features['hip_y_velocity'].rolling(window, center=True).mean()
             rollingFeatures["hip_y_velocity_smooth_$window"] = rollingMean(featureArrays["hip_y_velocity"]!!, window)
             rollingFeatures["turn_score_smooth_$window"] = rollingMean(featureArrays["turn_preparation_score"]!!, window)
             rollingFeatures["movement_complexity_smooth_$window"] = rollingMean(featureArrays["movement_complexity"]!!, window)
@@ -676,12 +647,12 @@ class FeatureExtraction {
             rollingFeatures["rotation_variation_$window"] = rollingStd(featureArrays["shoulder_rotation_velocity"]!!, window)
         }
         
-        // Python: Transition detection (sudden changes)
+        //  Transition detection (sudden changes)
         val hipYAcceleration = diff(featureArrays["hip_y_velocity"]!!)
         val movementJerk = diff(featureArrays["movement_complexity"]!!).map { abs(it) }.toMutableList()
         val rotationAcceleration = diff(featureArrays["shoulder_rotation_velocity"]!!).map { abs(it) }.toMutableList()
         
-        // Python: Phase consistency flags
+        //  Phase consistency flags
         val verticalMomentumQuantile = quantile(featureArrays["vertical_momentum"]!!, 0.7)
         val forwardMomentumQuantile = quantile(featureArrays["forward_momentum"]!!.map { abs(it) }, 0.7)
         val turnScoreQuantile = quantile(featureArrays["turn_preparation_score"]!!, 0.7)
@@ -696,7 +667,7 @@ class FeatureExtraction {
             if (it > turnScoreQuantile) 1f else 0f 
         }.toMutableList()
         
-        // Python: Add temporal features to each frame (matching Python DataFrame approach)
+        //  Add temporal features to each frame
         val enhancedFeatures = mutableListOf<Map<String, Float>>()
         
         for (i in features.indices) {
@@ -723,12 +694,9 @@ class FeatureExtraction {
             enhancedFeatures.add(frameFeatures)
         }
         
-        Log.d(TAG, "Generated ${enhancedFeatures.size} feature vectors with ${enhancedFeatures[0].keys.size} features each")
-        
         return enhancedFeatures
     }
     
-    // Python pandas equivalent functions
     private fun rollingMean(values: List<Float>, window: Int): MutableList<Float> {
         val result = mutableListOf<Float>()
         for (i in values.indices) {

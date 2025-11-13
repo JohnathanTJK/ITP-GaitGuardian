@@ -16,16 +16,22 @@ import java.io.File
 import java.io.IOException
 import java.nio.FloatBuffer
 import kotlin.math.roundToInt
+import kotlin.math.abs
 
 /**
  * CLEAN TugPrediction - Only does ONNX inference, smoothing, and duration analysis
  * Feature extraction is handled by FeatureExtraction
+ * 
+ * PATCHED: Phase durations now only count labeled frames (excludes unlabeled pre/post recording padding)
  */
 class TugPrediction(private val context: Context) {
 
     companion object {
         private const val TAG = "TugPrediction"
         private const val DEFAULT_FPS = 30f
+        
+        // Sentinel value for unlabeled frames
+        private const val UNLABELED_PHASE = "Unlabeled"
     }
 
     // ===== Data Types =====
@@ -104,21 +110,13 @@ class TugPrediction(private val context: Context) {
         progressCallback: FrameProgressCallback? = null
     ): PredictionResult = withContext(Dispatchers.Default) {
         
-        val model = modelData ?: throw IllegalStateException("❌ Model not initialized")
-        
-        Log.i(TAG, "========================================")
-        Log.i(TAG, "🧠 TUG PREDICTION STARTING")
-        Log.i(TAG, "Total frames: ${landmarksList.size}")
-        Log.i(TAG, "FPS: $fps")
-        Log.i(TAG, "Timestamp: ${System.currentTimeMillis()}")
-        Log.i(TAG, "========================================")
-        Log.i(TAG, "Processing ${landmarksList.size} pose landmark frames with fixed Python port")
+        val model = modelData ?: throw IllegalStateException("Model not initialized")
         
         // Start overall timing
         val overallStartTime = System.currentTimeMillis()
         
         try {
-            // Extract features using the fixed Python port - now returns frame-by-frame features
+            // Extract features 
             val featureExtractionStartTime = System.currentTimeMillis()
             val featureExtractor = FeatureExtraction()
             val frameFeatures = featureExtractor.extractTugFeatures(landmarksList, fps)
@@ -132,12 +130,32 @@ class TugPrediction(private val context: Context) {
             
             // Process each frame's features for real-time prediction
             frameFeatures.forEachIndexed { frameIndex, featureMap ->
-                // Convert feature map to ordered FloatArray for model input
-                val featureVector = convertFeatureMapToArray(featureMap)
+                // Convert feature map to ordered FloatArray for model input (use canonical FEATURE_ORDER)
+                val featureVector = FeatureExtraction.buildOrderedFeatureArray(featureMap)
+                if (!FeatureExtraction.validateFeatureArray(featureVector)) {
+                    Log.w(TAG, "Feature vector validation failed for frame ${featureMap["frame"]}")
+                }
+
+                // Debug: sample logging of the input vector and names every 10 frames
+                if ((featureMap["frame"]?.toInt() ?: 0) % 10 == 0) {
+                    Log.d(TAG, "ONNX input len=${featureVector.size}, first12=${featureVector.take(12)}")
+                    Log.d(TAG, "ONNX names first12=${FeatureExtraction.FEATURE_ORDER.take(12)}")
+                }
                 
-                // Check if this frame has no movement detected
-                val noMovementDetected = featureMap["no_movement_detected"] == 1.0f
-                
+                // Robust no-movement detection: check that key velocity/movement features are near zero
+                val hy = featureMap["hip_y_velocity"] ?: 0f
+                val hx = featureMap["hip_x_velocity"] ?: 0f
+                val comxv = featureMap["com_x_velocity"] ?: 0f
+                val comyv = featureMap["com_y_velocity"] ?: 0f
+                val forward = featureMap["forward_momentum"] ?: 0f
+                val turnScore = featureMap["turn_preparation_score"] ?: 0f
+                val movementThreshold = 0.02f
+                val noMovementDetected = (
+                    abs(hy) < movementThreshold && abs(hx) < movementThreshold &&
+                    abs(comxv) < movementThreshold && abs(comyv) < movementThreshold &&
+                    abs(forward) < movementThreshold && abs(turnScore) < movementThreshold
+                )
+
                 val prediction = predictWithModel(featureVector, model)
                 
                 // CRITICAL FIX: Override prediction when no movement detected
@@ -170,7 +188,7 @@ class TugPrediction(private val context: Context) {
             val corrected = correctSequence(smoothed)
             val postProcessingEndTime = System.currentTimeMillis()
             
-            // Analyze phases
+            // Analyze phases - NOW ONLY COUNTS LABELED FRAMES
             val phaseAnalysis = analyzePhaseDurations(corrected, fps)
             val totalDuration = phaseAnalysis.sumOf { it.duration_sec.toDouble() }.toFloat()
             val phaseDurations = phaseAnalysis.associate { it.phase to it.duration_sec }
@@ -186,11 +204,12 @@ class TugPrediction(private val context: Context) {
             // Log results with timing
             Log.i(TAG, "Raw predictions: ${predictions.groupingBy { it }.eachCount()}")
             Log.i(TAG, "Final sequence: ${corrected.groupingBy { it }.eachCount()}")
-            Log.i(TAG, "Phase durations:")
+            Log.i(TAG, "Phase durations (labeled frames only):")
             phaseAnalysis.forEach { phase ->
                 Log.i(TAG, "   ${phase.phase}: ${phase.duration_sec}s (${phase.frame_count} frames)")
             }
-            Log.i(TAG, "Total TUG duration: ${totalDuration}s")
+            Log.i(TAG, "Total TUG duration (labeled only): ${totalDuration}s")
+            Log.i(TAG, "Video length: ${landmarksList.size / fps}s")
             
             // Log unique prediction fingerprint
             val predictionFingerprint = predictions.take(10).joinToString(",") + "_" + predictions.takeLast(10).joinToString(",")
@@ -250,15 +269,12 @@ class TugPrediction(private val context: Context) {
                 phase_analysis = emptyList(),
                 severity = "Unknown",
                 success = false,
-//                error_message = "Processing failed: ${e.message}"
                 error_message = errorMessage
             )
         }
     }
 
-    /**
-     * Process pre-computed features from Python (bypasses internal feature extraction)
-     */
+   
     suspend fun processFeatures(
         features: List<FloatArray>,
         featureNames: List<String>,
@@ -306,11 +322,12 @@ class TugPrediction(private val context: Context) {
             // Log results
             Log.i(TAG, "Raw predictions: ${predictions.groupingBy { it }.eachCount()}")
             Log.i(TAG, "Final sequence: ${corrected.groupingBy { it }.eachCount()}")
-            Log.i(TAG, "⏱Phase durations:")
+            Log.i(TAG, "Phase durations")
             phaseAnalysis.forEach { phase ->
                 Log.i(TAG, "   ${phase.phase}: ${phase.duration_sec}s (${phase.frame_count} frames)")
             }
-            Log.i(TAG, "Total TUG duration: ${totalDuration}s")
+            Log.i(TAG, "Total TUG duration (labeled only): ${totalDuration}s")
+            Log.i(TAG, "Video length: ${features.size / fps}s")
 
             // Calculate severity using MLP model with fallback to rule-based
             val severity = try {
@@ -318,20 +335,20 @@ class TugPrediction(private val context: Context) {
                 if (severityPredictor.initializeModel()) {
                     val mlpSeverity = severityPredictor.predictSeverity(phaseDurations)
                     severityPredictor.cleanup()
-                    Log.i(TAG, "✅ MLP Severity: $mlpSeverity")
+                    Log.i(TAG, "MLP Severity: $mlpSeverity")
                     mlpSeverity
                 } else {
-                    Log.w(TAG, "⚠️ MLP model failed to initialize, falling back to rule-based")
+                    Log.w(TAG, "MLP model failed to initialize, falling back to rule-based")
                     val tugMetrics = createTugMetricsMap(phaseDurations, totalDuration.toDouble())
                     val fallbackSeverity = SeverityClassification.classifyGaitSeverity(tugMetrics)
-                    Log.i(TAG, "📋 Rule-based Severity (fallback): $fallbackSeverity")
+                    Log.i(TAG, "Rule-based Severity (fallback): $fallbackSeverity")
                     fallbackSeverity
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "❌ MLP prediction error, using rule-based fallback", e)
+                Log.e(TAG, "MLP prediction error, using rule-based fallback", e)
                 val tugMetrics = createTugMetricsMap(phaseDurations, totalDuration.toDouble())
                 val fallbackSeverity = SeverityClassification.classifyGaitSeverity(tugMetrics)
-                Log.i(TAG, "📋 Rule-based Severity (fallback): $fallbackSeverity")
+                Log.i(TAG, "Rule-based Severity (fallback): $fallbackSeverity")
                 fallbackSeverity
             }
             PredictionResult(
@@ -363,80 +380,13 @@ class TugPrediction(private val context: Context) {
     // ===== Feature Conversion =====
     
     private fun convertFeatureMapToArray(featureMap: Map<String, Float>): FloatArray {
-        // Define the expected feature order to match the ONNX model training data
-        // This should match the exact order used during Python model training
-        val expectedFeatures = listOf(
-            // Clinical gait parameters
-            "hip_height", "hip_y_velocity", "hip_x_velocity", "hip_vertical_acceleration", "hip_horizontal_acceleration",
-            "com_x", "com_y", "com_x_velocity", "com_y_velocity", "com_acceleration",
-            
-            // Joint kinematics
-            "left_knee_angle", "right_knee_angle", "left_hip_angle", "right_hip_angle", 
-            "left_ankle_angle", "right_ankle_angle", "torso_angle", "torso_angle_velocity",
-            
-            // Joint coordination
-            "knee_coordination", "hip_coordination", "ankle_coordination", "knee_extension_power", 
-            "hip_extension_power", "ankle_power", "left_knee_velocity", "right_knee_velocity",
-            
-            // Phase-specific features
-            "vertical_momentum", "sit_to_stand_power", "trunk_flexion_velocity", "forward_momentum", "forward_acceleration",
-            
-            // Gait analysis
-            "ankle_distance", "heel_distance", "toe_distance", "base_of_support_width", "base_of_support_length",
-            "lheel_y_velocity", "rheel_y_velocity", "lheel_x_velocity", "rheel_x_velocity",
-            "step_asymmetry", "stride_asymmetry", "time_since_last_step", "step_frequency", 
-            "step_timing_variability", "stride_length_variation",
-            
-            // Turning kinematics
-            "shoulder_angle", "shoulder_rotation_velocity", "hip_rotation", "hip_rotation_velocity",
-            "axial_dissociation", "axial_dissociation_velocity", "head_yaw", "head_yaw_velocity",
-            "torso_twist", "torso_twist_velocity", "direction_change_magnitude", "turn_preparation_score",
-            
-            // Balance and stability
-            "mediolateral_sway", "anteroposterior_sway", "weight_shift_x", "weight_shift_y",
-            "stability_margin", "body_sway", "postural_control", "movement_complexity",
-            
-            // Energy and power
-            "kinetic_energy", "potential_energy", "total_mechanical_energy", "rotational_energy",
-            "concentric_power", "eccentric_power", "total_body_momentum",
-            
-            // Temporal context
-            "task_progression", "progression_velocity", "sit_to_stand_likelihood", "walk_from_likelihood",
-            "turn_first_likelihood", "walk_to_likelihood", "turn_second_likelihood", "stand_to_sit_likelihood",
-            
-            // Movement phase indicators (NEW - sequence-aware cumulative tracking)
-            "is_strong_vertical", "is_strong_forward", "is_strong_turning",
-            "cumulative_vertical", "cumulative_forward", "cumulative_turning", "sequence_progression",
-            
-            // Temporal smoothing features (rolling windows: 5, 10, 15, 30)
-            "hip_y_velocity_smooth_5", "turn_score_smooth_5", "movement_complexity_smooth_5",
-            "hip_height_std_5", "forward_momentum_std_5", "rotation_variation_5",
-            "hip_y_velocity_smooth_10", "turn_score_smooth_10", "movement_complexity_smooth_10",
-            "hip_height_std_10", "forward_momentum_std_10", "rotation_variation_10",
-            "hip_y_velocity_smooth_15", "turn_score_smooth_15", "movement_complexity_smooth_15",
-            "hip_height_std_15", "forward_momentum_std_15", "rotation_variation_15",
-            "hip_y_velocity_smooth_30", "turn_score_smooth_30", "movement_complexity_smooth_30",
-            "hip_height_std_30", "forward_momentum_std_30", "rotation_variation_30",
-            
-            // Derived features
-            "hip_y_acceleration", "movement_jerk", "rotation_acceleration",
-            "sustained_vertical_movement", "sustained_forward_movement", "sustained_turning"
-        )
-        
-        // Convert to ordered FloatArray
-        val result = FloatArray(111) // Expected model input size (updated from 111 to 111)
-        for (i in expectedFeatures.indices.take(111)) { // Ensure we don't exceed 111 features
-            val featureName = expectedFeatures[i]
-            result[i] = featureMap[featureName] ?: 0f
+        // Delegate to FeatureExtraction canonical order so Android uses the same ordering
+        val arr = FeatureExtraction.buildOrderedFeatureArray(featureMap)
+        if (!FeatureExtraction.validateFeatureArray(arr)) {
+            val frameNum = featureMap["frame"] ?: -1f
+            Log.w(TAG, "convertFeatureMapToArray: feature array invalid for frame=$frameNum")
         }
-        
-        // Log feature conversion for debugging (first few frames only)
-        if (featureMap["frame"]?.toInt() ?: 0 < 3) {
-            Log.d(TAG, "Frame ${featureMap["frame"]?.toInt()}: Converted ${featureMap.size} features to ${result.size} array")
-            Log.d(TAG, "Sample values: hip_y_velocity=${featureMap["hip_y_velocity"]}, forward_momentum=${featureMap["forward_momentum"]}")
-        }
-        
-        return result
+        return arr
     }
 
     // ===== ONNX Inference =====
@@ -521,10 +471,6 @@ class TugPrediction(private val context: Context) {
         return corrected
     }
 
-    /**
-     * Force a logical phase sequence based on model predictions
-     * Converted from Python force_phase_sequence function
-     */
     private fun forcePhaseSequence(
         predictions: List<String>, 
         phaseOrder: List<String>? = null, 
@@ -609,36 +555,66 @@ class TugPrediction(private val context: Context) {
         return frameLevelPredictions.take(totalFrames)
     }
 
+    /**
+     * PATCHED: Analyze phase durations - now ONLY counts labeled frames (ignores Unlabeled/Unknown)
+     * 
+     * This ensures that phase durations sum to the actual TUG task time, not the full video length.
+     * Unlabeled frames (from pre/post recording padding) are skipped.
+     */
     private fun analyzePhaseDurations(sequence: List<String>, fps: Float): List<PhaseAnalysis> {
         if (sequence.isEmpty()) return emptyList()
         
-        val phases = mutableListOf<PhaseAnalysis>()
-        var currentPhase = sequence[0]
-        var startFrame = 0
+        // Filter out unlabeled/unknown frames before analyzing
+        val validIndices = sequence.indices.filter { i ->
+            val phase = sequence[i]
+            phase != UNLABELED_PHASE && phase != "Unknown" && phase.isNotBlank()
+        }
         
-        for (i in 1..sequence.size) {
-            val isLastFrame = i == sequence.size
-            val phaseChanged = !isLastFrame && i < sequence.size && sequence[i] != currentPhase
+        if (validIndices.isEmpty()) {
+            Log.w(TAG, "No labeled frames found in sequence")
+            return emptyList()
+        }
+        
+        val phases = mutableListOf<PhaseAnalysis>()
+        var currentPhase = sequence[validIndices[0]]
+        var startFrame = validIndices[0]
+        var frameCount = 1
+        
+        for (i in 1 until validIndices.size) {
+            val frameIdx = validIndices[i]
+            val phase = sequence[frameIdx]
             
-            if (phaseChanged || isLastFrame) {
-                val endFrame = i - 1
-                val frameCount = endFrame - startFrame + 1
+            if (phase != currentPhase) {
+                // Phase changed - record the previous phase
                 val duration = frameCount / fps
-                
                 phases.add(PhaseAnalysis(
                     phase = currentPhase,
                     start_frame = startFrame,
-                    end_frame = endFrame,
+                    end_frame = validIndices[i - 1],
                     duration_sec = duration,
                     frame_count = frameCount
                 ))
                 
-                if (!isLastFrame && i < sequence.size) {
-                    currentPhase = sequence[i]
-                    startFrame = i
-                }
+                // Start new phase
+                currentPhase = phase
+                startFrame = frameIdx
+                frameCount = 1
+            } else {
+                frameCount++
             }
         }
+        
+        // Add the last phase
+        val duration = frameCount / fps
+        phases.add(PhaseAnalysis(
+            phase = currentPhase,
+            start_frame = startFrame,
+            end_frame = validIndices.last(),
+            duration_sec = duration,
+            frame_count = frameCount
+        ))
+        
+        Log.d(TAG, "Analyzed ${phases.size} phases from ${validIndices.size} labeled frames (total sequence: ${sequence.size})")
         
         return phases
     }
@@ -681,4 +657,4 @@ class TugPrediction(private val context: Context) {
             Log.w(TAG, "Cleanup warning", e)
         }
     }
-    }
+}

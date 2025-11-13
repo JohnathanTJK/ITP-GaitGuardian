@@ -22,7 +22,7 @@ import kotlin.math.roundToInt
  * 
  * CLEAN PIPELINE FLOW:
  * 1. PoseExtraction → raw landmarks (MediaPipe Tasks API)
- * 2. FeatureExtraction → 111 biomechanical features (exact Python port)
+ * 2. FeatureExtraction → 111 biomechanical features 
  * 3. TugPrediction → ONNX inference + smoothing + duration analysis
  * 4. GaitAnalysisClient → orchestrates the pipeline
  * 
@@ -159,7 +159,7 @@ class GaitAnalysisClient(private val context: Context) {
 
         try {
             
-            // Step 1: Extract pose landmarks using MediaPipe (Python-matched method)
+            // Step 1: Extract pose landmarks using MediaPipe 
             Log.d(TAG, "Extracting pose landmarks with MediaPipe...")
             val poseExtractionStartTime = System.currentTimeMillis()
             val videoUri = Uri.fromFile(videoFile)

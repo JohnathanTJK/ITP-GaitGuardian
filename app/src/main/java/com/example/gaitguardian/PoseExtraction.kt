@@ -16,7 +16,7 @@ import java.io.File
 import java.io.FileWriter
 
 /**
- * Enhanced Pose Extraction - Using MediaPipe Tasks API (same as Python)
+ * Enhanced Pose Extraction - Using MediaPipe Tasks API
  */
 
 /**
@@ -73,14 +73,14 @@ class PoseExtraction(private val context: Context) {
 
             val options = PoseLandmarker.PoseLandmarkerOptions.builder()
                 .setBaseOptions(baseOptions)
-                .setRunningMode(RunningMode.VIDEO)    // CRITICAL: Use VIDEO mode like Python
+                .setRunningMode(RunningMode.VIDEO)    
                 .setNumPoses(1)
-                .setMinPoseDetectionConfidence(0.5f)  // CRITICAL: Match Python threshold (0.5, not 0.3)
-                .setMinPosePresenceConfidence(0.5f)   // CRITICAL: Match Python threshold (0.5, not 0.3)
-                .setMinTrackingConfidence(0.5f)       // CRITICAL: Match Python threshold (0.5, not 0.3)
+                .setMinPoseDetectionConfidence(0.5f)  
+                .setMinPosePresenceConfidence(0.5f)  
+                .setMinTrackingConfidence(0.5f)     
                 .build()
                 
-            Log.d(TAG, "🔧 Creating PoseLandmarker from options...")
+            Log.d(TAG, "Creating PoseLandmarker from options...")
             poseLandmarker = PoseLandmarker.createFromOptions(context, options)
             Log.e(TAG, "MediaPipe PoseLandmarker initialized successfully")
         } catch (e: Exception) {
@@ -90,7 +90,7 @@ class PoseExtraction(private val context: Context) {
             poseLandmarker = null
         }
     }    /**
-     * Process video to landmarks directly (like Python) - returns landmarks and metadata
+     * Process video to landmarks directly - returns landmarks and metadata
      */
     fun processVideoToLandmarksWithMetadata(
         videoUri: Uri,
@@ -98,7 +98,7 @@ class PoseExtraction(private val context: Context) {
     ): VideoLandmarksResult? {
         return try {
             Log.d(TAG, "========================================")
-            Log.d(TAG, "🎥 POSE EXTRACTION STARTING")
+            Log.d(TAG, "POSE EXTRACTION STARTING")
             Log.d(TAG, "Video URI: $videoUri")
             Log.d(TAG, "Timestamp: ${System.currentTimeMillis()}")
             Log.d(TAG, "========================================")
@@ -109,7 +109,7 @@ class PoseExtraction(private val context: Context) {
             Log.e(TAG, "MediaMetadataRetriever initialized successfully")
             
             val duration = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
-            // Get actual FPS from MediaMetadataRetriever (like Python's cap.get(cv2.CAP_PROP_FPS))
+            
             val frameRateString = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_CAPTURE_FRAMERATE)
             var frameRate = frameRateString?.toFloatOrNull() ?: 30f // fallback to 30 if detection fails
             
@@ -131,7 +131,6 @@ class PoseExtraction(private val context: Context) {
 
             val landmarksList = mutableListOf<List<NormalizedLandmark>>()
             
-            // CRITICAL: Check video rotation to match Python orientation
             val rotation = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toIntOrNull() ?: 0
             Log.d(TAG, "Video rotation: $rotation degrees")
             
@@ -142,15 +141,15 @@ class PoseExtraction(private val context: Context) {
             val startTimestampMs = System.currentTimeMillis()
             val frameDurationMs = (1000.0 / frameRate).toLong().coerceAtLeast(1L) // Ensure at least 1ms between frames
             
-            // Process ALL frames using MediaPipe (same logic as Python)
+            // Process ALL frames using MediaPipe
             for (frameNumber in 0 until totalFrames) {
                 try {
-                    // CRITICAL: Use strictly increasing timestamp to avoid MediaPipe errors
+                    // Use strictly increasing timestamp to avoid MediaPipe errors
                     val timestampMs = startTimestampMs + (frameNumber * frameDurationMs)
                     
                     // OPTIMIZATION: Use getFrameAtIndex() for exact frame extraction on API 28+
                     var bitmap = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                        // API 28+ - Use frame-perfect extraction (like Python's cap.read())
+                        
                         try {
                             mediaMetadataRetriever.getFrameAtIndex(frameNumber)
                         } catch (e: Exception) {
@@ -191,10 +190,8 @@ class PoseExtraction(private val context: Context) {
                     bitmap?.let { frame ->
                         try {
                             if (poseLandmarker != null) {
-                                // CRITICAL: Resize to 640×480 to match Python preprocessing
                                 val resizedBitmap = Bitmap.createScaledBitmap(frame, 640, 480, true)
                                 
-                                // CRITICAL: Handle rotation if present (normalize orientation like Python)
                                 val finalBitmap = if (rotation != 0) {
                                     val matrix = android.graphics.Matrix()
                                     matrix.postRotate(rotation.toFloat())
@@ -203,13 +200,13 @@ class PoseExtraction(private val context: Context) {
                                     resizedBitmap
                                 }
                                 
-                                // CRITICAL: Force ARGB_8888 format before MediaPipe (required format)
+                                // Force ARGB_8888 format before MediaPipe (required format)
                                 val argbBitmap = finalBitmap.copy(Bitmap.Config.ARGB_8888, false)
                                 
                                 // Convert bitmap to MediaPipe image format
                                 val mpImage = BitmapImageBuilder(argbBitmap).build()
                                 
-                                // CRITICAL: Use detectForVideo with strictly increasing timestamps
+                                // Use detectForVideo with strictly increasing timestamps
                                 val result = poseLandmarker!!.detectForVideo(mpImage, timestampMs)
                                 
                                 if (result.landmarks().isNotEmpty()) {
@@ -290,7 +287,7 @@ class PoseExtraction(private val context: Context) {
             if (firstSuccessfulFrame != null && lastSuccessfulFrame != null) {
                 val firstHash = firstSuccessfulFrame.take(3).joinToString { "${it.x()},${it.y()}" }.hashCode()
                 val lastHash = lastSuccessfulFrame.take(3).joinToString { "${it.x()},${it.y()}" }.hashCode()
-                Log.e(TAG, "🔍 VIDEO UNIQUENESS CHECK - First frame hash: $firstHash, Last frame hash: $lastHash")
+                Log.e(TAG, " VIDEO UNIQUENESS CHECK - First frame hash: $firstHash, Last frame hash: $lastHash")
             }
             
             if (successfulFrames == 0) {
