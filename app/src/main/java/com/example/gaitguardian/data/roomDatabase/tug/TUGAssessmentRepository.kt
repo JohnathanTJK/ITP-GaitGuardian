@@ -77,6 +77,10 @@ class TUGAssessmentRepository(private val tugDao: TugDao, private val tugAnalysi
     suspend fun getLatestTugAnalysis(): TUGAnalysis? {
         return tugAnalysisDao.getLatestTugAnalysis()
     }
+
+    @WorkerThread
+    fun getLatestTugAnalysisFlow(): Flow<TUGAnalysis?> = tugAnalysisDao.getLatestTugAnalysisFlow()
+
     
     @WorkerThread
     suspend fun getTugAnalysisById(analysisId: Long): TUGAnalysis? {

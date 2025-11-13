@@ -17,7 +17,10 @@ interface TugAnalysisDao {
     // For Updating Result Card
     @Query("SELECT * FROM tug_analysis_table ORDER BY testId DESC LIMIT 1")
     suspend fun getLatestTugAnalysis(): TUGAnalysis?
-    
+
+    @Query("SELECT * FROM tug_analysis_table ORDER BY testId DESC LIMIT 1")
+    fun getLatestTugAnalysisFlow(): Flow<TUGAnalysis?>
+
     // Get specific analysis by ID
     @Query("SELECT * FROM tug_analysis_table WHERE testId = :analysisId")
     suspend fun getTugAnalysisById(analysisId: Long): TUGAnalysis?

@@ -175,6 +175,17 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, priva
     suspend fun getLatestTugAnalysis(): TUGAnalysis? {
         return tugRepository.getLatestTugAnalysis()
     }
+    private val _latestAnalysis = MutableStateFlow<TUGAnalysis?>(null)
+    val latestAnalysis: StateFlow<TUGAnalysis?> = _latestAnalysis
+
+    init {
+        viewModelScope.launch {
+            tugRepository.getLatestTugAnalysisFlow().collect {
+                _latestAnalysis.value = it
+                Log.d("LatestAnalysis", "Latest analysis updated: $it")
+            }
+        }
+    }
     
     // NEW: Get specific TUG analysis by ID
     suspend fun getTugAnalysisById(analysisId: Long): TUGAnalysis? {

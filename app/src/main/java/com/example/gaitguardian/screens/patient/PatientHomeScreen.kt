@@ -52,10 +52,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.work.WorkInfo
+import androidx.work.Data
 import androidx.work.WorkManager
+import com.example.gaitguardian.api.GaitAnalysisResponse
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAnalysis
 import com.example.gaitguardian.ui.theme.ButtonActive
 import com.example.gaitguardian.viewmodels.TugDataViewModel
+import com.google.gson.Gson
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
 
 
 @Composable
@@ -74,10 +80,11 @@ fun PatientHomeScreen(
     var previousTiming by remember { mutableFloatStateOf(0f) }
     var latestTiming by remember { mutableFloatStateOf(0f) }
     var latestAnalysis by remember { mutableStateOf<TUGAnalysis?>(null) }
-
-    val severity = latestAnalysis?.severity ?: "-"
-    val totalTime = latestAnalysis?.timeTaken?.toFloat() ?: 0f
-
+    val latestAnalysisFlow by tugViewModel.latestAnalysis.collectAsState()
+//    val severity = latestAnalysis?.severity ?: "-"
+//    val totalTime = latestAnalysis?.timeTaken?.toFloat() ?: 0f
+    val severity = latestAnalysisFlow?.severity ?: "-"
+    val totalTime = latestAnalysisFlow?.timeTaken?.toFloat() ?: 0f
     var showTutorial by remember { mutableStateOf(false) } // <-- control overlay
 
     LaunchedEffect(Unit) {
@@ -85,7 +92,7 @@ fun PatientHomeScreen(
         tugViewModel.getLatestTUGAssessment()
         latestAnalysis = tugViewModel.getLatestTugAnalysis()
     }
-    Log.d("patienthomescreen", "latest tug analysis : $latestAnalysis")
+//    Log.d("patienthomescreen", "latest tug analysis : $latestAnalysis")
     if (latestTwoDurations.size >= 2) {
         latestTiming = latestTwoDurations[0]
         previousTiming = latestTwoDurations[1]
@@ -105,6 +112,53 @@ fun PatientHomeScreen(
                     it.state == WorkInfo.State.ENQUEUED
         }
     }
+    workInfoList.forEach { workInfo ->
+        Log.d("patienthomescreen", "WorkInfo: $workInfo")
+    }
+    val latestWorkInfoFind = workInfoList.find{it.outputData.getString("VIDEO_PATH") == latestAssessment?.videoTitle}
+    Log.d("patienthomescreen", "latest work info find : $latestWorkInfoFind")
+
+    val latestWorkInfo = workInfoList
+        .filter { it.state == WorkInfo.State.SUCCEEDED }
+        .find { workInfo ->
+            val videoPath = workInfo.outputData.getString("VIDEO_PATH")
+            videoPath != null && videoPath == latestAssessment?.videoTitle
+        }
+
+    LaunchedEffect(latestWorkInfo) {
+        if (latestWorkInfo != null) {
+            if (latestWorkInfo.state == WorkInfo.State.SUCCEEDED) {
+                val json = latestWorkInfo.outputData.getString("ANALYSIS_RESULT")
+                val analysisResult = Gson().fromJson(json, GaitAnalysisResponse::class.java)
+
+                withContext(Dispatchers.IO) {
+                    handleAnalysisSuccess(
+                        analysisResult,
+//                        File(analysisResult.processingInfo?.videoPath ?: return@withContext),
+                        tugViewModel,
+                        patientViewModel
+                    )
+                }
+            }
+        }
+    }
+//    LaunchedEffect(workInfoList) {
+//        workInfoList.forEach { info ->
+//            if (info.state == WorkInfo.State.SUCCEEDED) {
+//                val json = info.outputData.getString("ANALYSIS_RESULT")
+//                val analysisResult = Gson().fromJson(json, GaitAnalysisResponse::class.java)
+//
+//                withContext(Dispatchers.IO) {
+//                    handleAnalysisSuccess(
+//                        analysisResult,
+////                        File(analysisResult.processingInfo?.videoPath ?: return@withContext),
+//                        tugViewModel,
+//                        patientViewModel
+//                    )
+//                }
+//            }
+//        }
+//    }
 
     Box(
         modifier = modifier
@@ -132,22 +186,22 @@ fun PatientHomeScreen(
                     fontSize = Heading1,
                     color = Color.Black
                 )
-                Button(
-                    onClick = {tugViewModel.removeAllAssessments()}
-                )
-                {
-                    Text("delete all tug info")
-                }
 //                Button(
-//                    onClick = {patientViewModel.setSaveVideos(true)}
-//                ) {
-//                    Text("enable save videos")
+//                    onClick = {tugViewModel.removeAllAssessments()}
+//                )
+//                {
+//                    Text("delete all tug info")
 //                }
-                Button(
-                    onClick = {navController.navigate("start_screen")}
-                ){
-                    Text("start screen (set name and pin)")
-                }
+////                Button(
+////                    onClick = {patientViewModel.setSaveVideos(true)}
+////                ) {
+////                    Text("enable save videos")
+////                }
+//                Button(
+//                    onClick = {navController.navigate("start_screen")}
+//                ){
+//                    Text("start screen (set name and pin)")
+//                }
             }
 
             // Core Results Card

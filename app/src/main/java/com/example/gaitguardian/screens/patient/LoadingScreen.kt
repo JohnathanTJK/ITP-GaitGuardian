@@ -96,6 +96,7 @@ fun LoadingScreen(
     LaunchedEffect(videoFile) {
         analysisState = AnalysisState.Analyzing
 
+        Log.d("LoadingScreen", "video absolute path is ${videoFile.absolutePath}")
         // create a WorkManager request to analyse the video
         val workRequest = OneTimeWorkRequestBuilder<VideoAnalysisWorker>()
             .setInputData(workDataOf("VIDEO_PATH" to videoFile.absolutePath))
@@ -136,7 +137,7 @@ fun LoadingScreen(
                         withContext(Dispatchers.IO) {
                             handleAnalysisSuccess(
                                 analysisResult,
-                                videoFile,
+//                                videoFile,
                                 tugDataViewModel,
                                 patientViewModel
                             )
@@ -440,7 +441,7 @@ class VideoAnalysisWorker(
             Log.d("VideoAnalysisWorker", "your response now: $response")
             val resultJson = Gson().toJson(response)
             Log.d("VideoAnalysisWorker", "your json now: $resultJson")
-            val output = workDataOf("ANALYSIS_RESULT" to resultJson)
+            val output = workDataOf("ANALYSIS_RESULT" to resultJson, "VIDEO_PATH" to videoFile.name)
 
             Result.success(output)
         } catch (e: Exception) {
@@ -451,9 +452,9 @@ class VideoAnalysisWorker(
     }
 }
 
-private suspend fun handleAnalysisSuccess(
+suspend fun handleAnalysisSuccess(
     response: GaitAnalysisResponse,
-    videoFile: File,
+//    videoFile: File,
     tugDataViewModel: TugDataViewModel,
     patientViewModel: PatientViewModel
 ) {
