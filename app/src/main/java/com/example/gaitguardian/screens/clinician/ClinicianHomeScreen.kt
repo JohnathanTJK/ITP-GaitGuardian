@@ -56,6 +56,9 @@ import com.example.gaitguardian.ui.theme.buttonBackgroundColor
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import com.example.gaitguardian.viewmodels.PatientViewModel
 import com.example.gaitguardian.viewmodels.TugDataViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun ClinicianHomeScreen(
@@ -66,14 +69,6 @@ fun ClinicianHomeScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val pendingIds by tugViewModel.pendingAssessmentIds.collectAsState(initial = emptyList())
-
-    LaunchedEffect(pendingIds) {
-        Log.d("Clinician","this is ${pendingIds}")
-        pendingIds.forEach { testId ->
-//            NotificationService(context).showNotification(testId)
-        }
-    }
 
     val patientInfo by patientViewModel.patient.collectAsState()
     val clinicianInfo by clinicianViewModel.clinician.collectAsState()
@@ -203,7 +198,10 @@ fun ClinicianHomeScreen(
                         navController = navController,
                         tugViewModel = tugViewModel,
                         testId = video.testId,
-                        dateTime = video.dateTime,
+                        dateTime = SimpleDateFormat(
+                            "dd MMM yyyy, hh:mm a",
+                            Locale.getDefault()
+                        ).format(Date(video.dateTime)),
                         medication = finalMedicationState,
                         severity = finalSeverity,
                         watchStatus = if (video.watchStatus) "Reviewed" else "Pending",

@@ -83,7 +83,7 @@ class TUGAssessmentRepository(private val tugDao: TugDao, private val tugAnalysi
 
     
     @WorkerThread
-    suspend fun getTugAnalysisById(analysisId: Long): TUGAnalysis? {
+    suspend fun getTugAnalysisById(analysisId: String): TUGAnalysis? {
         return tugAnalysisDao.getTugAnalysisById(analysisId)
     }
     

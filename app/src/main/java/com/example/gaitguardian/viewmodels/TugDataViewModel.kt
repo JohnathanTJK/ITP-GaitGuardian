@@ -14,12 +14,8 @@ import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessmentRepository
 import com.example.gaitguardian.data.roomDatabase.tug.subtaskDuration
 import com.example.gaitguardian.data.sharedPreferences.AppPreferencesRepository
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, private val appPreferencesRepository: AppPreferencesRepository) : ViewModel() {
@@ -163,6 +159,10 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, priva
         lastInsertedId = id
     }
 
+    suspend fun checkTugAnalysisById(testId: String): TUGAnalysis? {
+        return tugRepository.getTugAnalysisById(testId)
+    }
+
     private val _subtaskDuration = MutableStateFlow<subtaskDuration?>(null)
     val subtaskDuration: StateFlow<subtaskDuration?> = _subtaskDuration
 
@@ -193,38 +193,6 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, priva
             }
         }
     }
-    
-    // NEW: Get specific TUG analysis by ID
-    suspend fun getTugAnalysisById(analysisId: Long): TUGAnalysis? {
-        return tugRepository.getTugAnalysisById(analysisId)
-    }
-
-    // Notification Storing of IDs
-    fun saveAssessmentIDsforNotifications(testId: Int) {
-        viewModelScope.launch {
-            appPreferencesRepository.addAssessmentId(testId)
-        }
-    }
-    fun clearAssessmentIDsforNotifications(testId: Int) {
-        viewModelScope.launch {
-            appPreferencesRepository.removeAssessmentId(testId)
-        }
-    }
-    // In your ViewModel
-    private val _notificationEvents = MutableSharedFlow<Int>(extraBufferCapacity = 1)
-    val notificationEvents = _notificationEvents.asSharedFlow()
-
-    fun onNotificationReceived(id: Int) {
-        _notificationEvents.tryEmit(id) // emits even if the same ID
-    }
-    // StateFlow of List<Int>
-    val pendingAssessmentIds: StateFlow<List<Int>> =
-        appPreferencesRepository.getPendingAssessmentsIds()
-            .stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5000),
-                emptyList() // initial value
-            )
 
     // For creating the VM in MainActivity
     class TugDataViewModelFactory(private val tugRepository: TUGAssessmentRepository,

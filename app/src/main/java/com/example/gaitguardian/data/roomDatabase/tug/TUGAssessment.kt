@@ -3,15 +3,14 @@ package com.example.gaitguardian.data.roomDatabase.tug
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import java.util.UUID
 
 @Entity(tableName = "tug_assessment_table")
 data class TUGAssessment(
     @PrimaryKey(autoGenerate = false)
 //    val testId: Int = 0,
-    val testId : String,
+    val testId: String,
     @ColumnInfo(name = "dateTime")
-    val dateTime: String,
+    val dateTime: Long,
     @ColumnInfo(name = "videoDuration")
     val videoDuration: Float,
     @ColumnInfo(name ="videoTitle")

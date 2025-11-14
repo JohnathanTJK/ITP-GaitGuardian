@@ -74,6 +74,9 @@ import com.patrykandpatrick.vico.core.common.component.TextComponent
 import com.patrykandpatrick.vico.core.common.shape.CorneredShape
 import kotlinx.coroutines.launch
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun ClinicianDetailedPatientViewScreen(
@@ -118,7 +121,11 @@ fun ClinicianDetailedPatientViewScreen(
 
     LaunchedEffect(assessment?.testId) {
         assessment?.let {
-            tugDateTime = it.dateTime
+
+            tugDateTime = SimpleDateFormat(
+                "dd MMM yyyy, hh:mm a",
+                Locale.getDefault()
+            ).format(Date(it.dateTime))
             tugVideo = it.videoTitle.orEmpty()
             tugDuration = it.videoDuration
             onMedication = it.onMedication

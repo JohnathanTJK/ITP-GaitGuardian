@@ -23,7 +23,7 @@ interface TugAnalysisDao {
 
     // Get specific analysis by ID
     @Query("SELECT * FROM tug_analysis_table WHERE testId = :analysisId")
-    suspend fun getTugAnalysisById(analysisId: Long): TUGAnalysis?
+    suspend fun getTugAnalysisById(analysisId: String): TUGAnalysis?
 
     //TODO: Update Result Card with this
     @Query("SELECT timeTaken FROM tug_analysis_table ORDER BY testId DESC LIMIT 2")

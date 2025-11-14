@@ -24,16 +24,16 @@ interface TugDao {
     suspend fun multiSelectMarkAsReviewed(id: String, watchStatus: Boolean)
 
     // To be used in PatientViewModel
-    @Query(" SELECT videoDuration FROM tug_assessment_table ORDER BY testId DESC LIMIT 2")
+    @Query(" SELECT videoDuration FROM tug_assessment_table ORDER BY dateTime DESC LIMIT 2")
     suspend fun getLatestTwoDurations(): List<Float>
 
     @Query("UPDATE tug_assessment_table SET updateMedication = :medication WHERE testId = (SELECT MAX(testId) FROM tug_assessment_table)")
     suspend fun updateOnMedicationStatus(medication: Boolean)
 
-    @Query("SELECT * FROM tug_assessment_table ORDER BY testId DESC LIMIT 1")
+    @Query("SELECT * FROM tug_assessment_table ORDER BY dateTime DESC LIMIT 1")
     suspend fun getLatestAssessment(): TUGAssessment?
 
-    @Query("DELETE FROM tug_assessment_table WHERE testId = (SELECT testId FROM tug_assessment_table ORDER BY testId DESC LIMIT 1)")
+    @Query("DELETE FROM tug_assessment_table WHERE testId = (SELECT testId FROM tug_assessment_table ORDER BY dateTime DESC LIMIT 1)")
     suspend fun removeLastInsertedAssessment()
 
     @Query("DELETE FROM tug_assessment_table")

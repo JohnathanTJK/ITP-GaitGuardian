@@ -31,6 +31,9 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun ResultScreen(
@@ -207,8 +210,11 @@ fun CoreResultsCard(
                     fontWeight = FontWeight.Medium
                 )
                 VerticalDivider()
+                val formattedDate = latestAssessment?.dateTime?.let { dateTime ->
+                    SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(dateTime))
+                } ?: "-"
                 Text(
-                    text = latestAssessment?.dateTime ?: "-",
+                    text = formattedDate,
                     color = Color.Black,
                     fontSize = body,
                     fontWeight = FontWeight.Medium
