@@ -461,6 +461,7 @@ private fun recordVideo(
                         navController.navigate("loading_screen/${assessmentTitle}/${encodedPath}")
 
                         val newTug = TUGAssessment(
+                            testId = UUID.randomUUID().toString(),
                             dateTime = currentDateTime,
                             videoDuration = recordingTimeState.value.toFloat(),
                             videoTitle = outputFile.name,

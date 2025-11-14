@@ -15,7 +15,7 @@ import com.example.gaitguardian.data.roomDatabase.tug.TugDao
 
 // TODO: entities = [Patient::class, TUGAssessment::class, TUGVideo::class] etc. if necessary
 //  version number need to update if schema changes
-@Database(entities = [Patient::class, TUGAssessment::class, Clinician::class, TUGAnalysis::class], version = 5)
+@Database(entities = [Patient::class, TUGAssessment::class, Clinician::class, TUGAnalysis::class], version = 6)
 abstract class GaitGuardianRoomDatabase : RoomDatabase() {
 
     abstract fun patientDao(): PatientDao

@@ -488,6 +488,7 @@ class VideoAnalysisWorker(
 }
 
 suspend fun handleAnalysisSuccess(
+    assessmentId: String,
     response: GaitAnalysisResponse,
 //    videoFile: File,
     tugDataViewModel: TugDataViewModel,
@@ -505,6 +506,7 @@ suspend fun handleAnalysisSuccess(
     }
 
     val analysis = TUGAnalysis(
+        testId = assessmentId,
         severity = response.severity ?: "Unknown",
         timeTaken = tugMetrics?.totalTime ?: 0.0,
         stepCount = response.gaitMetrics?.stepCount ?: 0,
@@ -518,9 +520,6 @@ suspend fun handleAnalysisSuccess(
     )
     Log.d("handleAnalysisSuccess", " analysis Info: $analysis")
     tugDataViewModel.insertTugAnalysis(analysis)
-    tugDataViewModel.lastInsertedId?.toInt()?.let { newId ->
-        tugDataViewModel.saveAssessmentIDsforNotifications(newId)
-    }
 //
 //    if (!patientViewModel.saveVideos.value && videoFile.exists()) {
 //        videoFile.delete()

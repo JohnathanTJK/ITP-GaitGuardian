@@ -23,7 +23,7 @@ class TUGAssessmentRepository(private val tugDao: TugDao, private val tugAnalysi
     }
 
     @WorkerThread
-    suspend fun multiSelectMarkAsReviewed(id: Int, watchStatus: Boolean) {
+    suspend fun multiSelectMarkAsReviewed(id: String, watchStatus: Boolean) {
         tugDao.multiSelectMarkAsReviewed(id, watchStatus)
     }
 

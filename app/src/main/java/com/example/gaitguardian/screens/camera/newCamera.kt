@@ -718,8 +718,10 @@ private fun startRecording(
 
                     onRecordingFinished(Uri.fromFile(outputFile))
                     val encodedPath = Uri.encode(outputFile.absolutePath)
-
+                    val assessmentId = UUID.randomUUID().toString()
+                    Log.d("camera_screen", "absolutePath: ${outputFile.absolutePath}")
                     val newTug = TUGAssessment(
+                        testId = assessmentId,
                         dateTime = currentDateTime,
                         videoDuration = durationSeconds.toFloat(),
                         videoTitle = outputFile.absolutePath,

@@ -130,9 +130,12 @@ fun PatientHomeScreen(
             if (latestWorkInfo.state == WorkInfo.State.SUCCEEDED) {
                 val json = latestWorkInfo.outputData.getString("ANALYSIS_RESULT")
                 val analysisResult = Gson().fromJson(json, GaitAnalysisResponse::class.java)
+//                val latestAssessment by tugViewModel.latestAssessment.collectAsState()
+                val assessmentId = latestAssessment?.testId
 
                 withContext(Dispatchers.IO) {
                     handleAnalysisSuccess(
+                        assessmentId ?: return@withContext,
                         analysisResult,
 //                        File(analysisResult.processingInfo?.videoPath ?: return@withContext),
                         tugViewModel,
@@ -202,6 +205,16 @@ fun PatientHomeScreen(
 //                ){
 //                    Text("start screen (set name and pin)")
 //                }
+                Button(
+                    onClick = {
+                        // need to create TUG assessment, then insert into DB
+                        // /storage/emulated/0/Android/data/com.example.gaitguardian/files/Movies/new-video-1763128314346.mp4
+                        // error /storage/emulated/0/Android/data/com.example.gaitguardian/files/Movies/new-video-1763128403213.mp4
+                    }
+                )
+                {
+                    Text("Working Video")
+                }
             }
 
             // Core Results Card

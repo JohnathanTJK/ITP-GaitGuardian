@@ -96,7 +96,7 @@ fun ClinicianHomeScreen(
         isCriticalReview(assessment.watchStatus, flagStatus)
     }
 
-    var selectedVideoIds by remember { mutableStateOf(setOf<Int>()) }
+    var selectedVideoIds by remember { mutableStateOf(setOf<String>()) }
     var showPendingVideos by remember { mutableStateOf(false) }
     var showCriticalVideos by remember { mutableStateOf(false) }
 
@@ -392,7 +392,7 @@ fun VideoOverviewStats(
 @Composable
 fun TUGVideoItem(
     navController: NavController,
-    testId: Int,
+    testId: String,
     dateTime: String,
     medication: Boolean,
     severity: String,

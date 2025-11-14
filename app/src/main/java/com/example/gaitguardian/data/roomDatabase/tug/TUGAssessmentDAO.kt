@@ -21,7 +21,7 @@ interface TugDao {
     suspend fun updateClinicianReview(id: Int, watchStatus: Boolean, notes: String)
 
     @Query("UPDATE tug_assessment_table SET watchStatus = :watchStatus WHERE testId = :id")
-    suspend fun multiSelectMarkAsReviewed(id: Int, watchStatus: Boolean)
+    suspend fun multiSelectMarkAsReviewed(id: String, watchStatus: Boolean)
 
     // To be used in PatientViewModel
     @Query(" SELECT videoDuration FROM tug_assessment_table ORDER BY testId DESC LIMIT 2")

@@ -1,6 +1,7 @@
 package com.example.gaitguardian
 
 import android.util.Log
+import java.util.UUID
 
 /**
  * Severity classification for TUG (Timed Up and Go) test based on metrics
@@ -114,6 +115,7 @@ object SeverityClassification {
         val severity = classifyGaitSeverity(tugMetrics)
         
         return com.example.gaitguardian.data.roomDatabase.tug.TUGAnalysis(
+            testId = UUID.randomUUID().toString(),
             severity = severity,
             timeTaken = timeTaken,
             stepCount = stepCount,
@@ -141,6 +143,7 @@ object SeverityClassification {
         val phaseDurations = predictionResult.phase_durations
         
         return com.example.gaitguardian.data.roomDatabase.tug.TUGAnalysis(
+            testId = UUID.randomUUID().toString(),
             severity = predictionResult.severity,
             timeTaken = predictionResult.total_duration_sec.toDouble(),
             stepCount = stepCount,

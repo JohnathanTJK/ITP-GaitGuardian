@@ -126,7 +126,7 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, priva
             false // Return false on error
         }
     }
-    fun markMultiAsReviewed(id: Int) {
+    fun markMultiAsReviewed(id: String) {
         viewModelScope.launch {
             tugRepository.multiSelectMarkAsReviewed(id, true)
         }
