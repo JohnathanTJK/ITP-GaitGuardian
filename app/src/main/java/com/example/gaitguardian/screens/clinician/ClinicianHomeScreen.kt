@@ -94,7 +94,7 @@ fun ClinicianHomeScreen(
     var selectedVideoIds by remember { mutableStateOf(setOf<String>()) }
     var showPendingVideos by remember { mutableStateOf(false) }
     var showCriticalVideos by remember { mutableStateOf(false) }
-
+    var showReviewedVideos by remember { mutableStateOf(false) }
     val filteredVideos = when {
         showCriticalVideos -> {
             uploadedAssesssments.filter { assessment ->
@@ -105,6 +105,7 @@ fun ClinicianHomeScreen(
             }
         }
         showPendingVideos -> uploadedAssesssments.filter { !it.watchStatus }
+        showReviewedVideos -> uploadedAssesssments.filter { it.watchStatus }
         else -> uploadedAssesssments
     }
 
@@ -136,19 +137,23 @@ fun ClinicianHomeScreen(
                     totalTests = uploadedAssesssments.count(),
                     pendingTests = pendingReviews,
                     criticalTests = criticalReviews,
+                    showOnlyReviewed = showReviewedVideos,
                     showOnlyPending = showPendingVideos,
                     showOnlyCritical = showCriticalVideos,
                     onFilterToggle = { filterType ->
                         when (filterType) {
-                            "all" -> {
+                            "reviewed" -> {
+                                showReviewedVideos = true
                                 showPendingVideos = false
                                 showCriticalVideos = false
                             }
                             "pending" -> {
+                                showReviewedVideos = false
                                 showPendingVideos = true
                                 showCriticalVideos = false
                             }
                             "critical" -> {
+                                showReviewedVideos = false
                                 showPendingVideos = false
                                 showCriticalVideos = true
                             }
@@ -174,6 +179,7 @@ fun ClinicianHomeScreen(
                     ) {
                         Text(
                             text = when {
+                                showReviewedVideos -> "No reviewed assessments to display."
                                 showCriticalVideos -> "No critical assessments to review."
                                 showPendingVideos -> "No pending assessments to review."
                                 else -> "No assessments available."
@@ -299,6 +305,7 @@ fun VideoReviewsSummaryCard(
     totalTests: Int,
     pendingTests: Int,
     criticalTests: Int,
+    showOnlyReviewed: Boolean,
     showOnlyPending: Boolean,
     showOnlyCritical: Boolean,
     onFilterToggle: (String) -> Unit
@@ -320,10 +327,11 @@ fun VideoReviewsSummaryCard(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 VideoOverviewStats(
-                    value = totalTests.toString(),
-                    label = "Total Tests",
-                    isSelected = !showOnlyPending && !showOnlyCritical,
-                    onClick = { onFilterToggle("all") },
+//                    value = totalTests.toString(),
+                    value = (totalTests - pendingTests).toString(),
+                    label = "Reviewed",
+                    isSelected = showOnlyReviewed,
+                    onClick = { onFilterToggle("reviewed") },
                     backgroundColor = Color(0xFFE6FFFA),
                     textColor = Color(0xFF234E52),
                     modifier = Modifier.weight(1f)
