@@ -83,20 +83,6 @@ class MainActivity : ComponentActivity() {
 
         _assessmentId.value = intent?.getIntExtra("assessmentId", -1)?.takeIf { it != -1 }
 
-//        val destinationFromIntent = if (savedInstanceState == null) {
-//            intent?.getStringExtra("destination")?.also {
-//                Log.d("MainActivity", "Fresh launch - destination: $it")
-//                // Clear from intent so it doesn't get reused
-//                intent.removeExtra("destination")
-//            }
-//        } else {
-//            Log.d("MainActivity", "Config change - ignoring intent")
-//            null
-//        }
-
-        // ✅ handle notification tap (cold start)
-//        handleNotificationIntent(intent)
-
         setContent {
             GaitGuardianTheme {
                 val navController = rememberNavController()
@@ -115,16 +101,10 @@ class MainActivity : ComponentActivity() {
                     navController.addOnDestinationChangedListener(listener)
                     onDispose { navController.removeOnDestinationChangedListener(listener) }
                 }
-//                val destinationFromIntent = intent?.getStringExtra("destination")
-//                val destinationFromIntent by _destinationFromIntent
                 NavGraph(
                     navController = navController,
                     initialId = _assessmentId.value,
-//                    destinationIntent = destinationFromIntent,
                     destinationIntent = destinationState.value,
-//                    onDestinationReached = {
-//                        _destinationFromIntent.value = null
-//                    },
                     patientViewModel = patientViewModel,
                     clinicianViewModel = clinicianViewModel,
                     tugDataViewModel = tugDataViewModel
@@ -133,22 +113,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-//    override fun onNewIntent(intent: Intent) {
-//        super.onNewIntent(intent)
-//        setIntent(intent)
-//        _destinationFromIntent.value = intent.getStringExtra("destination")
-////        val destination = intent.getStringExtra("destination")
-////        if (destination != null) {
-////            navController.navigate(destination)
-////        }
-//    }
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         Log.d("MainActivity", "=== onNewIntent called ===")
         Log.d("MainActivity", "new intent destination: ${intent.getStringExtra("destination")}")
         setIntent(intent)
         destinationState.value = intent.getStringExtra("destination")
-//        _destinationFromIntent.value = intent.getStringExtra("destination")
     }
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private fun hasRequiredPermissions(): Boolean {

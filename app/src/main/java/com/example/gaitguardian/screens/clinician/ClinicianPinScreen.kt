@@ -230,8 +230,7 @@ fun PinDigitBox(
 
 @Composable
 fun PinEntryExample(navController: NavController,
-                    clinicianViewModel: ClinicianViewModel,
-                    notificationId: Int? = null)
+                    clinicianViewModel: ClinicianViewModel)
 { // for testing now
     var showSuccess by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
@@ -266,20 +265,10 @@ fun PinEntryExample(navController: NavController,
                         showSuccess = true
                         coroutineScope.launch {
                             delay(1500)
-
-                            if (notificationId != null) {
-                                // Navigate to detail screen if notificationId (tapped notification)
-                                navController.navigate("clinician_detailed_patient_view_screen/$notificationId") {
-//                                navController.navigate("clinician_graph/clinician_detailed_patient_view_screen/$notificationId") {
-                                    popUpTo("clinician_pin_verification_screen") { inclusive = true }
-                                    launchSingleTop = true
-                                }
-                            } else {
-                                // Navigate to home
-                                navController.navigate("clinician_graph") {
-                                    popUpTo("clinician_pin_verification_screen") { inclusive = true }
-                                    launchSingleTop = true
-                                }
+                            // Navigate to home
+                            navController.navigate("clinician_graph") {
+                                popUpTo("clinician_pin_verification_screen") { inclusive = true }
+                                launchSingleTop = true
                             }
                         }
                     }

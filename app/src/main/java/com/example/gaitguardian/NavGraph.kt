@@ -182,14 +182,7 @@ fun NavGraph(
                     }
                 }
                 "clinician" -> {
-                    Log.d("NavGraph", "inside default, clnicinaGraphis $isInClinicianGraph")
-                    val route = if (initialId != null) {
-                        "clinician_pin_verification_screen/$initialId"
-                    } else {
-                        "clinician_pin_verification_screen/-1"
-                    }
-
-                    navController.navigate(route) {
+                    navController.navigate("clinician_pin_verification_screen") {
                         popUpTo("splash_screen") { inclusive = true }
                         launchSingleTop = true
                     }
@@ -204,20 +197,6 @@ fun NavGraph(
         }
     }
 
-    LaunchedEffect(Unit) {
-        tugDataViewModel.notificationEvents.collect { notifId ->
-            val navBackStackEntry = navController.currentBackStackEntry
-            val isInClinicianGraph = navBackStackEntry?.destination?.parent?.route == "clinician_graph"
-            val targetRoute = if (isInClinicianGraph) {
-                "clinician_detailed_patient_view_screen/$notifId"
-            } else {
-                "clinician_pin_verification_screen/$notifId"
-            }
-            navController.navigate(targetRoute) {
-//                launchSingleTop = true
-            }
-        }
-    }
     if (currentDestination == "splash_screen") {
         // No Scaffold — just directly display SplashScreen
         SplashScreen(navController, clinicianViewModel)
@@ -237,7 +216,7 @@ fun NavGraph(
             bottomBar = {
                 if (currentDestination != "camera_screen/{assessmentTitle}" && currentDestination != "3m_screen" && currentDestination != "start_screen" && currentDestination != "lateral_screen"
                     && currentDestination != "new_cam_screen"
-                    && currentDestination != "clinician_pin_verification_screen/{notifId}"
+                    && currentDestination != "clinician_pin_verification_screen"
                     && orientation != Configuration.ORIENTATION_LANDSCAPE
                 )
                 {
@@ -316,22 +295,15 @@ fun NavGraph(
                         clinicianViewModel = clinicianViewModel
                     )
                 }
-                composable(
-                    "clinician_pin_verification_screen/{notifId}",
-                    arguments = listOf(navArgument("notifId") {
-                        type = NavType.IntType
-                        defaultValue = -1 // optional
-                    })
-                ) { backStackEntry ->
-                    val notifId = backStackEntry.arguments?.getInt("notifId")?.takeIf { it != -1 }
-                    PinEntryExample(navController, clinicianViewModel,notifId)
+                composable("clinician_pin_verification_screen")
+                {
+                    PinEntryExample(navController, clinicianViewModel)
                 }
 
                 // Clinician-Specific Screens here
                 navigation(
                     startDestination = "clinician_home_screen",
                     route = "clinician_graph"
-
                 )
                 {
 //                    composable("clinician_pin_verification_screen") {
