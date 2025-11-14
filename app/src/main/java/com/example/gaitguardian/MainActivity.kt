@@ -30,6 +30,7 @@ import com.example.gaitguardian.api.TestApiConnection
 class MainActivity : ComponentActivity() {
     private val _assessmentId = mutableStateOf<Int?>(null)
 //    private val _destinationFromIntent = mutableStateOf<String?>(null)
+    private val destinationState = mutableStateOf<String?>(null)
 
     // Initialize ViewModels at the top
     private val patientViewModel by lazy {
@@ -73,22 +74,25 @@ class MainActivity : ComponentActivity() {
         if (!hasRequiredPermissions()) {
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, 0)
         }
-
+        // A process restart from a notification will land here.
+        if (savedInstanceState == null) {
+            destinationState.value = intent?.getStringExtra("destination")
+        }
         createNotificationChannel()
         requestNotificationPermissionIfNeeded()
 
         _assessmentId.value = intent?.getIntExtra("assessmentId", -1)?.takeIf { it != -1 }
 
-        val destinationFromIntent = if (savedInstanceState == null) {
-            intent?.getStringExtra("destination")?.also {
-                Log.d("MainActivity", "Fresh launch - destination: $it")
-                // Clear from intent so it doesn't get reused
-                intent.removeExtra("destination")
-            }
-        } else {
-            Log.d("MainActivity", "Config change - ignoring intent")
-            null
-        }
+//        val destinationFromIntent = if (savedInstanceState == null) {
+//            intent?.getStringExtra("destination")?.also {
+//                Log.d("MainActivity", "Fresh launch - destination: $it")
+//                // Clear from intent so it doesn't get reused
+//                intent.removeExtra("destination")
+//            }
+//        } else {
+//            Log.d("MainActivity", "Config change - ignoring intent")
+//            null
+//        }
 
         // ✅ handle notification tap (cold start)
 //        handleNotificationIntent(intent)
@@ -116,7 +120,8 @@ class MainActivity : ComponentActivity() {
                 NavGraph(
                     navController = navController,
                     initialId = _assessmentId.value,
-                    destinationIntent = destinationFromIntent,
+//                    destinationIntent = destinationFromIntent,
+                    destinationIntent = destinationState.value,
 //                    onDestinationReached = {
 //                        _destinationFromIntent.value = null
 //                    },
@@ -142,6 +147,7 @@ class MainActivity : ComponentActivity() {
         Log.d("MainActivity", "=== onNewIntent called ===")
         Log.d("MainActivity", "new intent destination: ${intent.getStringExtra("destination")}")
         setIntent(intent)
+        destinationState.value = intent.getStringExtra("destination")
 //        _destinationFromIntent.value = intent.getStringExtra("destination")
     }
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
