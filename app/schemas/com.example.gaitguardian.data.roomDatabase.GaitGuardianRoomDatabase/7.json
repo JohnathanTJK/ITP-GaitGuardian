@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 7,
-    "identityHash": "41711c2d65de327f167295ca359bc93f",
+   "identityHash": "73c9f143e6fb483fc0579a68055540a9",
     "entities": [
       {
         "tableName": "patients_table",
@@ -36,7 +36,7 @@
       },
       {
         "tableName": "tug_assessment_table",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`testId` TEXT NOT NULL, `dateTime` INTEGER NOT NULL, `videoDuration` INTEGER NOT NULL, `videoTitle` TEXT, `onMedication` INTEGER NOT NULL, `updateMedication` INTEGER NOT NULL, `patientComments` TEXT NOT NULL, `clinicianId` INTEGER, `watchStatus` INTEGER NOT NULL, `notes` TEXT, PRIMARY KEY(`testId`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`testId` TEXT NOT NULL, `dateTime` INTEGER NOT NULL, `videoDuration` REAL NOT NULL, `videoTitle` TEXT, `onMedication` INTEGER NOT NULL, `updateMedication` INTEGER NOT NULL, `patientComments` TEXT NOT NULL, `clinicianId` INTEGER, `watchStatus` INTEGER NOT NULL, `notes` TEXT, PRIMARY KEY(`testId`))",
         "fields": [
           {
             "fieldPath": "testId",
@@ -53,7 +53,7 @@
           {
             "fieldPath": "videoDuration",
             "columnName": "videoDuration",
-            "affinity": "INTEGER",
+            "affinity": "REAL",
             "notNull": true
           },
           {
@@ -214,7 +214,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '41711c2d65de327f167295ca359bc93f')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '73c9f143e6fb483fc0579a68055540a9')"
     ]
   }
 }
