@@ -205,16 +205,6 @@ fun PatientHomeScreen(
 //                ){
 //                    Text("start screen (set name and pin)")
 //                }
-                Button(
-                    onClick = {
-                        // need to create TUG assessment, then insert into DB
-                        // /storage/emulated/0/Android/data/com.example.gaitguardian/files/Movies/new-video-1763128314346.mp4
-                        // error /storage/emulated/0/Android/data/com.example.gaitguardian/files/Movies/new-video-1763128403213.mp4
-                    }
-                )
-                {
-                    Text("Working Video")
-                }
             }
 
             // Core Results Card
@@ -293,20 +283,14 @@ fun PatientHomeScreen(
 fun VideoProcessingBanner(
     ongoingWork: List<WorkInfo>,
 ) {
-    val context = LocalContext.current
-    val workManager = WorkManager.getInstance(context)
 
-    // Observe all video analysis work
-    val workInfoList by workManager
-        .getWorkInfosByTagLiveData("video_analysis")
-        .observeAsState(initial = emptyList())
-
-//    val ongoingWork = remember(workInfoList) {
-//        workInfoList.filter {
-//            it.state == WorkInfo.State.RUNNING ||
-//                    it.state == WorkInfo.State.ENQUEUED
-//        }
-//    }
+    val progressList = ongoingWork.map { info ->
+        mapOf(
+            "currentFrame" to info.progress.getInt("CURRENT_FRAME", 0),
+            "totalFrames" to info.progress.getInt("TOTAL_FRAMES", 0),
+            "percent" to info.progress.getInt("PROGRESS", 0),
+        )
+    }
     // for check
     LaunchedEffect(ongoingWork) {
         Log.d("VideoProcessingBanner", "Ongoing work count: ${ongoingWork.size}")
@@ -321,11 +305,6 @@ fun VideoProcessingBanner(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
-//                .then(
-//                    if (onBannerClick != null) {
-//                        Modifier.clickable { onBannerClick() }
-//                    } else Modifier
-//                ),
             colors = CardDefaults.cardColors(
                 containerColor = Color(0xFF6A1B9A)
             ),
@@ -361,6 +340,20 @@ fun VideoProcessingBanner(
                             color = Color.White.copy(alpha = 0.8f),
                             fontSize = 12.sp
                         )
+                        if (progressList.isNotEmpty()) {
+                            val p = progressList.first()
+
+                            val currentFrame = p["currentFrame"] as Int
+                            val totalFrame = p["totalFrames"] as Int
+                            val percent = p["percent"] as Int
+
+                            Text(
+                                text = "Frame $currentFrame/$totalFrame ($percent%)",
+                                color = Color.White.copy(alpha = 0.9f),
+                                fontSize = 12.sp
+                            )
+                        }
+
                     }
                 }
 
