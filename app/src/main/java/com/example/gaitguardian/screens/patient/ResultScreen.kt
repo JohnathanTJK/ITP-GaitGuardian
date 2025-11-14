@@ -31,11 +31,14 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun ResultScreen(
     navController: NavController,
-    assessmentTitle: String,
+//    assessmentTitle: String,
     patientViewModel: PatientViewModel,
     tugViewModel: TugDataViewModel,
 //    analysisId: Long? = null,  // NEW: Accept specific analysis ID
@@ -47,7 +50,7 @@ fun ResultScreen(
     var latestAnalysis by remember { mutableStateOf<TUGAnalysis?>(null) }
 
     LaunchedEffect(Unit) {
-        tugViewModel.getLatestTUGAssessment()
+//        tugViewModel.getLatestTUGAssessment()
         tugViewModel.getLatestTwoDurations()
         tugViewModel.setAssessmentComment("")
         latestAnalysis = tugViewModel.getLatestTugAnalysis()
@@ -106,7 +109,7 @@ fun ResultScreen(
                             hasUpdatedMedication = true
                             tugViewModel.setOnMedication(!onMedication)
                             tugViewModel.updatePostAssessmentOnMedicationStatus(true)
-                            tugViewModel.getLatestTUGAssessment()
+//                            tugViewModel.getLatestTUGAssessment()
                         }
                     }
                 )
@@ -207,8 +210,11 @@ fun CoreResultsCard(
                     fontWeight = FontWeight.Medium
                 )
                 VerticalDivider()
+                val formattedDate = latestAssessment?.dateTime?.let { dateTime ->
+                    SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(dateTime))
+                } ?: "-"
                 Text(
-                    text = latestAssessment?.dateTime ?: "-",
+                    text = formattedDate,
                     color = Color.Black,
                     fontSize = body,
                     fontWeight = FontWeight.Medium

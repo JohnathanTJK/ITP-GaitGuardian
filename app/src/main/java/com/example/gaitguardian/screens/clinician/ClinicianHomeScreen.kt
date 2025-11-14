@@ -1,7 +1,5 @@
 package com.example.gaitguardian.screens.clinician
 
-import android.app.Activity
-import android.content.pm.ActivityInfo
 import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -33,7 +31,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -53,14 +50,15 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.gaitguardian.NotificationService
 import com.example.gaitguardian.data.roomDatabase.patient.Patient
-import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessment
 import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.ui.theme.buttonBackgroundColor
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import com.example.gaitguardian.viewmodels.PatientViewModel
 import com.example.gaitguardian.viewmodels.TugDataViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun ClinicianHomeScreen(
@@ -71,14 +69,6 @@ fun ClinicianHomeScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val pendingIds by tugViewModel.pendingAssessmentIds.collectAsState(initial = emptyList())
-
-    LaunchedEffect(pendingIds) {
-        Log.d("Clinician","this is ${pendingIds}")
-        pendingIds.forEach { testId ->
-//            NotificationService(context).showNotification(testId)
-        }
-    }
 
     val patientInfo by patientViewModel.patient.collectAsState()
     val clinicianInfo by clinicianViewModel.clinician.collectAsState()
@@ -96,10 +86,10 @@ fun ClinicianHomeScreen(
         isCriticalReview(assessment.watchStatus, flagStatus)
     }
 
-    var selectedVideoIds by remember { mutableStateOf(setOf<Int>()) }
+    var selectedVideoIds by remember { mutableStateOf(setOf<String>()) }
     var showPendingVideos by remember { mutableStateOf(false) }
     var showCriticalVideos by remember { mutableStateOf(false) }
-
+    var showReviewedVideos by remember { mutableStateOf(false) }
     val filteredVideos = when {
         showCriticalVideos -> {
             uploadedAssesssments.filter { assessment ->
@@ -110,6 +100,7 @@ fun ClinicianHomeScreen(
             }
         }
         showPendingVideos -> uploadedAssesssments.filter { !it.watchStatus }
+        showReviewedVideos -> uploadedAssesssments.filter { it.watchStatus }
         else -> uploadedAssesssments
     }
 
@@ -141,19 +132,23 @@ fun ClinicianHomeScreen(
                     totalTests = uploadedAssesssments.count(),
                     pendingTests = pendingReviews,
                     criticalTests = criticalReviews,
+                    showOnlyReviewed = showReviewedVideos,
                     showOnlyPending = showPendingVideos,
                     showOnlyCritical = showCriticalVideos,
                     onFilterToggle = { filterType ->
                         when (filterType) {
-                            "all" -> {
+                            "reviewed" -> {
+                                showReviewedVideos = true
                                 showPendingVideos = false
                                 showCriticalVideos = false
                             }
                             "pending" -> {
+                                showReviewedVideos = false
                                 showPendingVideos = true
                                 showCriticalVideos = false
                             }
                             "critical" -> {
+                                showReviewedVideos = false
                                 showPendingVideos = false
                                 showCriticalVideos = true
                             }
@@ -179,6 +174,7 @@ fun ClinicianHomeScreen(
                     ) {
                         Text(
                             text = when {
+                                showReviewedVideos -> "No reviewed assessments to display."
                                 showCriticalVideos -> "No critical assessments to review."
                                 showPendingVideos -> "No pending assessments to review."
                                 else -> "No assessments available."
@@ -200,8 +196,12 @@ fun ClinicianHomeScreen(
 
                     TUGVideoItem(
                         navController = navController,
+                        tugViewModel = tugViewModel,
                         testId = video.testId,
-                        dateTime = video.dateTime,
+                        dateTime = SimpleDateFormat(
+                            "dd MMM yyyy, hh:mm a",
+                            Locale.getDefault()
+                        ).format(Date(video.dateTime)),
                         medication = finalMedicationState,
                         severity = finalSeverity,
                         watchStatus = if (video.watchStatus) "Reviewed" else "Pending",
@@ -303,6 +303,7 @@ fun VideoReviewsSummaryCard(
     totalTests: Int,
     pendingTests: Int,
     criticalTests: Int,
+    showOnlyReviewed: Boolean,
     showOnlyPending: Boolean,
     showOnlyCritical: Boolean,
     onFilterToggle: (String) -> Unit
@@ -324,10 +325,11 @@ fun VideoReviewsSummaryCard(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 VideoOverviewStats(
-                    value = totalTests.toString(),
-                    label = "Total Tests",
-                    isSelected = !showOnlyPending && !showOnlyCritical,
-                    onClick = { onFilterToggle("all") },
+//                    value = totalTests.toString(),
+                    value = (totalTests - pendingTests).toString(),
+                    label = "Reviewed",
+                    isSelected = showOnlyReviewed,
+                    onClick = { onFilterToggle("reviewed") },
                     backgroundColor = Color(0xFFE6FFFA),
                     textColor = Color(0xFF234E52),
                     modifier = Modifier.weight(1f)
@@ -392,7 +394,8 @@ fun VideoOverviewStats(
 @Composable
 fun TUGVideoItem(
     navController: NavController,
-    testId: Int,
+    tugViewModel: TugDataViewModel,
+    testId: String,
     dateTime: String,
     medication: Boolean,
     severity: String,
@@ -445,7 +448,7 @@ fun TUGVideoItem(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "TUG #${testId}",
+                        text = "TUG #${tugViewModel.getDisplayNumberForId(testId)}",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF2D3748)

@@ -42,7 +42,7 @@ fun ManageVideoPrivacyScreen(navController: NavController, patientViewModel: Pat
     LaunchedEffect(showConfirmation) {
         if (showConfirmation) {
             delay(2000)
-            navController.navigate("camera_screen/${assessmentTitle}") {
+            navController.navigate("new_cam_screen") {
                 popUpTo("video_privacy_screen/${assessmentTitle}") { inclusive = true }
             }
         }

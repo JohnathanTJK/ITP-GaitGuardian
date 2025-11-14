@@ -13,17 +13,17 @@ class TUGAssessmentRepository(private val tugDao: TugDao, private val tugAnalysi
     }
 
     @WorkerThread
-    suspend fun getAssessmentById(id: Int): TUGAssessment? {
+    suspend fun getAssessmentById(id: String): TUGAssessment? {
         return tugDao.getAssessmentById(id)
     }
 
     @WorkerThread
-    suspend fun updateClinicianReview(id: Int, watchStatus: Boolean, notes: String) {
+    suspend fun updateClinicianReview(id: String, watchStatus: Boolean, notes: String) {
         tugDao.updateClinicianReview(id, watchStatus, notes)
     }
 
     @WorkerThread
-    suspend fun multiSelectMarkAsReviewed(id: Int, watchStatus: Boolean) {
+    suspend fun multiSelectMarkAsReviewed(id: String, watchStatus: Boolean) {
         tugDao.multiSelectMarkAsReviewed(id, watchStatus)
     }
 
@@ -66,11 +66,11 @@ class TUGAssessmentRepository(private val tugDao: TugDao, private val tugAnalysi
 //        tugAnalysisDao.insertNewTUGAnalysis(tugAnalysis)
 //    }
     @WorkerThread
-    suspend fun insertTugAnalysis(tugAnalysis: TUGAnalysis): Long {
+    suspend fun insertTugAnalysis(tugAnalysis: TUGAnalysis) {
         return tugAnalysisDao.insertNewTUGAnalysis(tugAnalysis)
     }
     @WorkerThread
-    suspend fun getSubtaskById(id: Int): subtaskDuration? {
+    suspend fun getSubtaskById(id: String): subtaskDuration? {
         return tugAnalysisDao.getSubtaskById(id)
     }
     @WorkerThread
@@ -83,7 +83,7 @@ class TUGAssessmentRepository(private val tugDao: TugDao, private val tugAnalysi
 
     
     @WorkerThread
-    suspend fun getTugAnalysisById(analysisId: Long): TUGAnalysis? {
+    suspend fun getTugAnalysisById(analysisId: String): TUGAnalysis? {
         return tugAnalysisDao.getTugAnalysisById(analysisId)
     }
     

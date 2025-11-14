@@ -85,7 +85,8 @@ fun PerformanceChart(
     LaunchedEffect(selectedTask) {
         val extractTaskValues = taskToValue[selectedTask]
         if (extractTaskValues != null) {
-            val xValues = subtasks.map { it.testId }
+            val xValues = subtasks.indices.map { (it + 1).toFloat() } // because now using String, use the index instead but +1 so it starts from 1
+//            val xValues = subtasks.map { it.testId }
             val yValues = subtasks.map { extractTaskValues(it) }
             modelProducer.runTransaction {
                 lineSeries {

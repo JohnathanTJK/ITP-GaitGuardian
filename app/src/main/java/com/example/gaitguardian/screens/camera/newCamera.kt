@@ -5,15 +5,12 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Rect
-import android.graphics.RectF
 import android.net.Uri
 import android.util.Log
 import android.view.OrientationEventListener
-import android.view.OrientationEventListener.ORIENTATION_UNKNOWN
 import android.view.Surface
 import android.view.ViewTreeObserver
 import android.widget.Toast
-import androidx.annotation.OptIn
 import androidx.camera.camera2.interop.Camera2CameraInfo
 import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.CameraSelector
@@ -28,7 +25,6 @@ import androidx.camera.video.Recording
 import androidx.camera.video.VideoCapture
 import androidx.camera.video.VideoRecordEvent
 import androidx.camera.view.PreviewView
-import androidx.camera.view.TransformExperimental
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -49,11 +45,9 @@ import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -91,9 +85,9 @@ import com.example.gaitguardian.viewmodels.DistanceViewModel
 import com.example.gaitguardian.viewmodels.TugDataViewModel
 import kotlinx.coroutines.delay
 import java.io.File
-import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 import kotlin.collections.isNotEmpty
 
 
@@ -708,25 +702,32 @@ private fun startRecording(
                     if (outputFile.exists()) outputFile.delete()
                     Toast.makeText(context, "Video capture failed", Toast.LENGTH_LONG).show()
                 } else {
-                    val currentDateTime = SimpleDateFormat(
-                        "dd MMM yyyy, hh:mm a", Locale.getDefault()
-                    ).format(Date())
-                    val durationSeconds = ((System.nanoTime() - recordingStartTimeNanos) / 1_000_000_000).toInt()
+//                    val currentDateTime = SimpleDateFormat(
+//                        "dd MMM yyyy, hh:mm a", Locale.getDefault()
+//                    ).format(Date())
+                    val durationSeconds = ((System.nanoTime() - recordingStartTimeNanos) / 1_000_000_000).toFloat()
                     onRecordingStateChange(null, false)
                     Toast.makeText(context, "Video capture succeeded", Toast.LENGTH_LONG).show()
 
                     onRecordingFinished(Uri.fromFile(outputFile))
                     val encodedPath = Uri.encode(outputFile.absolutePath)
-
+                    val assessmentId = UUID.randomUUID().toString()
+                    Log.d("camera_screen", "absolutePath: ${outputFile.absolutePath}")
                     val newTug = TUGAssessment(
-                        dateTime = currentDateTime,
-                        videoDuration = durationSeconds.toFloat(),
-                        videoTitle = outputFile.name,
+                        testId = assessmentId,
+//                        dateTime = currentDateTime,
+                        dateTime = Date().time,
+                        videoDuration = durationSeconds,
+                        videoTitle = outputFile.absolutePath,
+//                        videoTitle = outputFile.name,
                         onMedication = tugViewModel.onMedication.value,
                         patientComments = tugViewModel.selectedComments.value.joinToString(", ")
                     )
                     tugViewModel.insertNewAssessment(newTug)
-                    navController.navigate("loading_screen/${assessmentTitle}/${encodedPath}")
+                    Log.d("camera_screen", "absolutePath: ${outputFile.absolutePath}")
+                    Log.d("camera_screen", "encodedPath: $encodedPath")
+//                    navController.navigate("loading_screen/${assessmentTitle}?outputPath=${encodedPath}")
+                    navController.navigate("loading_screen")
                 }
             }
         }

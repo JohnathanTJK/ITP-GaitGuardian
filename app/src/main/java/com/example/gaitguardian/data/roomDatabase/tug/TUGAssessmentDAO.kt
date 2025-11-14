@@ -15,25 +15,25 @@ interface TugDao {
     suspend fun insertNewTUGAssessment(tugAssessment: TUGAssessment)
 
     @Query("SELECT * FROM tug_assessment_table WHERE testId = :id")
-    suspend fun getAssessmentById(id: Int): TUGAssessment?
+    suspend fun getAssessmentById(id: String): TUGAssessment?
 
     @Query("UPDATE tug_assessment_table SET watchStatus = :watchStatus, notes = :notes WHERE testId = :id")
-    suspend fun updateClinicianReview(id: Int, watchStatus: Boolean, notes: String)
+    suspend fun updateClinicianReview(id: String, watchStatus: Boolean, notes: String)
 
     @Query("UPDATE tug_assessment_table SET watchStatus = :watchStatus WHERE testId = :id")
-    suspend fun multiSelectMarkAsReviewed(id: Int, watchStatus: Boolean)
+    suspend fun multiSelectMarkAsReviewed(id: String, watchStatus: Boolean)
 
     // To be used in PatientViewModel
-    @Query(" SELECT videoDuration FROM tug_assessment_table ORDER BY testId DESC LIMIT 2")
+    @Query(" SELECT videoDuration FROM tug_assessment_table ORDER BY dateTime DESC LIMIT 2")
     suspend fun getLatestTwoDurations(): List<Float>
 
     @Query("UPDATE tug_assessment_table SET updateMedication = :medication WHERE testId = (SELECT MAX(testId) FROM tug_assessment_table)")
     suspend fun updateOnMedicationStatus(medication: Boolean)
 
-    @Query("SELECT * FROM tug_assessment_table ORDER BY testId DESC LIMIT 1")
+    @Query("SELECT * FROM tug_assessment_table ORDER BY dateTime DESC LIMIT 1")
     suspend fun getLatestAssessment(): TUGAssessment?
 
-    @Query("DELETE FROM tug_assessment_table WHERE testId = (SELECT testId FROM tug_assessment_table ORDER BY testId DESC LIMIT 1)")
+    @Query("DELETE FROM tug_assessment_table WHERE testId = (SELECT testId FROM tug_assessment_table ORDER BY dateTime DESC LIMIT 1)")
     suspend fun removeLastInsertedAssessment()
 
     @Query("DELETE FROM tug_assessment_table")
