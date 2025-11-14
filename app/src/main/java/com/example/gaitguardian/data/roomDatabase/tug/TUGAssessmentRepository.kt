@@ -66,7 +66,7 @@ class TUGAssessmentRepository(private val tugDao: TugDao, private val tugAnalysi
 //        tugAnalysisDao.insertNewTUGAnalysis(tugAnalysis)
 //    }
     @WorkerThread
-    suspend fun insertTugAnalysis(tugAnalysis: TUGAnalysis): Long {
+    suspend fun insertTugAnalysis(tugAnalysis: TUGAnalysis) {
         return tugAnalysisDao.insertNewTUGAnalysis(tugAnalysis)
     }
     @WorkerThread

@@ -164,9 +164,9 @@ class DistanceViewModel : ViewModel() {
         Log.d("DistanceViewModel", "Detected ${landmarks.size} pose landmarks")
 
         // Log individual landmark positions for debugging
-        landmarks.forEachIndexed { index, landmark ->
-            Log.v("DistanceViewModel", "Landmark $index: position=(${landmark.position.x}, ${landmark.position.y}), inFrameLikelihood=${landmark.inFrameLikelihood}")
-        }
+//        landmarks.forEachIndexed { index, landmark ->
+//            Log.v("DistanceViewModel", "Landmark $index: position=(${landmark.position.x}, ${landmark.position.y}), inFrameLikelihood=${landmark.inFrameLikelihood}")
+//        }
 
         // Create bounding box from all visible landmarks
         val boundingBox = createBoundingBoxFromLandmarks(landmarks, imgWidth, imgHeight)

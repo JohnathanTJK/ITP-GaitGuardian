@@ -146,17 +146,12 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, priva
 
     }
     // ML Analysis
-    private val _response = MutableStateFlow<GaitAnalysisResponse?>(null)
-    val response: StateFlow<GaitAnalysisResponse?> = _response
 
     private val _allTUGAnalysis = MutableStateFlow<List<TUGAnalysis>>(emptyList())
     val allTUGAnalysis: StateFlow<List<TUGAnalysis>> = _allTUGAnalysis
 
-    var lastInsertedId by mutableStateOf<Long?>(null)
-        private set
     suspend fun insertTugAnalysis(tugAnalysis: TUGAnalysis) {
-        val id = tugRepository.insertTugAnalysis(tugAnalysis)
-        lastInsertedId = id
+        return tugRepository.insertTugAnalysis(tugAnalysis)
     }
 
     suspend fun checkTugAnalysisById(testId: String): TUGAnalysis? {
@@ -175,9 +170,6 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, priva
     //TODO: Replace this for Result Card , it should work , similar logic as before
     suspend fun getLatestTwoTimes(): List<Double> {
         return tugRepository.getLatestTwoTimes()
-    }
-    fun setResponse(response: GaitAnalysisResponse) {
-        _response.value = response
     }
     suspend fun getLatestTugAnalysis(): TUGAnalysis? {
         return tugRepository.getLatestTugAnalysis()

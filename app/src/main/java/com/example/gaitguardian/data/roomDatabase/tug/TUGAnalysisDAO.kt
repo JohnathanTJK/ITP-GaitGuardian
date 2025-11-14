@@ -12,7 +12,7 @@ interface TugAnalysisDao {
     @Query("SELECT * FROM tug_analysis_table")
     fun getAllAnalysis(): Flow<List<TUGAnalysis>>  // Room does not support StateFlow
     @Insert
-    suspend fun insertNewTUGAnalysis(tugAnalysis: TUGAnalysis) : Long
+    suspend fun insertNewTUGAnalysis(tugAnalysis: TUGAnalysis)
 
     // For Updating Result Card
     @Query("SELECT * FROM tug_analysis_table ORDER BY testId DESC LIMIT 1")
