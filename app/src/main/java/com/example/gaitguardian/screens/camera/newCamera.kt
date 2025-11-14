@@ -94,6 +94,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 import kotlin.collections.isNotEmpty
 
 
@@ -721,12 +722,16 @@ private fun startRecording(
                     val newTug = TUGAssessment(
                         dateTime = currentDateTime,
                         videoDuration = durationSeconds.toFloat(),
-                        videoTitle = outputFile.name,
+                        videoTitle = outputFile.absolutePath,
+//                        videoTitle = outputFile.name,
                         onMedication = tugViewModel.onMedication.value,
                         patientComments = tugViewModel.selectedComments.value.joinToString(", ")
                     )
                     tugViewModel.insertNewAssessment(newTug)
-                    navController.navigate("loading_screen/${assessmentTitle}/${encodedPath}")
+                    Log.d("camera_screen", "absolutePath: ${outputFile.absolutePath}")
+                    Log.d("camera_screen", "encodedPath: $encodedPath")
+//                    navController.navigate("loading_screen/${assessmentTitle}?outputPath=${encodedPath}")
+                    navController.navigate("loading_screen")
                 }
             }
         }

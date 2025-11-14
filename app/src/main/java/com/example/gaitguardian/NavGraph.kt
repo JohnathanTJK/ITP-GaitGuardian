@@ -1,7 +1,6 @@
 package com.example.gaitguardian
 
 import android.app.Activity
-import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.net.Uri
 import android.util.Log
@@ -33,7 +32,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
@@ -443,21 +441,73 @@ fun NavGraph(
                     composable("video_test_screen") {
                         VideoTestScreen()
                     }
-                    composable("loading_screen/{assessmentTitle}/{outputPath}") { backStackEntry ->
-                        val title = backStackEntry.arguments?.getString("assessmentTitle")
-                        val encodedPath = backStackEntry.arguments?.getString("outputPath")
-                        val decodedPath = encodedPath?.let { Uri.decode(it) }
+//                    composable("loading_screen/{assessmentTitle}/{outputPath}") { backStackEntry ->
+//                        val title = backStackEntry.arguments?.getString("assessmentTitle")
+//                        val encodedPath = backStackEntry.arguments?.getString("outputPath")
+//                        val decodedPath = encodedPath?.let { Uri.decode(it) }
+//
+//                        if (title != null && decodedPath != null) {
+//                            LoadingScreen(
+//                                navController,
+//                                title,
+//                                decodedPath,
+//                                tugDataViewModel,
+//                                patientViewModel
+//                            )
+//
+//                        }
+//                    }
+//                    composable("loading_screen/{assessmentTitle}?outputPath={outputPath}") { backStackEntry ->
+//                        val title = backStackEntry.arguments?.getString("assessmentTitle")
+//                        val encodedPath = backStackEntry.arguments?.getString("outputPath")
+//                        val decodedPath = encodedPath?.let { Uri.decode(it) }
+//
+//                        if (title != null) {
+//                            LoadingScreen(
+//                                navController,
+//                                title,
+//                                decodedPath, // can be null
+//                                tugDataViewModel,
+//                                patientViewModel
+//                            )
+//
+//                        }
+//                    }
+//                    composable("loading_screen/{assessmentTitle}") { backStackEntry ->
+//                        val title = backStackEntry.arguments?.getString("assessmentTitle")
+//                        if (title != null) {
+//                            LoadingScreen(
+//                                navController,
+//                                title,
+//                                tugDataViewModel,
+//                                patientViewModel
+//                            )
+//                        }
+//                    }
+//                    composable("loading_screen") {
+//                        LoadingScreen(navController,tugDataViewModel, patientViewModel)
+//                    }
+                    composable(
+                        route = "loading_screen?errorMessage={errorMessage}",
+                        arguments = listOf(
+                            navArgument("errorMessage") {
+                                type = NavType.StringType
+                                defaultValue = null
+                                nullable = true
+                            }
+                        )
+                    ) { backStackEntry ->
+                        val errorMsg = backStackEntry.arguments?.getString("errorMessage")
+                        LoadingScreen(
+                            navController,
+                            errorMsg, // will be null or default if not passed
+                            tugDataViewModel,
+                            patientViewModel
+                        )
+                    }
 
-                        if (title != null && decodedPath != null) {
-                            LoadingScreen(
-                                navController,
-                                title,
-                                decodedPath,
-                                tugDataViewModel,
-                                patientViewModel
-                            )
-
-                        }
+                    composable("result_screen") {
+                        ResultScreen(navController,patientViewModel, tugDataViewModel)
                     }
 //                    composable("result_screen/{assessmentTitle}/{analysisId}") { backStackEntry ->
 //                        val time = backStackEntry.arguments?.getString("assessmentTitle")
@@ -466,12 +516,12 @@ fun NavGraph(
 //                            ResultScreen(navController, time, patientViewModel, tugDataViewModel, analysisId)
 //                        }
 //                    }
-                    composable("result_screen/{assessmentTitle}") { backStackEntry ->
-                        val time = backStackEntry.arguments?.getString("assessmentTitle")
-                        if (time != null) {
-                            ResultScreen(navController, time, patientViewModel, tugDataViewModel)
-                        }
-                    }
+//                    composable("result_screen/{assessmentTitle}") { backStackEntry ->
+//                        val time = backStackEntry.arguments?.getString("assessmentTitle")
+//                        if (time != null) {
+//                            ResultScreen(navController, time, patientViewModel, tugDataViewModel)
+//                        }
+//                    }
                 }
             }
         }

@@ -15,15 +15,15 @@ class NotificationService(private val context: Context) {
         const val SEVERITY_ALERT_CHANNEL_ID = "severity_alert_channel"
     }
 
-    fun showCompleteVideoNotification(assessmentTitle: String, isSuccess: Boolean)
+    fun showCompleteVideoNotification(isSuccess: Boolean, errorMessage: String? = null)
     {
         val destination = if (isSuccess) {
-            "result_screen/$assessmentTitle"
+            "result_screen"
         } else {
-            "loading_screen"
+            "loading_screen?errorMessage=$errorMessage"
         }
         val contentText = if (isSuccess) {
-            "Your video for $assessmentTitle has been uploaded. Tap to view results."
+            "Your video has been processed successfully. Tap to view results."
         } else {
             "There was an error processing your video. Tap to try again."
         }
@@ -42,7 +42,7 @@ class NotificationService(private val context: Context) {
 
         val notification = NotificationCompat.Builder(context, SEVERITY_ALERT_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Video Upload Complete")
+            .setContentTitle("Video Processing Complete")
 //            .setContentText("Your video for $assessmentTitle has been uploaded. Tap to view results.")
             .setContentText(contentText)
             .setContentIntent(pendingIntent)

@@ -1,6 +1,7 @@
 package com.example.gaitguardian.screens.patient
 
 import android.content.Context
+import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -26,7 +27,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,9 +55,8 @@ import com.example.gaitguardian.data.roomDatabase.tug.TUGAnalysis
 import com.example.gaitguardian.viewmodels.PatientViewModel
 import com.example.gaitguardian.viewmodels.TugDataViewModel
 import com.google.gson.Gson
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -66,17 +65,24 @@ import java.util.UUID
 @Composable
 fun LoadingScreen(
     navController: NavController,
-    assessmentTitle: String,
-    outputPath: String,
+    errorMessage: String?,
     tugDataViewModel: TugDataViewModel,
     patientViewModel: PatientViewModel
 ) {
+
+    val latestAssessment by tugDataViewModel.latestAssessment.collectAsState()
+    val outputPath = latestAssessment?.videoTitle
     val context = LocalContext.current
-    val videoFile = File(outputPath)
+    val videoFile = outputPath?.let { File(it) }
     val gson = remember { Gson() }
     val workManager = WorkManager.getInstance(context)
     val workRequestId = remember { mutableStateOf<UUID?>(null) }
-    var analysisState by remember { mutableStateOf<AnalysisState>(AnalysisState.Idle) }
+    var analysisState by remember {
+        mutableStateOf(
+            if (errorMessage != null) AnalysisState.Error(errorMessage)
+            else AnalysisState.Idle
+        )
+    }
     var progress by remember { mutableStateOf(0) }
     var currentFrame by remember { mutableStateOf(0) }
     var totalFrames by remember { mutableStateOf(0) }
@@ -91,104 +97,131 @@ fun LoadingScreen(
         "🧠 Courage doesn’t always roar.\nSometimes it’s the quiet voice that says,\n‘I’ll try again tomorrow.’"
     )
     val randomQuote = remember { motivationalQuotes.random() }
-
-    // Start background analysis using WorkManager
-    LaunchedEffect(videoFile) {
-        analysisState = AnalysisState.Analyzing
-
-        Log.d("LoadingScreen", "video absolute path is ${videoFile.absolutePath}")
-        // create a WorkManager request to analyse the video
-        val workRequest = OneTimeWorkRequestBuilder<VideoAnalysisWorker>()
-            .setInputData(workDataOf("VIDEO_PATH" to videoFile.absolutePath))
-            .addTag("video_analysis")
-            .build()
-
-        workManager.enqueue(workRequest)
-        workRequestId.value = workRequest.id
+    LaunchedEffect(errorMessage) {
+        if (errorMessage == null) {
+            tugDataViewModel.getLatestTUGAssessment()
+            Log.d("loadingscreen", "error message dont have, retrieved latest alr")
+        }
     }
 
-    val workInfo by workRequestId.value?.let { id ->
-        workManager.getWorkInfoByIdLiveData(id)
-            .observeAsState() // ← Use observeAsState instead of observeForever!
-    } ?: remember { mutableStateOf(null) }
+    if (errorMessage != null)
+    {
+        analysisState = AnalysisState.Error(errorMessage)
+    }
+    else {
+        LaunchedEffect(Unit) {
+            tugDataViewModel.getLatestTUGAssessment()
+        }
 
-    LaunchedEffect(workInfo) {
-        workInfo?.let { info ->
-            when (info.state) {
-                WorkInfo.State.RUNNING -> {
-                    val p = info.progress.getInt("PROGRESS", 0)
-                    progress = p
-                    currentFrame = info.progress.getInt("CURRENT_FRAME", 0)
-                    totalFrames = info.progress.getInt("TOTAL_FRAMES", 0)
-                    processingStage = info.progress.getString("STAGE") ?: "Processing..."
-                    analysisState = AnalysisState.Analyzing
-                }
+        // Start background analysis using WorkManager
+        LaunchedEffect(videoFile, errorMessage) {
+            workManager.cancelAllWork()
+            delay(500)
+            if (errorMessage == null && videoFile != null) {
+                analysisState = AnalysisState.Analyzing
+                Log.d("loadingscreen", "analysis state ste to analyzing now")
+                Log.d("LoadingScreen", "video absolute path is ${videoFile.absolutePath}")
+                // create a WorkManager request to analyse the video
+                val workRequest = OneTimeWorkRequestBuilder<VideoAnalysisWorker>()
+                    .setInputData(workDataOf("VIDEO_PATH" to videoFile.absolutePath))
+                    .addTag("video_analysis")
+                    .build()
 
-                WorkInfo.State.SUCCEEDED -> {
-                    val json = info.outputData.getString("ANALYSIS_RESULT")
-                    val analysisResult = gson.fromJson(json, GaitAnalysisResponse::class.java)
+                workManager.enqueue(workRequest)
+                workRequestId.value = workRequest.id
+            }
+        }
 
-                    Log.d("result", "analysisResult is $analysisResult")
+        val workInfo by workRequestId.value?.let { id ->
+            workManager.getWorkInfoByIdLiveData(id)
+                .observeAsState() // ← Use observeAsState instead of observeForever!
+        } ?: remember { mutableStateOf(null) }
 
-                    if (analysisResult.success) {
-                        Log.d("result", "analysis state is success: inserting new entry now!")
+        LaunchedEffect(workInfo) {
+            workInfo?.let { info ->
+                when (info.state) {
+                    WorkInfo.State.RUNNING -> {
+                        val p = info.progress.getInt("PROGRESS", 0)
+                        progress = p
+                        currentFrame = info.progress.getInt("CURRENT_FRAME", 0)
+                        totalFrames = info.progress.getInt("TOTAL_FRAMES", 0)
+                        processingStage = info.progress.getString("STAGE") ?: "Processing..."
+                        analysisState = AnalysisState.Analyzing
+                    }
 
-                        // Insert analysis and get the ID first
-                        withContext(Dispatchers.IO) {
-                            handleAnalysisSuccess(
-                                analysisResult,
+                    WorkInfo.State.SUCCEEDED -> {
+                        val json = info.outputData.getString("ANALYSIS_RESULT")
+                        val analysisResult = gson.fromJson(json, GaitAnalysisResponse::class.java)
+
+                        Log.d("result", "analysisResult is $analysisResult")
+
+                        if (analysisResult.success) {
+                            Log.d("result", "analysis state is success: inserting new entry now!")
+                            val assessmentId = latestAssessment?.testId
+                            // Insert analysis and get the ID first
+                            withContext(Dispatchers.IO) {
+                                handleAnalysisSuccess(
+                                    assessmentId!!,
+                                    analysisResult,
 //                                videoFile,
-                                tugDataViewModel,
-                                patientViewModel
-                            )
-                        }
-                        
-                        // Now get the inserted ID and log it
-                        val insertedId = tugDataViewModel.lastInsertedId
-                        Log.d("LoadingScreen", "✅ New analysis inserted with ID: $insertedId")
-                        Log.d("LoadingScreen", "📊 TUG Result - Total Time: ${analysisResult.tugMetrics?.totalTime}s")
-                        Log.d("LoadingScreen", "📊 Severity: ${analysisResult.severity}")
-                        
-                        // Set success state AFTER getting the ID
-                        analysisState = AnalysisState.Success
-                    } else {
-                        analysisResult.error?.let {
-                            analysisState = AnalysisState.Error(it)
-                            tugDataViewModel.removeLastInsertedAssessment()
-                            Log.d("LoadingScreen", "SUCCESSFULLY REMOVED LAST ASSESSMENT BECAUSE FAILED")
+                                    tugDataViewModel,
+                                    patientViewModel
+                                )
+                            }
+
+                            // Now get the inserted ID and log it
+                            val insertedId = tugDataViewModel.lastInsertedId
+                            Log.d("LoadingScreen", "✅ New analysis inserted with ID: $insertedId")
+                            Log.d("LoadingScreen", "📊 TUG Result - Total Time: ${analysisResult.tugMetrics?.totalTime}s")
+                            Log.d("LoadingScreen", "📊 Severity: ${analysisResult.severity}")
+
+                            // Set success state AFTER getting the ID
+                            analysisState = AnalysisState.Success
+                        } else {
+                            analysisResult.error?.let {
+                                analysisState = AnalysisState.Error(it)
+                                tugDataViewModel.removeLastInsertedAssessment()
+                                Log.d("LoadingScreen", "SUCCESSFULLY REMOVED LAST ASSESSMENT BECAUSE FAILED")
+                            }
                         }
                     }
-                }
 
-                WorkInfo.State.FAILED -> {
-                    val error = info.outputData.getString("ERROR_MESSAGE") ?: "Unknown error"
-                    analysisState = AnalysisState.Error(error)
-                    tugDataViewModel.removeLastInsertedAssessment()
-                }
+                    WorkInfo.State.FAILED -> {
+                        val error = info.outputData.getString("ERROR_MESSAGE") ?: "Unknown ?error"
+                        analysisState = AnalysisState.Error(error)
+                        tugDataViewModel.removeLastInsertedAssessment()
+                    }
 
-                WorkInfo.State.CANCELLED -> {
-                    analysisState = AnalysisState.Error("Analysis was cancelled")
-                    tugDataViewModel.removeLastInsertedAssessment()
-                }
+                    WorkInfo.State.CANCELLED -> {
+                        analysisState = AnalysisState.Error("Analysis was cancelled")
+                        tugDataViewModel.removeLastInsertedAssessment()
+                    }
 
-                else -> {}
+                    else -> {}
+                }
             }
         }
-    }
 
-    // Navigate when success
-    LaunchedEffect(analysisState) {
-        if (analysisState == AnalysisState.Success) {
-            // Use the lastInsertedId to navigate to the specific analysis
-            val analysisId = tugDataViewModel.lastInsertedId
-            Log.d("LoadingScreen", "🧭 Navigating to result_screen with ID: $analysisId")
+        // Navigate when success
+        LaunchedEffect(analysisState) {
+            if (analysisState == AnalysisState.Success) {
+                // Use the lastInsertedId to navigate to the specific analysis
+                val analysisId = tugDataViewModel.lastInsertedId
+                Log.d("LoadingScreen", "🧭 Navigating to result_screen with ID: $analysisId")
 //            navController.navigate("result_screen/${assessmentTitle}/${analysisId}") {
-            navController.navigate("result_screen/${assessmentTitle}") {
+//            navController.navigate("result_screen/${assessmentTitle}") {
+//                navController.navigate("result_screen") {
 //                popUpTo("loading_screen") { inclusive = true }
-                popUpTo("gait_assessment_screen") {inclusive = false}
+//                popUpTo("gait_assessment_screen") {inclusive = false}
+//            }
+                navController.navigate("result_screen") {
+//                popUpTo("loading_screen") { inclusive = true }
+                    popUpTo("gait_assessment_screen") {inclusive = false}
+                }
             }
         }
     }
+
 
     // UI
     Box(
@@ -254,7 +287,9 @@ fun LoadingScreen(
                         onClick = {
                             navController.navigate("new_cam_screen")
 //                            navController.navigate("camera_screen/$assessmentTitle")
-                        }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9C27B0))
+
                     )
                     {
                         Text("Record Again")
@@ -433,10 +468,10 @@ class VideoAnalysisWorker(
             val response: GaitAnalysisResponse = convertTugResultToGaitAnalysisResponse(tugResult)
             if (response.success)
             {
-                NotificationService(applicationContext).showCompleteVideoNotification("Timed Up and Go", true)
+                NotificationService(applicationContext).showCompleteVideoNotification(true)
             }
             else {
-                NotificationService(applicationContext).showCompleteVideoNotification("Timed Up and Go",false)
+                NotificationService(applicationContext).showCompleteVideoNotification(false,response.error)
             }
             Log.d("VideoAnalysisWorker", "your response now: $response")
             val resultJson = Gson().toJson(response)

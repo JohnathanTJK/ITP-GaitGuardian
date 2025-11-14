@@ -35,7 +35,7 @@ import androidx.compose.ui.text.withStyle
 @Composable
 fun ResultScreen(
     navController: NavController,
-    assessmentTitle: String,
+//    assessmentTitle: String,
     patientViewModel: PatientViewModel,
     tugViewModel: TugDataViewModel,
 //    analysisId: Long? = null,  // NEW: Accept specific analysis ID
@@ -47,7 +47,7 @@ fun ResultScreen(
     var latestAnalysis by remember { mutableStateOf<TUGAnalysis?>(null) }
 
     LaunchedEffect(Unit) {
-        tugViewModel.getLatestTUGAssessment()
+//        tugViewModel.getLatestTUGAssessment()
         tugViewModel.getLatestTwoDurations()
         tugViewModel.setAssessmentComment("")
         latestAnalysis = tugViewModel.getLatestTugAnalysis()
@@ -106,7 +106,7 @@ fun ResultScreen(
                             hasUpdatedMedication = true
                             tugViewModel.setOnMedication(!onMedication)
                             tugViewModel.updatePostAssessmentOnMedicationStatus(true)
-                            tugViewModel.getLatestTUGAssessment()
+//                            tugViewModel.getLatestTUGAssessment()
                         }
                     }
                 )
