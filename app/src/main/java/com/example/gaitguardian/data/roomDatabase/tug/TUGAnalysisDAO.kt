@@ -30,7 +30,7 @@ interface TugAnalysisDao {
     suspend fun getLatestTwoTimes(): List<Double>
 
     @Query("SELECT sitToStand, walkFromChair, turnFirst, walkToChair, turnSecond, standToSit FROM tug_analysis_table WHERE testId = :id ")
-    suspend fun getSubtaskById(id: Int): subtaskDuration
+    suspend fun getSubtaskById(id: String): subtaskDuration
 
     // REMOVE ALL
     @Query("DELETE FROM tug_analysis_table")

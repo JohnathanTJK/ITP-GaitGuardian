@@ -1,7 +1,5 @@
 package com.example.gaitguardian.screens.clinician
 
-import android.app.Activity
-import android.content.pm.ActivityInfo
 import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -33,7 +31,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -53,9 +50,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.gaitguardian.NotificationService
 import com.example.gaitguardian.data.roomDatabase.patient.Patient
-import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessment
 import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.ui.theme.buttonBackgroundColor
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
@@ -200,6 +195,7 @@ fun ClinicianHomeScreen(
 
                     TUGVideoItem(
                         navController = navController,
+                        tugViewModel = tugViewModel,
                         testId = video.testId,
                         dateTime = video.dateTime,
                         medication = finalMedicationState,
@@ -392,6 +388,7 @@ fun VideoOverviewStats(
 @Composable
 fun TUGVideoItem(
     navController: NavController,
+    tugViewModel: TugDataViewModel,
     testId: String,
     dateTime: String,
     medication: Boolean,
@@ -445,7 +442,7 @@ fun TUGVideoItem(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "TUG #${testId}",
+                        text = "TUG #${tugViewModel.getDisplayNumberForId(testId)}",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF2D3748)

@@ -71,9 +71,8 @@ fun VideoPlaybackScreen(
     Log.d("playbackscreen", "subtaskduration = $subtaskDuration")
     val subtaskJumpTimings = subtaskDuration?.let { prepareSubtaskJumpTimings(it) }
     Log.d("playbackscreen", "subtasktimings = $subtaskJumpTimings")
-    val videoFolder = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
     val videoTitle = assessment?.videoTitle ?: return
-    val videoFile = File(videoFolder, videoTitle)
+    val videoFile = File(videoTitle)
     val videoUri = videoFile.toUri()
 
     // Hoist ExoPlayer to parent component so that it does not recreate the ExoPlayer instance when screen rotate

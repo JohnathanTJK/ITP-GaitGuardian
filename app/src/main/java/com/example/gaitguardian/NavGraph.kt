@@ -353,10 +353,11 @@ fun NavGraph(
                         )
                     }
                     composable("clinician_detailed_patient_view_screen/{testId}") { backStackEntry ->
-                        val testId = backStackEntry.arguments?.getString("testId")?.toIntOrNull()
+                        val testId = backStackEntry.arguments?.getString("testId")
                         if (testId != null) {
                             ClinicianDetailedPatientViewScreen(
                                 navController,
+                                patientViewModel,
                                 tugDataViewModel,
                                 testId
                             )

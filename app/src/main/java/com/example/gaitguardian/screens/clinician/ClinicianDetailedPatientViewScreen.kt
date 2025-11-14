@@ -54,6 +54,7 @@ import com.example.gaitguardian.data.roomDatabase.tug.subtaskDuration
 import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.ui.theme.buttonBackgroundColor
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
+import com.example.gaitguardian.viewmodels.PatientViewModel
 import com.example.gaitguardian.viewmodels.TugDataViewModel
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
@@ -77,21 +78,27 @@ import java.io.File
 @Composable
 fun ClinicianDetailedPatientViewScreen(
     navController: NavController,
+    patientViewModel: PatientViewModel,
     tugViewModel: TugDataViewModel,
-    testId: Int,
+    testId: String,
     modifier: Modifier = Modifier
 ) {
 
+    var displayId by remember {mutableStateOf("")}
     LaunchedEffect(testId) { // pre-load with the testId from backStackEntry
         tugViewModel.loadAssessmentById(testId)
         tugViewModel.getSubtaskById(testId)
+        displayId = tugViewModel.getDisplayNumberForId(testId).toString()
     }
+
+
+    val patientInfo by patientViewModel.patient.collectAsState()
 
     val allSubtasks by tugViewModel.allTUGAnalysis.collectAsState()
     val assessment by tugViewModel.selectedTUGAssessment.collectAsState()
     val subtaskDuration by tugViewModel.subtaskDuration.collectAsState()
     Log.d("ClinicianDetailedPatientViewScreen", "asssemntinfo: $assessment")
-    val patient = Patient(2, "Benny", 18)
+//    val patient = Patient(2, "Benny", 18)
 
     var tugDateTime by remember { mutableStateOf("") }
     var tugVideo by remember { mutableStateOf("") }
@@ -144,14 +151,16 @@ fun ClinicianDetailedPatientViewScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                patientInfo?.name?.let {
+                    Text(
+                        text = it,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF2D3748)
+                    )
+                }
                 Text(
-                    text = patient.name,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF2D3748)
-                )
-                Text(
-                    text = "• Age ${patient.age}",
+                    text = "• Age ${patientInfo?.age}",
                     fontSize = 14.sp,
                     color = Color(0xFF718096)
                 )
@@ -169,7 +178,8 @@ fun ClinicianDetailedPatientViewScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    "TUG TEST #${testId}",
+//                    "TUG TEST #${testId}",
+                    "TUG TEST #$displayId",
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center,
                     color = Color.Black
@@ -540,10 +550,11 @@ fun JetpackComposeBasicLineChart(subtasks: List<TUGAnalysis>, modifier: Modifier
 
 @Composable
 fun VideoButton(videoTitle: String, videoDuration: Float, navController: NavController) {
-    val context = LocalContext.current
-    val videoFolder = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
-    val videoFile = videoFolder?.listFiles()?.find { it.name == videoTitle }
-    if (videoFile != null && videoFile.exists()) {
+//    val context = LocalContext.current
+//    val videoFolder = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
+//    val videoFile = videoFolder?.listFiles()?.find { it.name == videoTitle }
+    val videoFile = File(videoTitle)
+    if (videoFile.exists()) {
         Button(
             onClick = {
                 navController.navigate("video_screen")

@@ -110,14 +110,21 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, priva
 
     // Update the TUG Assessment (Notes, Reviewed) etc.
     // Get selected assessment by Id from RoomDB
-    fun loadAssessmentById(id: Int) {
+    fun loadAssessmentById(id: String) {
         viewModelScope.launch {
             val assessment = tugRepository.getAssessmentById(id)
             _selectedTUGAssessment.value = assessment
         }
     }
+    fun getDisplayNumberForId(id: String): Int {
+        val list = allTUGAssessments.value
+            .sortedBy { it.dateTime }
+
+        return list.indexOfFirst { it.testId == id } + 1
+    }
+
     // Update the TUG Assessment (Notes, Reviewed) etc.
-    suspend fun updateTUGReview(id: Int, watchStatus: Boolean, notes: String): Boolean {
+    suspend fun updateTUGReview(id: String, watchStatus: Boolean, notes: String): Boolean {
         return try {
             tugRepository.updateClinicianReview(id, watchStatus, notes)
             true // Return true on success
@@ -159,7 +166,7 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, priva
     private val _subtaskDuration = MutableStateFlow<subtaskDuration?>(null)
     val subtaskDuration: StateFlow<subtaskDuration?> = _subtaskDuration
 
-    fun getSubtaskById(testId: Int) {
+    fun getSubtaskById(testId: String) {
         viewModelScope.launch {
             _subtaskDuration.value = tugRepository.getSubtaskById(testId)
         }

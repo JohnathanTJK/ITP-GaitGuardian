@@ -13,12 +13,12 @@ class TUGAssessmentRepository(private val tugDao: TugDao, private val tugAnalysi
     }
 
     @WorkerThread
-    suspend fun getAssessmentById(id: Int): TUGAssessment? {
+    suspend fun getAssessmentById(id: String): TUGAssessment? {
         return tugDao.getAssessmentById(id)
     }
 
     @WorkerThread
-    suspend fun updateClinicianReview(id: Int, watchStatus: Boolean, notes: String) {
+    suspend fun updateClinicianReview(id: String, watchStatus: Boolean, notes: String) {
         tugDao.updateClinicianReview(id, watchStatus, notes)
     }
 
@@ -70,7 +70,7 @@ class TUGAssessmentRepository(private val tugDao: TugDao, private val tugAnalysi
         return tugAnalysisDao.insertNewTUGAnalysis(tugAnalysis)
     }
     @WorkerThread
-    suspend fun getSubtaskById(id: Int): subtaskDuration? {
+    suspend fun getSubtaskById(id: String): subtaskDuration? {
         return tugAnalysisDao.getSubtaskById(id)
     }
     @WorkerThread

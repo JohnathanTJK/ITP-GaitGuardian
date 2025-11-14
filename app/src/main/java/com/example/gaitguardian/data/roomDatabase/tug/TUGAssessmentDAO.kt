@@ -15,10 +15,10 @@ interface TugDao {
     suspend fun insertNewTUGAssessment(tugAssessment: TUGAssessment)
 
     @Query("SELECT * FROM tug_assessment_table WHERE testId = :id")
-    suspend fun getAssessmentById(id: Int): TUGAssessment?
+    suspend fun getAssessmentById(id: String): TUGAssessment?
 
     @Query("UPDATE tug_assessment_table SET watchStatus = :watchStatus, notes = :notes WHERE testId = :id")
-    suspend fun updateClinicianReview(id: Int, watchStatus: Boolean, notes: String)
+    suspend fun updateClinicianReview(id: String, watchStatus: Boolean, notes: String)
 
     @Query("UPDATE tug_assessment_table SET watchStatus = :watchStatus WHERE testId = :id")
     suspend fun multiSelectMarkAsReviewed(id: String, watchStatus: Boolean)
