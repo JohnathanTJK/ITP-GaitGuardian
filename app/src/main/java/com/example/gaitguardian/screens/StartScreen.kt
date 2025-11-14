@@ -280,6 +280,7 @@ private fun ClinicianInfoSection(
             value = clinicianPin,
             onValueChange = onClinicianPinChange,
             label = "Enter your 4 digit PIN here...",
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.padding(bottom = 16.dp)
         )
         Button(
