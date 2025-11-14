@@ -115,7 +115,6 @@ fun LoadingScreen(
 
         // Start background analysis using WorkManager
         LaunchedEffect(videoFile, errorMessage) {
-            workManager.cancelAllWork()
             delay(500)
             if (errorMessage == null && videoFile != null) {
                 analysisState = AnalysisState.Analyzing
@@ -169,12 +168,11 @@ fun LoadingScreen(
                                 )
                             }
 
-                            // Now get the inserted ID and log it
-                            val insertedId = tugDataViewModel.lastInsertedId
-                            Log.d("LoadingScreen", "✅ New analysis inserted with ID: $insertedId")
+                            Log.d("LoadingScreen", "✅ New analysis inserted")
                             Log.d("LoadingScreen", "📊 TUG Result - Total Time: ${analysisResult.tugMetrics?.totalTime}s")
                             Log.d("LoadingScreen", "📊 Severity: ${analysisResult.severity}")
-
+                            workManager.cancelWorkById(workRequestId.value!!)
+                            workManager.pruneWork()
                             // Set success state AFTER getting the ID
                             analysisState = AnalysisState.Success
                         } else {
@@ -205,9 +203,6 @@ fun LoadingScreen(
         // Navigate when success
         LaunchedEffect(analysisState) {
             if (analysisState == AnalysisState.Success) {
-                // Use the lastInsertedId to navigate to the specific analysis
-                val analysisId = tugDataViewModel.lastInsertedId
-                Log.d("LoadingScreen", "🧭 Navigating to result_screen with ID: $analysisId")
 //            navController.navigate("result_screen/${assessmentTitle}/${analysisId}") {
 //            navController.navigate("result_screen/${assessmentTitle}") {
 //                navController.navigate("result_screen") {
@@ -285,14 +280,15 @@ fun LoadingScreen(
                     )
                     Button(
                         onClick = {
-                            navController.navigate("new_cam_screen")
+//                            navController.navigate("new_cam_screen")
+                            navController.navigate("assessment_info_screen/'Timed Up and Go'")
 //                            navController.navigate("camera_screen/$assessmentTitle")
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9C27B0))
 
                     )
                     {
-                        Text("Record Again")
+                        Text("Record Again", color = Color.White)
                     }
                 }
 
@@ -476,7 +472,7 @@ class VideoAnalysisWorker(
             Log.d("VideoAnalysisWorker", "your response now: $response")
             val resultJson = Gson().toJson(response)
             Log.d("VideoAnalysisWorker", "your json now: $resultJson")
-            val output = workDataOf("ANALYSIS_RESULT" to resultJson, "VIDEO_PATH" to videoFile.name)
+            val output = workDataOf("ANALYSIS_RESULT" to resultJson, "VIDEO_PATH" to videoFile.absolutePath)
 
             Result.success(output)
         } catch (e: Exception) {

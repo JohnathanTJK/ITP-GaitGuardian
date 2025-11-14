@@ -705,7 +705,7 @@ private fun startRecording(
 //                    val currentDateTime = SimpleDateFormat(
 //                        "dd MMM yyyy, hh:mm a", Locale.getDefault()
 //                    ).format(Date())
-                    val durationSeconds = ((System.nanoTime() - recordingStartTimeNanos) / 1_000_000_000).toInt()
+                    val durationSeconds = ((System.nanoTime() - recordingStartTimeNanos) / 1_000_000_000).toFloat()
                     onRecordingStateChange(null, false)
                     Toast.makeText(context, "Video capture succeeded", Toast.LENGTH_LONG).show()
 
@@ -717,7 +717,7 @@ private fun startRecording(
                         testId = assessmentId,
 //                        dateTime = currentDateTime,
                         dateTime = Date().time,
-                        videoDuration = durationSeconds.toFloat(),
+                        videoDuration = durationSeconds,
                         videoTitle = outputFile.absolutePath,
 //                        videoTitle = outputFile.name,
                         onMedication = tugViewModel.onMedication.value,

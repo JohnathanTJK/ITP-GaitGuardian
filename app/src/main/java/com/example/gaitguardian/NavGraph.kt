@@ -51,7 +51,6 @@ import com.example.gaitguardian.screens.SplashScreen
 import com.example.gaitguardian.screens.StartScreen
 import com.example.gaitguardian.screens.VideoPlaybackScreen
 import com.example.gaitguardian.screens.camera.CameraScreen
-import com.example.gaitguardian.screens.camera.NewCameraScreen
 import com.example.gaitguardian.screens.clinician.ClinicianDetailedPatientViewScreen
 import com.example.gaitguardian.screens.clinician.ClinicianHomeScreen
 import com.example.gaitguardian.screens.clinician.PerformanceScreen
@@ -339,17 +338,17 @@ fun NavGraph(
                     {
                         PerformanceScreen(tugDataViewModel)
                     }
-                    composable("camera_screen/{assessmentTitle}") { backStackEntry ->
-                        val assessmentTitle = backStackEntry.arguments?.getString("assessmentTitle")
-                        if (assessmentTitle != null) {
-                            NewCameraScreen(
-                                navController,
-                                patientViewModel,
-                                tugDataViewModel,
-                                assessmentTitle
-                            )
-                        }
-                    }
+//                    composable("camera_screen/{assessmentTitle}") { backStackEntry ->
+//                        val assessmentTitle = backStackEntry.arguments?.getString("assessmentTitle")
+//                        if (assessmentTitle != null) {
+//                            NewCameraScreen(
+//                                navController,
+//                                patientViewModel,
+//                                tugDataViewModel,
+//                                assessmentTitle
+//                            )
+//                        }
+//                    }
                     composable("video_screen") {
                         VideoPlaybackScreen(tugDataViewModel,navController)
                     }

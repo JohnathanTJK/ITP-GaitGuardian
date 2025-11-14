@@ -33,6 +33,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -83,7 +84,7 @@ fun PatientHomeScreen(
     val latestAnalysisFlow by tugViewModel.latestAnalysis.collectAsState()
 //    val severity = latestAnalysis?.severity ?: "-"
 //    val totalTime = latestAnalysis?.timeTaken?.toFloat() ?: 0f
-    val severity = latestAnalysisFlow?.severity ?: "-"
+    val severity = latestAnalysisFlow?.severity ?: "-" // will auto update the result card as it is observing (more for WorkManager update)
     val totalTime = latestAnalysisFlow?.timeTaken?.toFloat() ?: 0f
     var showTutorial by remember { mutableStateOf(false) } // <-- control overlay
 
@@ -112,11 +113,10 @@ fun PatientHomeScreen(
                     it.state == WorkInfo.State.ENQUEUED
         }
     }
+
     workInfoList.forEach { workInfo ->
         Log.d("patienthomescreen", "WorkInfo: $workInfo")
     }
-    val latestWorkInfoFind = workInfoList.find{it.outputData.getString("VIDEO_PATH") == latestAssessment?.videoTitle}
-    Log.d("patienthomescreen", "latest work info find : $latestWorkInfoFind")
 
     val latestWorkInfo = workInfoList
         .filter { it.state == WorkInfo.State.SUCCEEDED }
@@ -124,6 +124,8 @@ fun PatientHomeScreen(
             val videoPath = workInfo.outputData.getString("VIDEO_PATH")
             videoPath != null && videoPath == latestAssessment?.videoTitle
         }
+    Log.d("patienthomescreen", "MATCHED latestworkinfo videoPath: ${latestWorkInfo?.outputData?.getString("VIDEO_PATH")}")
+
 
     LaunchedEffect(latestWorkInfo) {
         if (latestWorkInfo != null) {
@@ -132,36 +134,34 @@ fun PatientHomeScreen(
                 val analysisResult = Gson().fromJson(json, GaitAnalysisResponse::class.java)
 //                val latestAssessment by tugViewModel.latestAssessment.collectAsState()
                 val assessmentId = latestAssessment?.testId
+                Log.d("patienthomescreen", "latest assessmentiD: $assessmentId")
 
                 withContext(Dispatchers.IO) {
-                    handleAnalysisSuccess(
-                        assessmentId ?: return@withContext,
-                        analysisResult,
+                    val existingAnalysis = tugViewModel.checkTugAnalysisById(assessmentId ?: return@withContext)
+                    if(existingAnalysis != null) // means analysis for corresponding tug assessment already done
+                    {
+                        return@withContext
+                    }
+                    if (analysisResult.success)
+                    {
+                        Log.d("patienthomescreen", "analysis success , going into handleAnalysisSuccess")
+                        handleAnalysisSuccess(
+                            assessmentId,
+                            analysisResult,
 //                        File(analysisResult.processingInfo?.videoPath ?: return@withContext),
-                        tugViewModel,
-                        patientViewModel
-                    )
+                            tugViewModel,
+                            patientViewModel
+                        )
+                    }
+                    else {
+                        Log.d("patienthomescreen", "analysis failed- removing")
+                        tugViewModel.removeLastInsertedAssessment()
+                    }
+                    workManager.pruneWork()
                 }
             }
         }
     }
-//    LaunchedEffect(workInfoList) {
-//        workInfoList.forEach { info ->
-//            if (info.state == WorkInfo.State.SUCCEEDED) {
-//                val json = info.outputData.getString("ANALYSIS_RESULT")
-//                val analysisResult = Gson().fromJson(json, GaitAnalysisResponse::class.java)
-//
-//                withContext(Dispatchers.IO) {
-//                    handleAnalysisSuccess(
-//                        analysisResult,
-////                        File(analysisResult.processingInfo?.videoPath ?: return@withContext),
-//                        tugViewModel,
-//                        patientViewModel
-//                    )
-//                }
-//            }
-//        }
-//    }
 
     Box(
         modifier = modifier
@@ -189,12 +189,12 @@ fun PatientHomeScreen(
                     fontSize = Heading1,
                     color = Color.Black
                 )
-//                Button(
-//                    onClick = {tugViewModel.removeAllAssessments()}
-//                )
-//                {
-//                    Text("delete all tug info")
-//                }
+                Button(
+                    onClick = {tugViewModel.removeAllAssessments()}
+                )
+                {
+                    Text("delete all tug info")
+                }
 ////                Button(
 ////                    onClick = {patientViewModel.setSaveVideos(true)}
 ////                ) {
