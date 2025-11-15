@@ -55,7 +55,7 @@ fun GaitAssessmentScreen(navController: NavController, modifier: Modifier = Modi
             Button(
                 onClick = {
                     val encoded = Uri.encode("Timed Up and Go")
-                    navController.navigate("assessment_instruction_screen/$encoded")
+                    navController.navigate("assessment_info_screen/$encoded")
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
                 shape = RoundedCornerShape(16.dp),
@@ -70,7 +70,7 @@ fun GaitAssessmentScreen(navController: NavController, modifier: Modifier = Modi
             Button(
                 onClick = {
                     val encoded = Uri.encode("Sit-to-Stand x5")
-                    navController.navigate("assessment_instruction_screen/$encoded")
+                    navController.navigate("assessment_info_screen/$encoded")
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
                 shape = RoundedCornerShape(16.dp),

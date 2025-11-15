@@ -62,7 +62,7 @@ import com.example.gaitguardian.screens.patient.ManageVideoPrivacyScreen
 import com.example.gaitguardian.screens.patient.PatientFriendlyTugAssessmentScreen
 import com.example.gaitguardian.screens.patient.PatientHomeScreen
 import com.example.gaitguardian.screens.patient.ResultScreen
-import com.example.gaitguardian.screens.patient.VideoInstructionScreen
+//import com.example.gaitguardian.screens.patient.VideoInstructionScreen
 import com.example.gaitguardian.screens.patient.ViewVideosScreen
 import com.example.gaitguardian.ui.screens.VideoTestScreen
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
@@ -380,15 +380,15 @@ fun NavGraph(
                     composable("gait_assessment_screen") {
                         GaitAssessmentScreen(navController)
                     }
-                    composable(
-                        route = "assessment_instruction_screen/{assessmentType}",
-                        arguments = listOf(navArgument("assessmentType") {
-                            type = NavType.StringType
-                        })
-                    ) { backStackEntry ->
-                        val type = backStackEntry.arguments?.getString("assessmentType") ?: ""
-                        VideoInstructionScreen(navController, type)
-                    }
+//                    composable(
+//                        route = "assessment_instruction_screen/{assessmentType}",
+//                        arguments = listOf(navArgument("assessmentType") {
+//                            type = NavType.StringType
+//                        })
+//                    ) { backStackEntry ->
+//                        val type = backStackEntry.arguments?.getString("assessmentType") ?: ""
+//                        //VideoInstructionScreen(navController, type)
+//                    }
 
                     composable("tug_assessment_screen") {
                         PatientFriendlyTugAssessmentScreen(
