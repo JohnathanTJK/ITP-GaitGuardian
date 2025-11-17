@@ -66,9 +66,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -98,39 +105,133 @@ data class devOrientationState (
     val orientation: devOrientation,
     val lockedLandscape: Boolean
 )
+
+// WORKING BOUNDARY BOX
 @Composable
-fun BoundingBoxOverlay(box: Rect?, modifier: Modifier = Modifier) {
+fun BoundingBoxOverlay(
+    box: Rect?,
+    imageSize: Triple<Int, Int, Int>, // width, height, rotation
+    previewView: PreviewView,
+    modifier: Modifier = Modifier
+) {
     Canvas(modifier = modifier.fillMaxSize()) {
         box?.let {
+            val (imageWidth, imageHeight, rotation) = imageSize
+
+            // Get preview view dimensions
+            val viewWidth = size.width
+            val viewHeight = size.height
+
+            if (imageWidth == 0 || imageHeight == 0) return@let
+
+            // Transform coordinates from image space to view space
+            val transformedRect = transformRect(
+                rect = it,
+                imageWidth = imageWidth,
+                imageHeight = imageHeight,
+                viewWidth = viewWidth.toInt(),
+                viewHeight = viewHeight.toInt(),
+                rotation = rotation,
+                scaleType = previewView.scaleType
+            )
+
             drawRect(
                 color = Color.Red,
-                topLeft = Offset(it.left.toFloat(), it.top.toFloat()),
-                size = Size(it.width().toFloat(), it.height().toFloat()),
+                topLeft = Offset(transformedRect.left.toFloat(), transformedRect.top.toFloat()),
+                size = Size(
+                    transformedRect.width().toFloat(),
+                    transformedRect.height().toFloat()
+                ),
                 style = Stroke(width = 4f)
             )
         }
     }
 }
-//@OptIn(TransformExperimental::class)
-//@Composable
-//fun BoundingBoxOverlay(box: Rect?, previewView: PreviewView, modifier: Modifier = Modifier) {
-//    Canvas(modifier = modifier.fillMaxSize()) {
-//        val transform = previewView.outputTransform ?: return@Canvas
-//        val matrix = transform.getMatrix()
-//
-//        box?.let {
-//            val rectF = RectF(it)
-//            matrix.mapRect(rectF) // Transforms image-space rect to view-space rect
-//
-//            drawRect(
-//                color = Color.Red,
-//                topLeft = Offset(rectF.left, rectF.top),
-//                size = Size(rectF.width(), rectF.height()),
-//                style = Stroke(width = 4f)
-//            )
-//        }
-//    }
-//}
+//// Helper function to transform coordinates
+fun transformRect(
+    rect: Rect,
+    imageWidth: Int,
+    imageHeight: Int,
+    viewWidth: Int,
+    viewHeight: Int,
+    rotation: Int,
+    scaleType: PreviewView.ScaleType
+): Rect {
+    // Step 1: Handle rotation
+    val (rotatedRect, rotatedImageWidth, rotatedImageHeight) = when (rotation) {
+        90, 270 -> {
+            // Swap dimensions and transform coordinates
+            val newRect = if (rotation == 90) {
+                Rect(
+                    rect.top,
+                    imageWidth - rect.right,
+                    rect.bottom,
+                    imageWidth - rect.left
+                )
+            } else { // 270
+                Rect(
+                    imageHeight - rect.bottom,
+                    rect.left,
+                    imageHeight - rect.top,
+                    rect.right
+                )
+            }
+            Triple(newRect, imageHeight, imageWidth)
+        }
+        180 -> {
+            val newRect = Rect(
+                imageWidth - rect.right,
+                imageHeight - rect.bottom,
+                imageWidth - rect.left,
+                imageHeight - rect.top
+            )
+            Triple(newRect, imageWidth, imageHeight)
+        }
+        else -> Triple(rect, imageWidth, imageHeight)
+    }
+
+    // Step 2: Calculate scale factor based on scale type
+    val (scaleX, scaleY, offsetX, offsetY) = when (scaleType) {
+        PreviewView.ScaleType.FILL_CENTER -> {
+            // Fill mode: scale to fill, crop the excess
+            val scale = maxOf(
+                viewWidth.toFloat() / rotatedImageWidth,
+                viewHeight.toFloat() / rotatedImageHeight
+            )
+            val scaledWidth = rotatedImageWidth * scale
+            val scaledHeight = rotatedImageHeight * scale
+            val offsetX = (viewWidth - scaledWidth) / 2f
+            val offsetY = (viewHeight - scaledHeight) / 2f
+            arrayOf(scale, scale, offsetX, offsetY)
+        }
+        PreviewView.ScaleType.FIT_CENTER -> {
+            // Fit mode: scale to fit, letterbox if needed
+            val scale = minOf(
+                viewWidth.toFloat() / rotatedImageWidth,
+                viewHeight.toFloat() / rotatedImageHeight
+            )
+            val scaledWidth = rotatedImageWidth * scale
+            val scaledHeight = rotatedImageHeight * scale
+            val offsetX = (viewWidth - scaledWidth) / 2f
+            val offsetY = (viewHeight - scaledHeight) / 2f
+            arrayOf(scale, scale, offsetX, offsetY)
+        }
+        else -> {
+            // FIT_START, FIT_END, FILL_START, FILL_END - similar logic
+            val scale = viewWidth.toFloat() / rotatedImageWidth
+            arrayOf(scale, scale, 0f, 0f)
+        }
+    }
+
+    // Step 3: Transform the rectangle
+    val transformedLeft = (rotatedRect.left * scaleX + offsetX).toInt()
+    val transformedTop = (rotatedRect.top * scaleY + offsetY).toInt()
+    val transformedRight = (rotatedRect.right * scaleX + offsetX).toInt()
+    val transformedBottom = (rotatedRect.bottom * scaleY + offsetY).toInt()
+
+    return Rect(transformedLeft, transformedTop, transformedRight, transformedBottom)
+}
+// END OF BOUNDARY BOX WORKING
 
 @Composable
 fun rembDeviceOrientation(): devOrientationState {
@@ -192,6 +293,7 @@ fun rembDeviceOrientation(): devOrientationState {
 @Composable
 fun CameraScreen(viewModel: DistanceViewModel = viewModel(), navController: NavController, tugViewModel: TugDataViewModel) {
     val cameraPhase by viewModel.cameraPhase.collectAsState()
+
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 //    val previewView = remember { PreviewView(context) }
@@ -212,7 +314,7 @@ fun CameraScreen(viewModel: DistanceViewModel = viewModel(), navController: NavC
                 deviceOrientation.orientation == devOrientation.LANDSCAPE_RIGHT
 
     val box = viewModel.boundingBox.collectAsState().value
-
+    val imageSize = viewModel.imageSize.collectAsState().value
     Box(modifier = Modifier.fillMaxSize()) {
         if (isDeviceLandscape) {
             // Camera preview
@@ -222,8 +324,9 @@ fun CameraScreen(viewModel: DistanceViewModel = viewModel(), navController: NavC
             when (cameraPhase) {
                 DistanceViewModel.CameraPhase.CheckingDistance -> {
                     DistanceTestOverlay(viewModel)
-                    BoundingBoxOverlay(box = box)
-//                    BoundingBoxOverlay(box = box, previewView = previewView)
+//                    BoundingBoxOverlay(box = box)
+//                    BoundingBoxOverlay(box = box, imageSize = imageSize, previewView = previewView)
+                    BoundingBoxOverlay(box = box, imageSize = imageSize, previewView = previewView)
                 }
 
                 DistanceViewModel.CameraPhase.CheckingLuminosity -> {
