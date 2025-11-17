@@ -1,0 +1,23 @@
+# Core ML and Data Science
+xgboost
+scikit-learn
+numpy
+pandas
+matplotlib
+seaborn
+joblib
+
+# ONNX conversion and runtime
+onnx
+onnxmltools
+onnxruntime
+
+# MediaPipe (for pose extraction)
+mediapipe
+
+# Video and image processing
+opencv-python
+
+# Miscellaneous
+json5
+tqdm
