@@ -391,11 +391,11 @@ class DistanceViewModel : ViewModel() {
 
     private fun checkDistanceStable(walkableSpace: Float) {
         val now = System.currentTimeMillis()
-        if (walkableSpace >= 3.0f && walkableSpace <= 4f) {
+        if (walkableSpace >= 3.0f && walkableSpace <= 3.2f) {
             if (distanceStableSince == null) distanceStableSince = now
             val elapsed = now - (distanceStableSince ?: now)
-            // wait for 6s
-            if (elapsed >= 6000 && _cameraPhase.value == CameraPhase.CheckingDistance) {
+            // wait for 4s
+            if (elapsed >= 4000 && _cameraPhase.value == CameraPhase.CheckingDistance) {
                 Log.d("DistanceViewModel", "Distance check passed, moving to luminosity check")
                 _cameraPhase.value = CameraPhase.CheckingLuminosity
             }

@@ -524,7 +524,7 @@ fun DistanceTestOverlay(viewModel: DistanceViewModel) {
                 )
             } else {
                 Text(
-                    "Not enough lateral space",
+                    "Not enough lateral space. Please ensure at least 3m of lateral space, max 3.2m.",
                     color = Color.Red,
                     fontSize = 16.sp
                 )
