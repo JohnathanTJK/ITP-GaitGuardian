@@ -5,17 +5,19 @@ GaitGuardian is a mobile application designed to make tracking the progression o
 
 - **All-in-one assessment tool** Record videos and perform Timed Up and Go (TUG) gait analysis in a single app.
 - **Patient and Clinician Functionalities** Switch between Clinician and Patient Views with role-specific functionalities.
+- **On-Device Video Analysis** Perform Video Analysis without an external server.
 - **Subtask Segmentation** Automatically break down the TUG test into subtasks and measure the time spent on each.
 - **Video Privacy Control** Patients can choose whether to save or discard recorded videos, ensuring privacy.
 ---
 ## ▶️ How It Works
 - Patient can record video recordings of them doing TUG tests.
-- GaitGuardian will run video analysis through a local Flask server.
+- GaitGuardian will run video analysis through an on-device pipeline.
 - Output generated from the video analysis will be shown to the Patient, indicating the severity rating and other relevant metrics. Generated response will be stored in the database.
 - Clinician can use GaitGuardian to access Patient's past assessments and review them.
+- Clincian also have access to an interactive Video Playback UI where they can watch assessments tagged with the specific subtask being performed at various timestamps on both portrait and landscape view.
 ---
 ## 🛠️ How to Run GaitGuardian
-_Please ensure that the Flask server and mobile application is connected to the **same** network._
+Please ensure that you have Android Studio installed.
 
 ### Install Requirements and Run Flask Server
 
@@ -68,7 +70,7 @@ app/src/main/java/com/example/gaitguardian
 │
 ├── screens/                            ← View Layer
 │   ├── camera/                         ← Camera capture and preview screens
-│   ├── clinician/                      ← Home, PIN entry, assessment details, performance graphs
+│   ├── clinician/                      ← Home, PIN entry, assessment details, performance graphs, video playback
 │   ├── patient/                        ← Home, recording, loading, results
 │   ├── SettingsScreen.kt                   ← Screen to manage app settings
 │   ├── SplashScreen.kt                     ← Initial loading/splash screen
@@ -78,6 +80,7 @@ app/src/main/java/com/example/gaitguardian
 │   ├── ClinicianViewModel.kt           ← Manages clinician-related UI state
 │   ├── PatientViewModel.kt             ← Manages patient-related UI state
 │   └── TugDataViewModel.kt             ← Manages TUG assessment data
+│   └── CameraViewModel.kt             ← Manages Camera-related UI state
 │
 ├── GaitGuardian.kt                     ← Application class
 ├── MainActivity.kt                     ← Entry point activity with navigation host
