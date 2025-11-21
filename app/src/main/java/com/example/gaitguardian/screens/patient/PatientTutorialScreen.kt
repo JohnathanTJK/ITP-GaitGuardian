@@ -4,6 +4,8 @@ import android.speech.tts.TextToSpeech
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -87,7 +89,7 @@ fun PatientTutorialScreen(onClose: () -> Unit) {
                             .background(ButtonActive.copy(alpha = 0.6f), RoundedCornerShape(16.dp)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("Record Video", color = Color.White, fontSize = Heading1 * 1.2f, fontWeight = FontWeight.Bold)
+                        Text("Record Video", color = Color.Black, fontSize = Heading1 * 1.2f, fontWeight = FontWeight.Bold)
                     }
                 } else {
                     Text(
@@ -110,7 +112,12 @@ fun PatientTutorialScreen(onClose: () -> Unit) {
                             .background(ButtonActive.copy(alpha = 0.6f), RoundedCornerShape(16.dp)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("Settings", color = Color.White, fontSize = Heading1 * 1.2f)
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Settings",
+                            modifier = Modifier.size(28.dp),
+                            tint = Color.Black
+                        )
                     }
                 }
 
