@@ -55,7 +55,9 @@ fun GaitAssessmentScreen(navController: NavController, modifier: Modifier = Modi
             Button(
                 onClick = {
                     val encoded = Uri.encode("Timed Up and Go")
-                    navController.navigate("assessment_info_screen/$encoded")
+//                    navController.navigate("assessment_info_screen/$encoded")
+                    navController.navigate("assessment_info_screen")
+
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
                 shape = RoundedCornerShape(16.dp),
@@ -67,20 +69,20 @@ fun GaitAssessmentScreen(navController: NavController, modifier: Modifier = Modi
                 Text("Stand-Walk Test", fontSize = 20.sp, color = Color.Black)
             }
 
-            Button(
-                onClick = {
-                    val encoded = Uri.encode("Sit-to-Stand x5")
-                    navController.navigate("assessment_info_screen/$encoded")
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(80.dp)
-                    .padding(vertical = 16.dp)
-            ) {
-                Text("Five Times Sit to Stand", fontSize = 20.sp, color = Color.Black)
-            }
+//            Button(
+//                onClick = {
+//                    val encoded = Uri.encode("Sit-to-Stand x5")
+//                    navController.navigate("assessment_info_screen/$encoded")
+//                },
+//                colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
+//                shape = RoundedCornerShape(16.dp),
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .height(80.dp)
+//                    .padding(vertical = 16.dp)
+//            ) {
+//                Text("Five Times Sit to Stand", fontSize = 20.sp, color = Color.Black)
+//            }
 
             // Third Button (Go Back) with same height & padding as above
             Button(
