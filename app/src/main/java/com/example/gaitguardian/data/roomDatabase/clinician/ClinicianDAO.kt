@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ClinicianDao {
-// DAO will store all the SQL queries, referenced from Chen Kan jetpackArchTest repo
 
     @Query("SELECT * FROM clinician_table WHERE id = :clinicianId LIMIT 1")
     fun getClinicianById(clinicianId: Int = 1): Flow<Clinician?> // Room does not support StateFlow

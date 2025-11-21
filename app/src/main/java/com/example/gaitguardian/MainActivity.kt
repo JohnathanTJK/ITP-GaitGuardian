@@ -28,8 +28,6 @@ import com.example.gaitguardian.viewmodels.TugDataViewModel
 import com.example.gaitguardian.api.TestApiConnection
 
 class MainActivity : ComponentActivity() {
-    private val _assessmentId = mutableStateOf<Int?>(null)
-//    private val _destinationFromIntent = mutableStateOf<String?>(null)
     private val destinationState = mutableStateOf<String?>(null)
 
     // Initialize ViewModels at the top
@@ -58,7 +56,6 @@ class MainActivity : ComponentActivity() {
             this,
             TugDataViewModel.TugDataViewModelFactory(
                 (application as GaitGuardian).tugRepository,
-                (application as GaitGuardian).appPreferencesRepository
             )
         )[TugDataViewModel::class.java]
     }
@@ -66,22 +63,19 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d("MainActivity", "=== onCreate called ===")
-        Log.d("MainActivity", "savedInstanceState is null: ${savedInstanceState == null}")
-        Log.d("MainActivity", "intent destination: ${intent?.getStringExtra("destination")}")
+
+        // Initialize GaitAnalysisClient
         TestApiConnection.testConnection(this)
 
         if (!hasRequiredPermissions()) {
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, 0)
         }
-        // A process restart from a notification will land here.
+
         if (savedInstanceState == null) {
             destinationState.value = intent?.getStringExtra("destination")
         }
         createNotificationChannel()
         requestNotificationPermissionIfNeeded()
-
-        _assessmentId.value = intent?.getIntExtra("assessmentId", -1)?.takeIf { it != -1 }
 
         setContent {
             GaitGuardianTheme {
@@ -103,7 +97,6 @@ class MainActivity : ComponentActivity() {
                 }
                 NavGraph(
                     navController = navController,
-                    initialId = _assessmentId.value,
                     destinationIntent = destinationState.value,
                     patientViewModel = patientViewModel,
                     clinicianViewModel = clinicianViewModel,
@@ -113,6 +106,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // Notification taps
+    // "destination" refers to the destination defined in the NotificationService.kt
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         Log.d("MainActivity", "=== onNewIntent called ===")
@@ -120,6 +115,7 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         destinationState.value = intent.getStringExtra("destination")
     }
+    // Checks if permissions to access Camera and Enable Notifications are provided
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private fun hasRequiredPermissions(): Boolean {
         return REQUIRED_PERMISSIONS.all {
@@ -158,6 +154,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // List of all required permissions
     companion object {
         @RequiresApi(Build.VERSION_CODES.TIRAMISU)
         private val REQUIRED_PERMISSIONS = arrayOf(

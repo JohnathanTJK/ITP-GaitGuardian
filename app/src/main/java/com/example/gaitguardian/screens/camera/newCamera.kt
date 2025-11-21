@@ -239,7 +239,6 @@ fun rembDeviceOrientation(): devOrientationState {
     var orientation by remember { mutableStateOf(devOrientation.PORTRAIT) }
 
     var isListenerEnabled by remember { mutableStateOf(true) }
-    var listenerStatus by remember { mutableStateOf("Listener Active") }
 
     DisposableEffect(context, isListenerEnabled) {
         if (!isListenerEnabled) return@DisposableEffect onDispose { }
@@ -296,11 +295,9 @@ fun CameraScreen(viewModel: CameraViewModel = viewModel(), navController: NavCon
 
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-//    val previewView = remember { PreviewView(context) }
     val previewView = remember {
         PreviewView(context).apply {
             scaleType = PreviewView.ScaleType.FILL_CENTER
-//            implementationMode = PreviewView.ImplementationMode.COMPATIBLE
         }
     }
     var recording by remember { mutableStateOf<Recording?>(null) }
@@ -324,8 +321,6 @@ fun CameraScreen(viewModel: CameraViewModel = viewModel(), navController: NavCon
             when (cameraPhase) {
                 CameraViewModel.CameraPhase.CheckingDistance -> {
                     DistanceTestOverlay(viewModel)
-//                    BoundingBoxOverlay(box = box)
-//                    BoundingBoxOverlay(box = box, imageSize = imageSize, previewView = previewView)
                     BoundingBoxOverlay(box = box, imageSize = imageSize, previewView = previewView)
                 }
 
@@ -693,31 +688,6 @@ fun VideoRecordingOverlay(
                 modifier = Modifier.size(40.dp)
             )
         }
-//        // Record button at bottom
-//        Button(
-//            onClick = {
-//                if (isRecording) {
-//                    recording?.stop()
-//                    onRecordingStateChange(null, false)
-//                } else {
-//                    startCountdown = true
-//                }
-//            },
-//            colors = ButtonDefaults.buttonColors(
-//                containerColor = if (isRecording) Color.Red else Color.Green
-//            ),
-//            shape = CircleShape,
-//            modifier = Modifier
-//                .align(Alignment.BottomCenter)
-//                .padding(24.dp)
-//                .size(80.dp)
-//        ) {
-//            Text(
-//                if (isRecording) "Stop" else "Record",
-//                color = Color.White,
-//                fontWeight = FontWeight.Bold
-//            )
-//        }
     }
 
     // Countdown effect
@@ -801,7 +771,6 @@ private fun startRecording(
     val pendingRecording = videoCapture.output.prepareRecording(context, outputOptions)
     var activeRecording: Recording? = null
     var recordingStartTimeNanos: Long = 0
-    var assessmentTitle = "Timed Up and Go"
     activeRecording = pendingRecording.start(ContextCompat.getMainExecutor(context)) { event ->
         when (event) {
             is VideoRecordEvent.Start -> {
@@ -817,9 +786,6 @@ private fun startRecording(
                     if (outputFile.exists()) outputFile.delete()
                     Toast.makeText(context, "Video capture failed", Toast.LENGTH_LONG).show()
                 } else {
-//                    val currentDateTime = SimpleDateFormat(
-//                        "dd MMM yyyy, hh:mm a", Locale.getDefault()
-//                    ).format(Date())
                     val durationSeconds = ((System.nanoTime() - recordingStartTimeNanos) / 1_000_000_000).toFloat()
                     onRecordingStateChange(null, false)
                     Toast.makeText(context, "Video capture succeeded", Toast.LENGTH_LONG).show()
@@ -830,18 +796,15 @@ private fun startRecording(
                     Log.d("camera_screen", "absolutePath: ${outputFile.absolutePath}")
                     val newTug = TUGAssessment(
                         testId = assessmentId,
-//                        dateTime = currentDateTime,
                         dateTime = Date().time,
                         videoDuration = durationSeconds,
                         videoTitle = outputFile.absolutePath,
-//                        videoTitle = outputFile.name,
                         onMedication = tugViewModel.onMedication.value,
                         patientComments = tugViewModel.selectedComments.value.joinToString(", ")
                     )
                     tugViewModel.insertNewAssessment(newTug)
                     Log.d("camera_screen", "absolutePath: ${outputFile.absolutePath}")
                     Log.d("camera_screen", "encodedPath: $encodedPath")
-//                    navController.navigate("loading_screen/${assessmentTitle}?outputPath=${encodedPath}")
                     navController.navigate("loading_screen")
                 }
             }

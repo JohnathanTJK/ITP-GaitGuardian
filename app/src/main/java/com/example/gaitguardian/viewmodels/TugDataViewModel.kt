@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, private val appPreferencesRepository: AppPreferencesRepository) : ViewModel() {
+class TugDataViewModel(private val tugRepository: TUGAssessmentRepository) : ViewModel() {
     init {
         viewModelScope.launch {
             tugRepository.allTUGAssessments.collect { tugList ->
@@ -35,7 +35,7 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, priva
     }
 
     // Patient
-    // Using RoomDb data to get the latest and previous timing
+    // Using RoomDB data to get the latest and previous timing (to display in result card)
     private val _latestTwoDurations = MutableStateFlow<List<Float>>(emptyList())
     val latestTwoDurations: StateFlow<List<Float>> = _latestTwoDurations
 
@@ -46,7 +46,7 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, priva
         }
     }
 
-    // Medication status
+    // Indicate Medication Status Before Assessment
     private val _onMedication = MutableStateFlow(true)
     val onMedication: StateFlow<Boolean> = _onMedication
 
@@ -55,6 +55,7 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, priva
         Log.d("PatientViewModel", "Medication status set to: $status")
     }
 
+    // Update the TUG Assessment (Medication) After Analysis is completed
     fun updatePostAssessmentOnMedicationStatus(medication: Boolean) {
         viewModelScope.launch {
             tugRepository.updateOnMedicationStatus(medication)
@@ -76,27 +77,27 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, priva
             tugRepository.insert(assessment)
         }
     }
-    // Assessment comment
-    private val _assessmentComment = MutableStateFlow("")
-    val assessmentComment: StateFlow<String> = _assessmentComment
 
-    fun setAssessmentComment(comment: String) {
-        _assessmentComment.value = comment
+    // AssessmentInfoScreen
+    private val _selectedComments = MutableStateFlow<Set<String>>(emptySet())
+    val selectedComments: StateFlow<Set<String>> = _selectedComments
+    // Multi-Select Button taps on AssessmentInfoScreen, when patient taps on comments
+    fun toggleComment(comment: String) {
+        _selectedComments.value = _selectedComments.value.toMutableSet().also {
+            if (it.contains(comment)) it.remove(comment) else it.add(comment)
+        }
+        Log.d("TugViewModel", "selected comments: ${_selectedComments.value}")
+
     }
-
     // Remove Assessment ( if video fails, need to re-upload/record)
     fun removeLastInsertedAssessment() {
         viewModelScope.launch(Dispatchers.IO) {
             tugRepository.removeLastInserted()
         }
     }
+
     // END PATIENT
-    fun removeAllAssessments(){
-        viewModelScope.launch(Dispatchers.IO) {
-            tugRepository.removeAllAssessments()
-            tugRepository.removeAllTUGAnalysis()
-        }
-    }
+
     // Clinician
     private val _allTUGAssessments = MutableStateFlow<List<TUGAssessment>>(emptyList())
     val allTUGAssessments: StateFlow<List<TUGAssessment>> = _allTUGAssessments
@@ -112,6 +113,8 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, priva
             _selectedTUGAssessment.value = assessment
         }
     }
+    // to display assessments in ascending order with an #id to differentiate
+    // cannot use assessment id because uses UUID so cannot sort normally.
     fun getDisplayNumberForId(id: String): Int {
         val list = allTUGAssessments.value
             .sortedBy { it.dateTime }
@@ -134,17 +137,7 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, priva
             tugRepository.multiSelectMarkAsReviewed(id, true)
         }
     }
-    // AssessmentInfoScreen
-    private val _selectedComments = MutableStateFlow<Set<String>>(emptySet())
-    val selectedComments: StateFlow<Set<String>> = _selectedComments
 
-    fun toggleComment(comment: String) {
-        _selectedComments.value = _selectedComments.value.toMutableSet().also {
-            if (it.contains(comment)) it.remove(comment) else it.add(comment)
-        }
-        Log.d("TugViewModel", "selected comments: ${_selectedComments.value}")
-
-    }
     // ML Analysis
 
     private val _allTUGAnalysis = MutableStateFlow<List<TUGAnalysis>>(emptyList())
@@ -167,10 +160,6 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, priva
         }
     }
 
-    //TODO: Replace this for Result Card , it should work , similar logic as before
-    suspend fun getLatestTwoTimes(): List<Double> {
-        return tugRepository.getLatestTwoTimes()
-    }
     suspend fun getLatestTugAnalysis(): TUGAnalysis? {
         return tugRepository.getLatestTugAnalysis()
     }
@@ -188,12 +177,11 @@ class TugDataViewModel(private val tugRepository: TUGAssessmentRepository, priva
 
     // For creating the VM in MainActivity
     class TugDataViewModelFactory(private val tugRepository: TUGAssessmentRepository,
-        private val appPreferencesRepository: AppPreferencesRepository
     ) :
         ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(TugDataViewModel::class.java)) {
-                @Suppress("UNCHECKED_CAST") return TugDataViewModel(tugRepository, appPreferencesRepository) as T
+                @Suppress("UNCHECKED_CAST") return TugDataViewModel(tugRepository) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }

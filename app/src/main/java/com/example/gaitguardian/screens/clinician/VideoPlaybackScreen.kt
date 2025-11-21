@@ -1,4 +1,4 @@
-package com.example.gaitguardian.screens
+package com.example.gaitguardian.screens.clinician
 
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.layout.*
@@ -17,7 +17,6 @@ import com.example.gaitguardian.data.roomDatabase.tug.subtaskDuration
 import com.example.gaitguardian.viewmodels.TugDataViewModel
 import android.app.Activity
 import android.content.res.Configuration
-import android.os.Environment
 import android.util.Log
 import android.view.ViewGroup
 import androidx.compose.animation.AnimatedVisibility
@@ -32,15 +31,13 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.media3.common.MediaItem
@@ -68,9 +65,7 @@ fun VideoPlaybackScreen(
 
     val assessment by tugViewModel.selectedTUGAssessment.collectAsState()
     val subtaskDuration by tugViewModel.subtaskDuration.collectAsState()
-    Log.d("playbackscreen", "subtaskduration = $subtaskDuration")
     val subtaskJumpTimings = subtaskDuration?.let { prepareSubtaskJumpTimings(it) }
-    Log.d("playbackscreen", "subtasktimings = $subtaskJumpTimings")
     val videoTitle = assessment?.videoTitle ?: return
     val videoFile = File(videoTitle)
     val videoUri = videoFile.toUri()
@@ -141,16 +136,8 @@ fun VideoPlaybackScreen(
         } else {
             PortraitVideoLayout(
                 exoPlayer = exoPlayer,
-                isPlaying = isPlaying,
                 currentPosition = currentPosition,
                 duration = duration,
-                onPlayPauseClick = {
-                    if (exoPlayer.isPlaying) {
-                        exoPlayer.pause()
-                    } else {
-                        exoPlayer.play()
-                    }
-                },
                 jumpTimestamps = subtaskJumpTimings
             )
         }
@@ -160,10 +147,8 @@ fun VideoPlaybackScreen(
 @Composable
 fun PortraitVideoLayout(
     exoPlayer: ExoPlayer,
-    isPlaying: Boolean,
     currentPosition: Long,
     duration: Long,
-    onPlayPauseClick: () -> Unit,
     jumpTimestamps: List<Triple<String, Long, Long>>?
 ) {
     val context = LocalContext.current
@@ -293,14 +278,14 @@ fun LandscapeVideoLayout(
     // Hide system bars for full-screen video
     DisposableEffect(Unit) {
         val window = activity?.window
-        val controller = window?.let { androidx.core.view.WindowInsetsControllerCompat(it, it.decorView) }
+        val controller = window?.let { WindowInsetsControllerCompat(it, it.decorView) }
 
-        controller?.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+        controller?.hide(WindowInsetsCompat.Type.systemBars())
         controller?.systemBarsBehavior =
-            androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
         onDispose {
-            controller?.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            controller?.show(WindowInsetsCompat.Type.systemBars())
         }
     }
 
@@ -366,9 +351,9 @@ fun LandscapeVideoLayout(
                         onClick = {
                             val window = activity?.window
                             val controller = window?.let {
-                                androidx.core.view.WindowInsetsControllerCompat(it, it.decorView)
+                                WindowInsetsControllerCompat(it, it.decorView)
                             }
-                            controller?.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+                            controller?.show(WindowInsetsCompat.Type.systemBars())
                             navController.popBackStack()
                         }
                     ) {

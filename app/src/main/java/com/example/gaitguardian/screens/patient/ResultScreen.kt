@@ -52,7 +52,6 @@ fun ResultScreen(
     LaunchedEffect(Unit) {
 //        tugViewModel.getLatestTUGAssessment()
         tugViewModel.getLatestTwoDurations()
-        tugViewModel.setAssessmentComment("")
         latestAnalysis = tugViewModel.getLatestTugAnalysis()
 
         Log.d("ResultScreen", "Analysis loaded: severity=${latestAnalysis?.severity}, testId=${latestAnalysis?.testId}, totalTime=${latestAnalysis?.timeTaken}")

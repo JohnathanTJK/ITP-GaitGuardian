@@ -6,13 +6,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAnalysis
@@ -38,7 +35,6 @@ import com.patrykandpatrick.vico.core.common.shape.CorneredShape
 @Composable
 fun PerformanceScreen(
     tugViewModel: TugDataViewModel,
-    modifier: Modifier = Modifier
 ) {
     val allSubtasks by tugViewModel.allTUGAnalysis.collectAsState()
     var selectedTask by remember { mutableStateOf("All Tasks") }
@@ -85,7 +81,8 @@ fun PerformanceChart(
     LaunchedEffect(selectedTask) {
         val extractTaskValues = taskToValue[selectedTask]
         if (extractTaskValues != null) {
-            val xValues = subtasks.indices.map { (it + 1).toFloat() } // because now using String, use the index instead but +1 so it starts from 1
+            val xValues =
+                subtasks.indices.map { (it + 1).toFloat() } // because now using String, use the index instead but +1 so it starts from 1
 //            val xValues = subtasks.map { it.testId }
             val yValues = subtasks.map { extractTaskValues(it) }
             modelProducer.runTransaction {
@@ -181,7 +178,6 @@ fun TaskDropdownFilter(
                 value = selectedTask,
                 onValueChange = {},
                 readOnly = true,
-//            label = { Text("Filter by Task", color = Color.DarkGray, fontSize = 14.sp) },
                 trailingIcon = {
                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                 },
@@ -190,46 +186,32 @@ fun TaskDropdownFilter(
                     unfocusedTextColor = Color.Black,
                     focusedLabelColor = Color.DarkGray,
                     unfocusedLabelColor = Color.DarkGray,
-                    focusedBorderColor = Color(0xFFDDDDDD), // Match dropdown border
-                    unfocusedBorderColor = Color(0xFFDDDDDD), // Match dropdown border
-                    focusedContainerColor = Color(0xFFF9F9F9), // Match dropdown background
-                    unfocusedContainerColor = Color(0xFFF9F9F9), // Match dropdown background
-                    disabledContainerColor = Color(0xFFF9F9F9), // For readOnly state
+                    focusedBorderColor = Color(0xFFDDDDDD),
+                    unfocusedBorderColor = Color(0xFFDDDDDD),
+                    focusedContainerColor = Color(0xFFF9F9F9),
+                    unfocusedContainerColor = Color(0xFFF9F9F9),
+                    disabledContainerColor = Color(0xFFF9F9F9),
                     disabledBorderColor = Color(0xFFDDDDDD),
                     disabledTextColor = Color.Black,
                     disabledLabelColor = Color.DarkGray
                 ),
-                shape = RoundedCornerShape(10.dp), // Match dropdown corner radius
+                shape = RoundedCornerShape(10.dp),
                 modifier = Modifier
                     .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
                     .fillMaxWidth()
             )
         }
 
-//        ExposedDropdownMenu(
-//            expanded = expanded,
-//            onDismissRequest = { expanded = false }
-//        ) {
-//            allTasks.forEach { task ->
-//                DropdownMenuItem(
-//                    text = { Text(task) },
-//                    onClick = {
-//                        onTaskSelected(task)
-//                        expanded = false
-//                    }
-//                )
-//            }
-//        }
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier
                 .background(Color(0xFFF9F9F9), shape = RoundedCornerShape(10.dp))
                 .border(1.dp, Color(0xFFDDDDDD), RoundedCornerShape(10.dp))
-                .clip(RoundedCornerShape(10.dp)), // Add this to clip the shadow
-            containerColor = Color(0xFFF9F9F9), // Set container color
-            tonalElevation = 0.dp, // Remove elevation shadow
-            shadowElevation = 0.dp // Remove shadow elevation
+                .clip(RoundedCornerShape(10.dp)),
+            containerColor = Color(0xFFF9F9F9),
+            tonalElevation = 0.dp,
+            shadowElevation = 0.dp
         ) {
             allTasks.forEach { task ->
                 DropdownMenuItem(

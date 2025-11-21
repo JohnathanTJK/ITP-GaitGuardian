@@ -26,7 +26,6 @@ import com.example.gaitguardian.viewmodels.TugDataViewModel
 @Composable
 fun AssessmentInfoScreen(
     navController: NavController,
-    assessmentTitle: String,
     modifier: Modifier = Modifier,
     patientViewModel: PatientViewModel,
     tugViewModel: TugDataViewModel
@@ -37,7 +36,6 @@ fun AssessmentInfoScreen(
     }
 
     val firstPrivacyCheck by patientViewModel.firstPrivacyCheck.collectAsState()
-    val comments by tugViewModel.assessmentComment.collectAsState()
     val onMedication by tugViewModel.onMedication.collectAsState()
 
     // Haptic feedback function
@@ -125,7 +123,7 @@ fun AssessmentInfoScreen(
                         "Needed assistance",
                         "Used walker",
                         "Felt strong",
-                        "Tired leh",
+                        "Tremors",
                     ),
                     selectedOptions = selectedComments,
                     onSelectionChange = { option ->
@@ -139,11 +137,10 @@ fun AssessmentInfoScreen(
             onClick = {
                 provideHapticFeedback() // Add haptic feedback
                 if(!firstPrivacyCheck){
-                    navController.navigate("video_privacy_screen/${assessmentTitle}")
+                    navController.navigate("video_privacy_screen")
                 }
                 else{
                     navController.navigate("new_cam_screen")
-//                    navController.navigate("camera_screen/${assessmentTitle}")
                 }
             },
             colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),

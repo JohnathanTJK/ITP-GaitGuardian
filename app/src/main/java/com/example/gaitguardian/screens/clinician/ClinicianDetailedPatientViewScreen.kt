@@ -185,13 +185,11 @@ fun ClinicianDetailedPatientViewScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-//                    "TUG TEST #${testId}",
                     "TUG TEST #$displayId",
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center,
                     color = Color.Black
                 )
-//                VideoWatchStatus((if (isReviewed) "Reviewed" else "Pending"))
             }
             Row(
                 modifier = Modifier
@@ -557,9 +555,6 @@ fun JetpackComposeBasicLineChart(subtasks: List<TUGAnalysis>, modifier: Modifier
 
 @Composable
 fun VideoButton(videoTitle: String, videoDuration: Float, navController: NavController) {
-//    val context = LocalContext.current
-//    val videoFolder = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
-//    val videoFile = videoFolder?.listFiles()?.find { it.name == videoTitle }
     val videoFile = File(videoTitle)
     if (videoFile.exists()) {
         Button(

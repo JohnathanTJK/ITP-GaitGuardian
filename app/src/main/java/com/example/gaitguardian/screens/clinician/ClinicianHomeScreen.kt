@@ -1,6 +1,5 @@
 package com.example.gaitguardian.screens.clinician
 
-import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,7 +30,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,7 +39,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -68,21 +65,20 @@ fun ClinicianHomeScreen(
     tugViewModel: TugDataViewModel,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
 
+    // Load necessary information from ViewModels for updating the UI in this screen
     val patientInfo by patientViewModel.patient.collectAsState()
     val clinicianInfo by clinicianViewModel.clinician.collectAsState()
-    val uploadedAssesssments by tugViewModel.allTUGAssessments.collectAsState()
+    val uploadedAssessments by tugViewModel.allTUGAssessments.collectAsState()
     val allTugAnalysis by tugViewModel.allTUGAnalysis.collectAsState()
-    Log.d("ClinicianHome", " number of analysis: ${allTugAnalysis.size}, $allTugAnalysis")
-    Log.d("ClinicianHome", "number of uplaoadassesmsents: ${uploadedAssesssments.size}, $uploadedAssesssments")
-    val pendingReviews = uploadedAssesssments.count { !it.watchStatus }
 
-    // Calculate critical reviews
-    val criticalReviews = uploadedAssesssments.count { assessment ->
+    // return number of patient assessments that are NOT reviewed by clinician
+    val pendingReviews = uploadedAssessments.count { !it.watchStatus }
+
+    // Calculate critical reviews (if critical means isFlagged is True)
+    val criticalReviews = uploadedAssessments.count { assessment ->
         val matchedAnalysis = allTugAnalysis.find { it.testId == assessment.testId }
         val flagStatus = matchedAnalysis?.isFlagged ?: false
-        val severity = matchedAnalysis?.severity ?: "N/A"
         isCriticalReview(assessment.watchStatus, flagStatus)
     }
 
@@ -90,18 +86,19 @@ fun ClinicianHomeScreen(
     var showPendingVideos by remember { mutableStateOf(false) }
     var showCriticalVideos by remember { mutableStateOf(false) }
     var showReviewedVideos by remember { mutableStateOf(false) }
+
+    // Used to update the list of filtered assessments
     val filteredVideos = when {
         showCriticalVideos -> {
-            uploadedAssesssments.filter { assessment ->
+            uploadedAssessments.filter { assessment ->
                 val matchedAnalysis = allTugAnalysis.find { it.testId == assessment.testId }
-                val severity = matchedAnalysis?.severity ?: "N/A"
                 val flagStatus = matchedAnalysis?.isFlagged ?: false
                 isCriticalReview(assessment.watchStatus, flagStatus)
             }
         }
-        showPendingVideos -> uploadedAssesssments.filter { !it.watchStatus }
-        showReviewedVideos -> uploadedAssesssments.filter { it.watchStatus }
-        else -> uploadedAssesssments
+        showPendingVideos -> uploadedAssessments.filter { !it.watchStatus }
+        showReviewedVideos -> uploadedAssessments.filter { it.watchStatus }
+        else -> uploadedAssessments
     }
 
     Spacer(Modifier.height(30.dp))
@@ -122,14 +119,14 @@ fun ClinicianHomeScreen(
             item {
                 ClinicianHeader(
                     clinicianName = clinicianInfo?.name ?: "Clinician",
-                    patient = patientInfo ?: Patient(id = 2, name = "Benny", age = 18),
+                    patient = patientInfo ?: Patient(id = 2, name = "Patient", age = 18),
                     pendingReviews = pendingReviews,
                     criticalReviews = criticalReviews
                 )
             }
             item {
                 VideoReviewsSummaryCard(
-                    totalTests = uploadedAssesssments.count(),
+                    totalTests = uploadedAssessments.count(),
                     pendingTests = pendingReviews,
                     criticalTests = criticalReviews,
                     showOnlyReviewed = showReviewedVideos,
@@ -142,11 +139,13 @@ fun ClinicianHomeScreen(
                                 showPendingVideos = false
                                 showCriticalVideos = false
                             }
+
                             "pending" -> {
                                 showReviewedVideos = false
                                 showPendingVideos = true
                                 showCriticalVideos = false
                             }
+
                             "critical" -> {
                                 showReviewedVideos = false
                                 showPendingVideos = false
@@ -159,12 +158,17 @@ fun ClinicianHomeScreen(
 
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Patient's Assessment Records", fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color(0xFF2D3748))
+                    Text(
+                        "Patient's Assessment Records",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF2D3748)
+                    )
                     HorizontalDivider(thickness = 0.5.dp, color = Color(0xFF718096))
                 }
             }
 
-            if(filteredVideos.isEmpty()){
+            if (filteredVideos.isEmpty()) {
                 item {
                     Box(
                         modifier = Modifier
@@ -184,14 +188,12 @@ fun ClinicianHomeScreen(
                         )
                     }
                 }
-            }
-            else{
+            } else {
                 items(filteredVideos.reversed()) { video ->
                     val finalMedicationState = video.onMedication != video.updateMedication
                     val matchedAnalysis = allTugAnalysis.find { it.testId == video.testId }
                     val finalSeverity = matchedAnalysis?.severity ?: "N/A"
                     val flagStatus = matchedAnalysis?.isFlagged ?: false
-//                    val isCritical = isCriticalReview(video.watchStatus, finalSeverity)
                     val isCritical = isCriticalReview(video.watchStatus, flagStatus)
 
                     TUGVideoItem(
@@ -257,10 +259,11 @@ fun MultiSelectControls(
                 .fillMaxWidth()
                 .padding(
                     start = 16.dp,
-            top = 8.dp,
-            end = 16.dp,
-            bottom = 8.dp
-        )        ) {
+                    top = 8.dp,
+                    end = 16.dp,
+                    bottom = 8.dp
+                )
+        ) {
             Column {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -271,8 +274,10 @@ fun MultiSelectControls(
                 )
             }
         }
-        Row(modifier = modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround) {
+        Row(
+            modifier = modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceAround
+        ) {
             Button(
                 onClick = onCancel,
                 colors = ButtonDefaults.buttonColors(
@@ -315,7 +320,12 @@ fun VideoReviewsSummaryCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Overview", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF2D3748))
+            Text(
+                "Overview",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF2D3748)
+            )
             Spacer(modifier = Modifier.height(8.dp))
             HorizontalDivider(thickness = 0.5.dp, color = Color(0xFF718096))
             Spacer(modifier = Modifier.height(8.dp))
@@ -325,7 +335,6 @@ fun VideoReviewsSummaryCard(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 VideoOverviewStats(
-//                    value = totalTests.toString(),
                     value = (totalTests - pendingTests).toString(),
                     label = "Reviewed",
                     isSelected = showOnlyReviewed,
@@ -431,7 +440,7 @@ fun TUGVideoItem(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if(watchStatus == "Pending") {
+                if (watchStatus == "Pending") {
                     Checkbox(
                         checked = isSelected,
                         onCheckedChange = onSelectionChanged,
@@ -535,7 +544,9 @@ fun VideoWatchStatus(watchStatus: String, isCritical: Boolean) {
                 .width(80.dp),
             shape = RoundedCornerShape(5.dp),
             colors = CardDefaults.cardColors(
-                containerColor = if (watchStatus == "Reviewed") Color(0xFFC6F6D5) else Color(0xFFFEEBC8),
+                containerColor = if (watchStatus == "Reviewed") Color(0xFFC6F6D5) else Color(
+                    0xFFFEEBC8
+                ),
             )
         ) {
             Box(
@@ -702,7 +713,9 @@ fun ClinicianHeader(
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(8.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = if (pendingReviews > 0) Color(0xFFFEF5E7) else Color(0xFFF0FFF4)
+                        containerColor = if (pendingReviews > 0) Color(0xFFFEF5E7) else Color(
+                            0xFFF0FFF4
+                        )
                     ),
                 ) {
                     Row(
@@ -724,7 +737,9 @@ fun ClinicianHeader(
                                     "All Clear",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (pendingReviews > 0) Color(0xFFDD6B20) else Color(0xFF38A169)
+                                color = if (pendingReviews > 0) Color(0xFFDD6B20) else Color(
+                                    0xFF38A169
+                                )
                             )
                             Text(
                                 text = if (pendingReviews > 0)
@@ -732,7 +747,9 @@ fun ClinicianHeader(
                                 else
                                     "No pending videos",
                                 fontSize = 11.sp,
-                                color = if (pendingReviews > 0) Color(0xFFB7791F) else Color(0xFF2F855A)
+                                color = if (pendingReviews > 0) Color(0xFFB7791F) else Color(
+                                    0xFF2F855A
+                                )
                             )
                         }
                     }

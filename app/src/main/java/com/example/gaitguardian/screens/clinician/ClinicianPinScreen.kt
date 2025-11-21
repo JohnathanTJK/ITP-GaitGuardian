@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -43,11 +42,11 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun PinEntryScreen(
+    modifier: Modifier = Modifier,
     pinLength: Int = 4,
     onPinComplete: (String) -> Unit,
     onPinChange: (String) -> Unit = {},
     errorMessage: String = "",
-    modifier: Modifier = Modifier
 ) {
     var pin by remember { mutableStateOf("") }
     val focusRequesters = remember {
@@ -217,7 +216,7 @@ fun PinDigitBox(
         } else {
             // Inactive boxes just show the digit or placeholder
             Text(
-                text = if (digit.isNotEmpty()) digit else "-",
+                text = digit.ifEmpty { "-" },
                 color = if (digit.isNotEmpty()) {
                     Color.Black
                 } else {
