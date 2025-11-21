@@ -88,7 +88,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessment
-import com.example.gaitguardian.viewmodels.DistanceViewModel
+import com.example.gaitguardian.viewmodels.CameraViewModel
 import com.example.gaitguardian.viewmodels.TugDataViewModel
 import kotlinx.coroutines.delay
 import java.io.File
@@ -291,7 +291,7 @@ fun rembDeviceOrientation(): devOrientationState {
 @androidx.annotation.OptIn(ExperimentalCamera2Interop::class)
 @SuppressLint("RestrictedApi")
 @Composable
-fun CameraScreen(viewModel: DistanceViewModel = viewModel(), navController: NavController, tugViewModel: TugDataViewModel) {
+fun CameraScreen(viewModel: CameraViewModel = viewModel(), navController: NavController, tugViewModel: TugDataViewModel) {
     val cameraPhase by viewModel.cameraPhase.collectAsState()
 
     val context = LocalContext.current
@@ -322,18 +322,18 @@ fun CameraScreen(viewModel: DistanceViewModel = viewModel(), navController: NavC
 
             // Overlays
             when (cameraPhase) {
-                DistanceViewModel.CameraPhase.CheckingDistance -> {
+                CameraViewModel.CameraPhase.CheckingDistance -> {
                     DistanceTestOverlay(viewModel)
 //                    BoundingBoxOverlay(box = box)
 //                    BoundingBoxOverlay(box = box, imageSize = imageSize, previewView = previewView)
                     BoundingBoxOverlay(box = box, imageSize = imageSize, previewView = previewView)
                 }
 
-                DistanceViewModel.CameraPhase.CheckingLuminosity -> {
+                CameraViewModel.CameraPhase.CheckingLuminosity -> {
                     LuminosityCheckOverlay(viewModel)
                 }
 
-                DistanceViewModel.CameraPhase.VideoRecording -> {
+                CameraViewModel.CameraPhase.VideoRecording -> {
                     VideoRecordingOverlay(
                         navController = navController,
                         tugDataViewModel = tugViewModel,
@@ -461,7 +461,7 @@ fun CameraScreen(viewModel: DistanceViewModel = viewModel(), navController: NavC
     }
 }
 @Composable
-fun DistanceTestOverlay(viewModel: DistanceViewModel) {
+fun DistanceTestOverlay(viewModel: CameraViewModel) {
     val personDistance by viewModel.personDistance.collectAsState()
     val lateralWidth by viewModel.lateralWidth.collectAsState()
     var heightInput by remember { mutableStateOf("1.7") }
@@ -511,29 +511,41 @@ fun DistanceTestOverlay(viewModel: DistanceViewModel) {
                 fontSize = 18.sp
             )
             Text(
-                "Visible Width: %.2f m".format(lateralWidth),
+                "Walkable Space: %.2f m".format(lateralWidth),
                 color = Color.White,
                 fontSize = 18.sp
             )
-            if (lateralWidth >= 3.0f) {
-                Text(
-                    "3m lateral space available - Recording will start soon...",
-                    color = Color.Green,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            } else {
-                Text(
-                    "Not enough lateral space. Please ensure at least 3m of lateral space, max 3.2m.",
-                    color = Color.Red,
-                    fontSize = 16.sp
-                )
+            when {
+                lateralWidth > 3.2f -> {
+                    Text(
+                        "Move Forward. Too much space detected.",
+                        color = Color.Red,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                lateralWidth >= 3.0f -> {
+                    Text(
+                        "3m walkable space available - Recording will start soon...",
+                        color = Color.Green,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                else -> {
+                    Text(
+                        "Not enough walkable space. Please ensure at least 3m of walkable space, max 3.2m.",
+                        color = Color.Red,
+                        fontSize = 16.sp
+                    )
+                }
             }
         }
     }
 }
 @Composable
-fun LuminosityCheckOverlay(viewModel: DistanceViewModel) {
+fun LuminosityCheckOverlay(viewModel: CameraViewModel) {
     val luminance by viewModel.luminance.collectAsState()
     val error by viewModel.luminosityError.collectAsState()
 

@@ -15,16 +15,14 @@ import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions
 import com.google.mlkit.vision.pose.Pose
 import com.google.mlkit.vision.pose.PoseDetection
 import com.google.mlkit.vision.pose.PoseLandmark
-import com.google.mlkit.vision.pose.accurate.AccuratePoseDetectorOptions
 import com.google.mlkit.vision.pose.defaults.PoseDetectorOptions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlin.math.abs
 import kotlin.math.atan
 import kotlin.math.tan
 
-class DistanceViewModel : ViewModel() {
+class CameraViewModel : ViewModel() {
 
     enum class CameraPhase {
         CheckingDistance,      // Check 3m space
@@ -124,7 +122,6 @@ class DistanceViewModel : ViewModel() {
     fun processImage(imageProxy: ImageProxy) {
         when (_cameraPhase.value) {
             CameraPhase.CheckingDistance -> processPoseDetection(imageProxy)
-//            CameraPhase.CheckingDistance -> processObjectDetection(imageProxy)
             CameraPhase.CheckingLuminosity -> processLuminosity(imageProxy)
             CameraPhase.VideoRecording -> imageProxy.close()
         }
@@ -266,54 +263,7 @@ class DistanceViewModel : ViewModel() {
 
         checkDistanceStable(walkableSpace)
     }
-    //    private fun handlePose(pose: Pose, imageProxy: ImageProxy) {
-//        // Landmark use shoulder, need to have realworld shoulder width might be more accurate
-//        // previously i use height so i think got some calculation error because the width of the shoulder not the same
-//        val left = pose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER)
-//        val right = pose.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER)
-//
-//        if (left == null || right == null) return
-//
-//        val rotation = imageProxy.imageInfo.rotationDegrees
-//        val imageWidthPx = imageProxy.width
-//        val imageHeightPx = imageProxy.height
-//
-//        val shoulderPx = when (rotation) {
-//            0, 180 -> abs(left.position.x - right.position.x)
-//            90, 270 -> abs(left.position.y - right.position.y)
-//            else -> abs(left.position.x - right.position.x)
-//        }
-//
-//        val frameWidthPx = if (rotation == 90 || rotation == 270) imageHeightPx else imageWidthPx
-//        if (shoulderPx <= 0f) return
-//
-//        val D = (focalLength * shoulderWidth * frameWidthPx) / (shoulderPx * sensorWidth)
-//        val fovX = 2 * atan((sensorWidth / 2f) / focalLength)
-//        val lateralWidthMeters = 2 * D * tan(fovX / 2f)
-//
-//        viewModelScope.launch {
-//            _personDistance.value = D
-//            _lateralWidth.value = lateralWidthMeters
-//        }
-//
-//        checkDistanceStable(lateralWidthMeters)
-//    }
-//
-//    private fun checkDistanceStable(lateralWidthMeters: Float) {
-//        val now = System.currentTimeMillis()
-//        if (lateralWidthMeters >= 3.0f) {
-//            if (distanceStableSince == null) distanceStableSince = now
-//            val elapsed = now - (distanceStableSince ?: now)
-//
-//            // After 3 seconds of stable 3m distance, move to luminosity check
-//            if (elapsed >= 3000 && _cameraPhase.value == CameraPhase.CheckingDistance) {
-//                Log.d("Validation", "Distance check passed, moving to luminosity check")
-//                _cameraPhase.value = CameraPhase.CheckingLuminosity
-//            }
-//        } else {
-//            distanceStableSince = null
-//        }
-//    }
+
     @androidx.annotation.OptIn(ExperimentalGetImage::class)
     @OptIn(ExperimentalGetImage::class)
     private fun processObjectDetection(imageProxy: ImageProxy) {
@@ -352,42 +302,6 @@ class DistanceViewModel : ViewModel() {
 
         computeWalkableSpace(box, imgWidth, imgHeight)
     }
-
-//    private fun computeWalkableSpace(box: Rect, imageWidthPx: Int, imageHeightPx: Int) {
-//        val boundingHeightPx = box.height().toFloat()
-//        val boundingWidthPx = box.width().toFloat()
-//
-//        if (boundingHeightPx <= 0f) return
-//
-//        // Calculate distance from person height
-//        val actualHeightInBox = personHeight * estimatedPersonCoverage
-//        val heightOnSensor = (boundingHeightPx / imageHeightPx) * sensorHeight
-//        val distanceMeters = (actualHeightInBox * focalLength) / heightOnSensor
-//
-//        // Calculate total lateral width visible at this distance
-//        val fovX = 2 * atan((sensorWidth / 2f) / focalLength)
-//        val totalLateralWidth = 2 * distanceMeters * tan(fovX / 2f)
-//
-//        // Calculate person's actual width in the real world
-//        val personWidthOnSensor = (boundingWidthPx / imageWidthPx) * sensorWidth
-//        val personRealWidth = (personWidthOnSensor * distanceMeters) / focalLength
-//
-//        // Available walking space = total width - person width
-//        val walkableSpace = totalLateralWidth - personRealWidth
-//
-//        Log.d("DistanceViewModel", "BoundingBox: ${boundingWidthPx}w x ${boundingHeightPx}h px")
-//        Log.d("DistanceViewModel", "Distance: $distanceMeters m")
-//        Log.d("DistanceViewModel", "Total visible width: $totalLateralWidth m")
-//        Log.d("DistanceViewModel", "Person width: $personRealWidth m")
-//        Log.d("DistanceViewModel", "Walkable space: $walkableSpace m")
-//
-//        viewModelScope.launch {
-//            _personDistance.value = distanceMeters
-//            _lateralWidth.value = walkableSpace // Now represents actual walkable space
-//        }
-//
-//        checkDistanceStable(walkableSpace)
-//    }
 
     private fun checkDistanceStable(walkableSpace: Float) {
         val now = System.currentTimeMillis()
