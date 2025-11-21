@@ -43,9 +43,9 @@ fun GaitAssessmentTutorial(onClose: () -> Unit) {
     LaunchedEffect(page, ttsReady) {
         if (!ttsReady) return@LaunchedEffect
         val speechText = when (page) {
-            1 -> "Choose an assessment to begin the test. Stand-Walk Test or Five Times Sit to Stand"
-            2 -> "Tag your medication status and select any additional comments if necessary. When done, click continue."
-            3 -> "Camera requirement tutorial. Follow the instructions to position the camera correctly for the test."
+            1 -> "Select an assessment"
+            2 -> "Assessment Info. First, Tag your medication status either ON or OFF. Second, select any additional comments. Third, click continue when done."
+            3 -> "Camera requirement. First, ensure your camera is set up correctly for the test. Second, make sure the lighting is good. Third, click record button."
             else -> ""
         }
         if (speechText.isNotEmpty()) tts?.speak(speechText, TextToSpeech.QUEUE_FLUSH, null, "tutorialTTS")
@@ -102,7 +102,7 @@ fun GaitAssessmentTutorial(onClose: () -> Unit) {
                             Text("Select an assessment", fontSize = body * 1.2f, color = Color.Black)
 
                             // Fake buttons (unclickable)
-                            listOf("Stand-Walk Test", "Five Times Sit to Stand").forEach { text ->
+                            listOf("Stand-Walk Test").forEach { text ->
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -115,7 +115,7 @@ fun GaitAssessmentTutorial(onClose: () -> Unit) {
                             }
                         }
                         2 -> {
-                            Text("1. Tag your medication status (ON / OFF).", fontSize = body * 1.2f, color = Color.Black)
+                            Text("1. Tag your medication status either ON or OFF.", fontSize = body * 1.2f, color = Color.Black)
                             Text("2. Select any additional comments.", fontSize = body * 1.2f, color = Color.Black)
                             Text("3. Click Continue when done.", fontSize = body * 1.2f, color = Color.Black)
 
@@ -124,7 +124,7 @@ fun GaitAssessmentTutorial(onClose: () -> Unit) {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(40.dp)
+                                        .height(50.dp)
                                         .background(ButtonActive.copy(alpha = 0.6f), RoundedCornerShape(12.dp)),
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -133,9 +133,9 @@ fun GaitAssessmentTutorial(onClose: () -> Unit) {
                             }
                         }
                         3 -> {
-                            Text("1. Ensure your camera is set up.", fontSize = body * 1.2f, color = Color.Black)
-                            Text("2. Make sure lighting is good.", fontSize = body * 1.2f, color = Color.Black)
-                            Text("3. Click Start Assessment.", fontSize = body * 1.2f, color = Color.Black)
+                            Text("1. Ensure your camera is set up correctly for the test.", fontSize = body * 1.2f, color = Color.Black)
+                            Text("2. Make sure the lighting is good.", fontSize = body * 1.2f, color = Color.Black)
+                            Text("3. Click record button.", fontSize = body * 1.2f, color = Color.Black)
                             // No fake buttons for camera page
                         }
                     }

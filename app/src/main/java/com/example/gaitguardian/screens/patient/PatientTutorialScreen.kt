@@ -43,7 +43,7 @@ fun PatientTutorialScreen(onClose: () -> Unit) {
     LaunchedEffect(page, ttsReady) {
         if (!ttsReady) return@LaunchedEffect
         val speechText = if (page == 1) {
-            "Tap on the Record Video button to start recording your gait assessment. Follow the instructions"
+            "Tap on the Record Video button to start recording your gait assessment."
         } else {
             "Tap on settings to adjust your preferences on video privacy"
         }
