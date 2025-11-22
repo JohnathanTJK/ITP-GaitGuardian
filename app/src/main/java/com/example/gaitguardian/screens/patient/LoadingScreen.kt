@@ -318,24 +318,6 @@ fun LoadingScreen(
                     )
                 }
             }
-            if (analysisState is AnalysisState.Analyzing) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = {
-                        // Cancel the work
-                        workRequestId.value?.let { id ->
-                            workManager.cancelWorkById(id)
-                            Log.d("LoadingScreen", "ANALYSIS SKIP/ WORK MANAGER STOP")
-                        }
-
-
-                        analysisState = AnalysisState.Success
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9C27B0))
-                ) {
-                    Text("Skip Analysis", color = Color.White)
-                }
-            }
         }
     }
 }

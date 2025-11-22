@@ -27,7 +27,7 @@ interface TugDao {
     @Query(" SELECT videoDuration FROM tug_assessment_table ORDER BY dateTime DESC LIMIT 2")
     suspend fun getLatestTwoDurations(): List<Float>
 
-    @Query("UPDATE tug_assessment_table SET updateMedication = :medication WHERE testId = (SELECT MAX(testId) FROM tug_assessment_table)")
+    @Query("UPDATE tug_assessment_table SET updateMedication = :medication WHERE testId = (SELECT testId FROM tug_assessment_table ORDER BY dateTime DESC LIMIT 1)")
     suspend fun updateOnMedicationStatus(medication: Boolean)
 
     @Query("SELECT * FROM tug_assessment_table ORDER BY dateTime DESC LIMIT 1")
