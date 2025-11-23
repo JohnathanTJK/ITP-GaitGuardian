@@ -19,26 +19,27 @@ import kotlinx.coroutines.delay
 fun SplashScreen(navController: NavHostController, clinicianViewModel: ClinicianViewModel) {
     val currentUserView by clinicianViewModel.getCurrentUserView.collectAsState(initial = "")
 
-    LaunchedEffect(currentUserView) {
-        delay(4000)  // 4 seconds splash
-        when (currentUserView) {
-            "clinician" -> {
-                navController.navigate("clinician_graph") {
-                    popUpTo("splash_screen") { inclusive = true }
-                }
-            }
-            "patient" -> {
-                navController.navigate("patient_graph") {
-                    popUpTo("splash_screen") { inclusive = true }
-                }
-            }
-            else -> {
-                navController.navigate("start_screen") {
-                    popUpTo("splash_screen") { inclusive = true }
-                }
-            }
-        }
-    }
+//    LaunchedEffect(currentUserView) {
+//        delay(4000)  // 4 seconds splash
+//        when (currentUserView) {
+//            "clinician" -> {
+//                navController.navigate("clinician_pin_verification_screen") {
+////                navController.navigate("clinician_graph") {
+//                    popUpTo("splash_screen") { inclusive = true }
+//                }
+//            }
+//            "patient" -> {
+//                navController.navigate("patient_graph") {
+//                    popUpTo("splash_screen") { inclusive = true }
+//                }
+//            }
+//            else -> {
+//                navController.navigate("start_screen") {
+//                    popUpTo("splash_screen") { inclusive = true }
+//                }
+//            }
+//        }
+//    }
 
     // UI Content of SplashScreen
     Box(

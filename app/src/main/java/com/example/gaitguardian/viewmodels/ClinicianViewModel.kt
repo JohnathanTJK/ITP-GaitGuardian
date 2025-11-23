@@ -18,13 +18,9 @@ class ClinicianViewModel(private val clinicianRepository: ClinicianRepository, p
     private val _clinician = MutableStateFlow<Clinician?>(null)
     val clinician: StateFlow<Clinician?> = _clinician
 
-    // In ClinicianViewModel.kt
-//    private val _allClinicians = MutableStateFlow<List<Clinician>>(emptyList())
-//    val allClinicians: StateFlow<List<Clinician>> = _allClinicians
 
     init {
         Log.d("ClinicianViewModel", "ClinicianVM init called")
-
         viewModelScope.launch {
             clinicianRepository.getClinician.collect {
                 _clinician.value = it
@@ -32,15 +28,9 @@ class ClinicianViewModel(private val clinicianRepository: ClinicianRepository, p
             }
 
         }
-//        viewModelScope.launch {
-//            clinicianRepository.allClinicians.collect { clinicians ->
-//                _allClinicians.value = clinicians
-//                Log.d("ClinicianVM", "Loaded ${clinicians.size} clinicians: $clinicians")
-//            }
-//        }
     }
 
-    // function to insert clinician into RoomDB,
+    // Function to insert Clinician into RoomDB (used in StartScreen.kt)
     fun insertClinician(clinician: Clinician) {
         viewModelScope.launch(Dispatchers.IO) {
             clinicianRepository.insert(clinician)
@@ -48,7 +38,7 @@ class ClinicianViewModel(private val clinicianRepository: ClinicianRepository, p
     }
 
     //Datastore Preferences
-    // Store Current User
+    // Getter Setter to retrieve Current User
     fun saveCurrentUserView(currentUser: String) {
         viewModelScope.launch {
             appPreferencesRepository.saveCurrentUserView(currentUser)

@@ -1,15 +1,20 @@
 package com.example.gaitguardian.screens.clinician
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.gaitguardian.data.roomDatabase.tug.TUGAnalysis
 import com.example.gaitguardian.ui.theme.bgColor
+import com.example.gaitguardian.viewmodels.TugDataViewModel
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
@@ -28,7 +33,10 @@ import com.patrykandpatrick.vico.core.common.component.TextComponent
 import com.patrykandpatrick.vico.core.common.shape.CorneredShape
 
 @Composable
-fun PerformanceScreen() {
+fun PerformanceScreen(
+    tugViewModel: TugDataViewModel,
+) {
+    val allSubtasks by tugViewModel.allTUGAnalysis.collectAsState()
     var selectedTask by remember { mutableStateOf("All Tasks") }
 
     Column(
@@ -44,6 +52,7 @@ fun PerformanceScreen() {
         Spacer(modifier = Modifier.height(16.dp))
 
         PerformanceChart(
+            subtasks = allSubtasks,
             selectedTask = selectedTask,
             modifier = Modifier.fillMaxSize()
 
@@ -53,23 +62,32 @@ fun PerformanceScreen() {
 
 @Composable
 fun PerformanceChart(
+    subtasks: List<TUGAnalysis>,
     selectedTask: String,
     modifier: Modifier = Modifier
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
 
+    val taskToValue: Map<String, (TUGAnalysis) -> Float> = mapOf(
+//        Map "Sit-to-Stand" to sitToStand so that I can retrieve the values direct
+        "Sit-to-Stand" to { it.sitToStand.toFloat() },
+        "Walk from Chair" to { it.walkFromChair.toFloat() },
+        "Turn First" to { it.turnFirst.toFloat() },
+        "Walk to Chair" to { it.walkToChair.toFloat() },
+        "Turn Second" to { it.turnSecond.toFloat() },
+        "Stand-to-Sit" to { it.standToSit.toFloat() },
+        "All Tasks" to { it.timeTaken.toFloat() }
+    )
     LaunchedEffect(selectedTask) {
-        modelProducer.runTransaction {
-            lineSeries {
-                when (selectedTask) {
-                    "All Tasks" -> series(listOf(1, 2, 3, 4, 5), listOf(13, 8, 7, 12, 10))
-                    "Sit-to-Stand" -> series(listOf(1, 2, 3), listOf(2, 2, 1))
-                    "Walk from Chair" -> series(listOf(1, 2, 3), listOf(4, 5, 4))
-                    "Turn First" -> series(listOf(1, 2, 3), listOf(3, 2, 4))
-                    "Walk to Chair" -> series(listOf(1, 2, 3), listOf(4, 4, 5))
-                    "Turn Second" -> series(listOf(1, 2, 3), listOf(2, 3, 3))
-                    "Stand-to-Sit" -> series(listOf(1, 2, 3), listOf(1, 2, 2))
-                    else -> series(emptyList(), emptyList())
+        val extractTaskValues = taskToValue[selectedTask]
+        if (extractTaskValues != null) {
+            val xValues =
+                subtasks.indices.map { (it + 1).toFloat() } // because now using String, use the index instead but +1 so it starts from 1
+//            val xValues = subtasks.map { it.testId }
+            val yValues = subtasks.map { extractTaskValues(it) }
+            modelProducer.runTransaction {
+                lineSeries {
+                    series(xValues, yValues)
                 }
             }
         }
@@ -149,47 +167,75 @@ fun TaskDropdownFilter(
         onExpandedChange = { expanded = !expanded },
         modifier = modifier
     ) {
-        OutlinedTextField(
-            value = selectedTask,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("Filter by Task", color = Color.DarkGray) },
-            trailingIcon = {
-                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-            },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.Black,
-                unfocusedTextColor = Color.Black,
-                focusedLabelColor = Color.DarkGray,
-                unfocusedLabelColor = Color.DarkGray,
-                focusedBorderColor = Color.Gray,
-                unfocusedBorderColor = Color.LightGray
-            ),
-            modifier = Modifier
-                .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
-                .fillMaxWidth()
-        )
+        Column()
+        {
+            Text(
+                text = "Filter by Task",
+                color = Color.DarkGray,
+                fontSize = 14.sp,
+            )
+            OutlinedTextField(
+                value = selectedTask,
+                onValueChange = {},
+                readOnly = true,
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black,
+                    focusedLabelColor = Color.DarkGray,
+                    unfocusedLabelColor = Color.DarkGray,
+                    focusedBorderColor = Color(0xFFDDDDDD),
+                    unfocusedBorderColor = Color(0xFFDDDDDD),
+                    focusedContainerColor = Color(0xFFF9F9F9),
+                    unfocusedContainerColor = Color(0xFFF9F9F9),
+                    disabledContainerColor = Color(0xFFF9F9F9),
+                    disabledBorderColor = Color(0xFFDDDDDD),
+                    disabledTextColor = Color.Black,
+                    disabledLabelColor = Color.DarkGray
+                ),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
+                    .fillMaxWidth()
+            )
+        }
 
         ExposedDropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = { expanded = false },
+            modifier = Modifier
+                .background(Color(0xFFF9F9F9), shape = RoundedCornerShape(10.dp))
+                .border(1.dp, Color(0xFFDDDDDD), RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(10.dp)),
+            containerColor = Color(0xFFF9F9F9),
+            tonalElevation = 0.dp,
+            shadowElevation = 0.dp
         ) {
             allTasks.forEach { task ->
                 DropdownMenuItem(
-                    text = { Text(task) },
+                    text = {
+                        Text(
+                            task,
+                            fontSize = 14.sp,
+                            fontWeight = if (task == selectedTask) FontWeight.Bold else FontWeight.Normal,
+                            color = if (task == selectedTask) Color(0xFF1565C0) else Color.Black
+                        )
+                    },
                     onClick = {
                         onTaskSelected(task)
                         expanded = false
-                    }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            if (task == selectedTask) Color(0xFFE3F2FD) else Color.Transparent
+                        )
+                        .padding(vertical = 6.dp, horizontal = 12.dp)
                 )
             }
         }
     }
-}
-
-@Preview
-@Composable
-fun PerformanceScreenPreview() {
-    PerformanceScreen()
 }
 

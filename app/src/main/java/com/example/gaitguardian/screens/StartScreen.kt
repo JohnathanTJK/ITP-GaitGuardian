@@ -42,6 +42,7 @@ import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import com.example.gaitguardian.viewmodels.PatientViewModel
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.runtime.mutableIntStateOf
 
 @Composable
 fun StartScreen(
@@ -54,6 +55,7 @@ fun StartScreen(
     var patientAge by remember { mutableStateOf("") }
     var patientConfirmed by remember { mutableStateOf(false) }
     var clinicianName by remember { mutableStateOf("") }
+    var clinicianPin by remember { mutableStateOf("") }
     var clinicianConfirmed by remember { mutableStateOf(false) }
     var successMessage by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
@@ -117,7 +119,7 @@ fun StartScreen(
                                 name = patientName.trim(),
                                 age = patientAge.toInt()
                             )
-                             patientViewModel.insertPatient(newPatient)
+                            patientViewModel.insertPatient(newPatient)
                             patientConfirmed = true
                             errorMessage = ""
                         }
@@ -127,10 +129,15 @@ fun StartScreen(
         } else {
             ClinicianInfoSection(
                 clinicianName = clinicianName,
+                clinicianPin = clinicianPin,
                 errorMessage = errorMessage,
                 successMessage = successMessage,
                 onClinicianNameChange = {
                     clinicianName = it
+                    errorMessage = ""
+                },
+                onClinicianPinChange = {
+                    clinicianPin = it
                     errorMessage = ""
                 },
                 onConfirm = {
@@ -138,14 +145,20 @@ fun StartScreen(
                         clinicianName.isBlank() -> {
                             errorMessage = "Please enter clinician name"
                         }
+                        clinicianPin.isBlank() -> {
+                            errorMessage = "Please enter clinician PIN"
+                        }
+                        clinicianPin.length != 4 || clinicianPin.toIntOrNull() == null -> {
+                            errorMessage = "PIN must be a 4-digit number"
+                        }
                         else -> {
-                            val newClinician = Clinician(name = clinicianName.trim())
-                             clinicianViewModel.insertClinician(newClinician)
+                            val newClinician = Clinician(name = clinicianName.trim(), pin = clinicianPin.trim())
+                            clinicianViewModel.insertClinician(newClinician)
                             clinicianConfirmed = true
                             errorMessage = ""
                         }
                     }
-                }
+                },
             )
         }
     }
@@ -232,9 +245,11 @@ private fun PatientInfoSection(
 @Composable
 private fun ClinicianInfoSection(
     clinicianName: String,
+    clinicianPin: String,
     errorMessage: String,
     successMessage: String,
     onClinicianNameChange: (String) -> Unit,
+    onClinicianPinChange: (String) -> Unit,
     onConfirm: () -> Unit
 ) {
     Column(
@@ -259,6 +274,13 @@ private fun ClinicianInfoSection(
             value = clinicianName,
             onValueChange = onClinicianNameChange,
             label = "Enter clinician name here...",
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+        InfoTextField(
+            value = clinicianPin,
+            onValueChange = onClinicianPinChange,
+            label = "Enter your 4 digit PIN here...",
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.padding(bottom = 16.dp)
         )
         Button(

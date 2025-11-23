@@ -18,12 +18,23 @@ interface TugAnalysisDao {
     @Query("SELECT * FROM tug_analysis_table ORDER BY testId DESC LIMIT 1")
     suspend fun getLatestTugAnalysis(): TUGAnalysis?
 
+    @Query("SELECT * FROM tug_analysis_table ORDER BY testId DESC LIMIT 1")
+    fun getLatestTugAnalysisFlow(): Flow<TUGAnalysis?>
+
+    // Get specific analysis by ID
+    @Query("SELECT * FROM tug_analysis_table WHERE testId = :analysisId")
+    suspend fun getTugAnalysisById(analysisId: String): TUGAnalysis?
+
     //TODO: Update Result Card with this
     @Query("SELECT timeTaken FROM tug_analysis_table ORDER BY testId DESC LIMIT 2")
     suspend fun getLatestTwoTimes(): List<Double>
 
     @Query("SELECT sitToStand, walkFromChair, turnFirst, walkToChair, turnSecond, standToSit FROM tug_analysis_table WHERE testId = :id ")
-    suspend fun getSubtaskById(id: Int): subtaskDuration
+    suspend fun getSubtaskById(id: String): subtaskDuration
 
-
+    // REMOVE ALL
+    @Query("DELETE FROM tug_analysis_table")
+    suspend fun removeAllTugAnalysis()
+    @Query("DELETE FROM sqlite_sequence WHERE name= 'tug_analysis_table'")
+    suspend fun removeAllTugAnalysisId()
 }

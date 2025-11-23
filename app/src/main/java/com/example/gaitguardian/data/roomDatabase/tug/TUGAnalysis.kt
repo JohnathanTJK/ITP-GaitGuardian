@@ -4,11 +4,13 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.google.gson.annotations.SerializedName
+import java.util.UUID
 
 @Entity(tableName = "tug_analysis_table")
 data class TUGAnalysis(
-    @PrimaryKey(autoGenerate = true)
-    val testId: Int = 0,
+    @PrimaryKey(autoGenerate = false)
+//    val testId: Int = 0,
+    val testId : String,
     // Severity Rating
     @ColumnInfo(name ="severity")
     val severity: String,
@@ -29,6 +31,9 @@ data class TUGAnalysis(
     val turnSecond: Double,
     @ColumnInfo("standToSit")
     val standToSit: Double,
+    // Flagged for exceeding 1 second after comparing with previous assessment
+    @ColumnInfo(name = "isFlagged")
+    val isFlagged: Boolean = false
 )
 
 

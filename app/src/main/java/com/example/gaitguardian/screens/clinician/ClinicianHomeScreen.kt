@@ -1,6 +1,5 @@
 package com.example.gaitguardian.screens.clinician
 
-import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -48,12 +48,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.gaitguardian.data.roomDatabase.patient.Patient
-import com.example.gaitguardian.data.roomDatabase.tug.TUGAssessment
 import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.ui.theme.buttonBackgroundColor
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import com.example.gaitguardian.viewmodels.PatientViewModel
 import com.example.gaitguardian.viewmodels.TugDataViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun ClinicianHomeScreen(
@@ -63,28 +65,40 @@ fun ClinicianHomeScreen(
     tugViewModel: TugDataViewModel,
     modifier: Modifier = Modifier
 ) {
-    // Start: Patient ViewModel testing
+
+    // Load necessary information from ViewModels for updating the UI in this screen
     val patientInfo by patientViewModel.patient.collectAsState()
-
-    // End: Patient ViewModel testing
-    // Start: Clinician ViewModel testing
     val clinicianInfo by clinicianViewModel.clinician.collectAsState()
-        val uploadedAssesssments by tugViewModel.allTUGAssessments.collectAsState()
-        val allTugAnalysis by tugViewModel.allTUGAnalysis.collectAsState()
-    val pendingReviews =
-        uploadedAssesssments.count { !it.watchStatus } // Calculate number of videos that are not watched
+    val uploadedAssessments by tugViewModel.allTUGAssessments.collectAsState()
+    val allTugAnalysis by tugViewModel.allTUGAnalysis.collectAsState()
 
+    // return number of patient assessments that are NOT reviewed by clinician
+    val pendingReviews = uploadedAssessments.count { !it.watchStatus }
 
-    // For the multiple mark-as-reviewed functionality
-    var selectedVideoIds by remember { mutableStateOf(setOf<Int>()) }
+    // Calculate critical reviews (if critical means isFlagged is True)
+    val criticalReviews = uploadedAssessments.count { assessment ->
+        val matchedAnalysis = allTugAnalysis.find { it.testId == assessment.testId }
+        val flagStatus = matchedAnalysis?.isFlagged ?: false
+        isCriticalReview(assessment.watchStatus, flagStatus)
+    }
 
-    // To display either ALL/ Pending videos only
+    var selectedVideoIds by remember { mutableStateOf(setOf<String>()) }
     var showPendingVideos by remember { mutableStateOf(false) }
+    var showCriticalVideos by remember { mutableStateOf(false) }
+    var showReviewedVideos by remember { mutableStateOf(false) }
 
-    val filteredVideos = if (showPendingVideos) {
-        uploadedAssesssments.filter { !it.watchStatus }
-    } else {
-        uploadedAssesssments
+    // Used to update the list of filtered assessments
+    val filteredVideos = when {
+        showCriticalVideos -> {
+            uploadedAssessments.filter { assessment ->
+                val matchedAnalysis = allTugAnalysis.find { it.testId == assessment.testId }
+                val flagStatus = matchedAnalysis?.isFlagged ?: false
+                isCriticalReview(assessment.watchStatus, flagStatus)
+            }
+        }
+        showPendingVideos -> uploadedAssessments.filter { !it.watchStatus }
+        showReviewedVideos -> uploadedAssessments.filter { it.watchStatus }
+        else -> uploadedAssessments
     }
 
     Spacer(Modifier.height(30.dp))
@@ -104,28 +118,57 @@ fun ClinicianHomeScreen(
         ) {
             item {
                 ClinicianHeader(
-                    clinicianName = "${clinicianInfo?.name ?: "Clinician"}",
-                    patient = patientInfo ?: Patient(id = 2, name = "Benny", age = 18),
-                    pendingReviews = pendingReviews
+                    clinicianName = clinicianInfo?.name ?: "Clinician",
+                    patient = patientInfo ?: Patient(id = 2, name = "Patient", age = 18),
+                    pendingReviews = pendingReviews,
+                    criticalReviews = criticalReviews
                 )
             }
             item {
                 VideoReviewsSummaryCard(
-                    totalTests = uploadedAssesssments.count(),
+                    totalTests = uploadedAssessments.count(),
                     pendingTests = pendingReviews,
+                    criticalTests = criticalReviews,
+                    showOnlyReviewed = showReviewedVideos,
                     showOnlyPending = showPendingVideos,
-                    onFilterToggle = { showPendingVideos = it }
+                    showOnlyCritical = showCriticalVideos,
+                    onFilterToggle = { filterType ->
+                        when (filterType) {
+                            "reviewed" -> {
+                                showReviewedVideos = true
+                                showPendingVideos = false
+                                showCriticalVideos = false
+                            }
+
+                            "pending" -> {
+                                showReviewedVideos = false
+                                showPendingVideos = true
+                                showCriticalVideos = false
+                            }
+
+                            "critical" -> {
+                                showReviewedVideos = false
+                                showPendingVideos = false
+                                showCriticalVideos = true
+                            }
+                        }
+                    }
                 )
             }
 
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Patient's Assessment Records", fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color(0xFF2D3748))
+                    Text(
+                        "Patient's Assessment Records",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF2D3748)
+                    )
                     HorizontalDivider(thickness = 0.5.dp, color = Color(0xFF718096))
                 }
             }
 
-            if(filteredVideos.isEmpty()){
+            if (filteredVideos.isEmpty()) {
                 item {
                     Box(
                         modifier = Modifier
@@ -134,25 +177,37 @@ fun ClinicianHomeScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = if (showPendingVideos) "No pending assessments to review." else "No assessments available.",
+                            text = when {
+                                showReviewedVideos -> "No reviewed assessments to display."
+                                showCriticalVideos -> "No critical assessments to review."
+                                showPendingVideos -> "No pending assessments to review."
+                                else -> "No assessments available."
+                            },
                             fontSize = 16.sp,
                             color = Color.Gray
                         )
                     }
                 }
-            }
-            else{
-                items(filteredVideos.reversed()) { video -> // show latest first
+            } else {
+                items(filteredVideos.reversed()) { video ->
                     val finalMedicationState = video.onMedication != video.updateMedication
                     val matchedAnalysis = allTugAnalysis.find { it.testId == video.testId }
                     val finalSeverity = matchedAnalysis?.severity ?: "N/A"
+                    val flagStatus = matchedAnalysis?.isFlagged ?: false
+                    val isCritical = isCriticalReview(video.watchStatus, flagStatus)
+
                     TUGVideoItem(
                         navController = navController,
+                        tugViewModel = tugViewModel,
                         testId = video.testId,
-                        dateTime = video.dateTime,
+                        dateTime = SimpleDateFormat(
+                            "dd MMM yyyy, hh:mm a",
+                            Locale.getDefault()
+                        ).format(Date(video.dateTime)),
                         medication = finalMedicationState,
                         severity = finalSeverity,
                         watchStatus = if (video.watchStatus) "Reviewed" else "Pending",
+                        isCritical = isCritical,
                         isSelected = selectedVideoIds.contains(video.testId),
                         onSelectionChanged = { isSelected ->
                             selectedVideoIds = if (isSelected) {
@@ -163,7 +218,6 @@ fun ClinicianHomeScreen(
                         }
                     )
                 }
-
             }
         }
 
@@ -174,8 +228,6 @@ fun ClinicianHomeScreen(
                     selectedVideoIds.forEach { videoId ->
                         tugViewModel.markMultiAsReviewed(videoId)
                     }
-
-                    // After update then clear the selection
                     selectedVideoIds = setOf()
                 },
                 onCancel = {
@@ -207,10 +259,11 @@ fun MultiSelectControls(
                 .fillMaxWidth()
                 .padding(
                     start = 16.dp,
-            top = 8.dp,
-            end = 16.dp,
-            bottom = 8.dp
-        )        ) {
+                    top = 8.dp,
+                    end = 16.dp,
+                    bottom = 8.dp
+                )
+        ) {
             Column {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -221,8 +274,10 @@ fun MultiSelectControls(
                 )
             }
         }
-        Row(modifier = modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround) {
+        Row(
+            modifier = modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceAround
+        ) {
             Button(
                 onClick = onCancel,
                 colors = ButtonDefaults.buttonColors(
@@ -252,8 +307,11 @@ fun MultiSelectControls(
 fun VideoReviewsSummaryCard(
     totalTests: Int,
     pendingTests: Int,
+    criticalTests: Int,
+    showOnlyReviewed: Boolean,
     showOnlyPending: Boolean,
-    onFilterToggle: (Boolean) -> Unit
+    showOnlyCritical: Boolean,
+    onFilterToggle: (String) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -262,7 +320,12 @@ fun VideoReviewsSummaryCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Overview", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF2D3748))
+            Text(
+                "Overview",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF2D3748)
+            )
             Spacer(modifier = Modifier.height(8.dp))
             HorizontalDivider(thickness = 0.5.dp, color = Color(0xFF718096))
             Spacer(modifier = Modifier.height(8.dp))
@@ -272,17 +335,30 @@ fun VideoReviewsSummaryCard(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 VideoOverviewStats(
-                    value = totalTests.toString(),
-                    label = "Total Tests",
-                    isSelected = !showOnlyPending,
-                    onClick = { onFilterToggle(false) },
+                    value = (totalTests - pendingTests).toString(),
+                    label = "Reviewed",
+                    isSelected = showOnlyReviewed,
+                    onClick = { onFilterToggle("reviewed") },
+                    backgroundColor = Color(0xFFE6FFFA),
+                    textColor = Color(0xFF234E52),
                     modifier = Modifier.weight(1f)
                 )
                 VideoOverviewStats(
                     value = pendingTests.toString(),
                     label = "Needs Review",
                     isSelected = showOnlyPending,
-                    onClick = { onFilterToggle(true) },
+                    onClick = { onFilterToggle("pending") },
+                    backgroundColor = Color(0xFFFEF5E7),
+                    textColor = Color(0xFFB7791F),
+                    modifier = Modifier.weight(1f)
+                )
+                VideoOverviewStats(
+                    value = criticalTests.toString(),
+                    label = "Critical",
+                    isSelected = showOnlyCritical,
+                    onClick = { onFilterToggle("critical") },
+                    backgroundColor = Color(0xFFFFF5F5),
+                    textColor = Color(0xFFC53030),
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -296,11 +372,16 @@ fun VideoOverviewStats(
     label: String,
     modifier: Modifier = Modifier,
     isSelected: Boolean = false,
+    backgroundColor: Color = Color(0xFFE6FFFA),
+    textColor: Color = Color(0xFF234E52),
     onClick: () -> Unit
 ) {
     Column(
         modifier = modifier
-            .background(if (isSelected) Color(0xFFEEF2F6) else Color.Transparent, shape = RoundedCornerShape(8.dp))
+            .background(
+                if (isSelected) backgroundColor else Color.Transparent,
+                shape = RoundedCornerShape(8.dp)
+            )
             .padding(8.dp)
             .clickable { onClick() },
         horizontalAlignment = Alignment.CenterHorizontally
@@ -309,25 +390,26 @@ fun VideoOverviewStats(
             text = value,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF2D3748)
+            color = if (isSelected) textColor else Color(0xFF2D3748)
         )
         Text(
             text = label,
             fontSize = 12.sp,
-            color = Color(0xFF718096)
+            color = if (isSelected) textColor else Color(0xFF718096)
         )
     }
 }
 
-
 @Composable
 fun TUGVideoItem(
     navController: NavController,
-    testId: Int,
+    tugViewModel: TugDataViewModel,
+    testId: String,
     dateTime: String,
     medication: Boolean,
     severity: String,
     watchStatus: String,
+    isCritical: Boolean = false,
     isSelected: Boolean = false,
     onSelectionChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
@@ -336,14 +418,20 @@ fun TUGVideoItem(
         modifier = modifier
             .fillMaxWidth(),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isSelected) 8.dp else 4.dp
+            defaultElevation = if (isSelected) 8.dp else if (isCritical) 6.dp else 4.dp
         ),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) Color(0xFFEBF8FF) else Color.White
+            containerColor = when {
+                isSelected -> Color(0xFFEBF8FF)
+                isCritical -> Color(0xFFFFF5F5)
+                else -> Color.White
+            }
         ),
-        border = if (isSelected) {
-            BorderStroke(2.dp, Color(0xFF4299E1))
-        } else null
+        border = when {
+            isSelected -> BorderStroke(2.dp, Color(0xFF4299E1))
+            isCritical -> BorderStroke(2.dp, Color(0xFFFC8181))
+            else -> null
+        }
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -352,8 +440,7 @@ fun TUGVideoItem(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if(watchStatus == "Pending")
-                {
+                if (watchStatus == "Pending") {
                     Checkbox(
                         checked = isSelected,
                         onCheckedChange = onSelectionChanged,
@@ -364,15 +451,20 @@ fun TUGVideoItem(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
 
-                Text(
-                    text = "TUG #${testId}",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF2D3748),
-                    modifier = Modifier.weight(1f)
-                )
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "TUG #${tugViewModel.getDisplayNumberForId(testId)}",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF2D3748)
+                    )
+                }
 
-                VideoWatchStatus(watchStatus)
+                VideoWatchStatus(watchStatus, isCritical)
             }
 
             Text(
@@ -398,36 +490,42 @@ fun TUGVideoItem(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            Text(
-                buildAnnotatedString {
-                    append("Video Severity Rating: ")
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.SemiBold)) {
-                        append(severity)
-                    }
-                },
-                fontSize = 14.sp,
-                color = Color.Black,
-                modifier = Modifier.padding(start = 48.dp)
-            )
+            Row(
+                modifier = Modifier.padding(start = 48.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    buildAnnotatedString {
+                        append("Video Severity Rating: ")
+                        withStyle(style = SpanStyle(fontWeight = FontWeight.SemiBold)) {
+                            append(severity)
+                        }
+                    },
+                    fontSize = 14.sp,
+                    color = Color.Black
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Show Review button only when item is not selected
             if (!isSelected) {
                 Button(
                     onClick = {
                         navController.navigate("clinician_detailed_patient_view_screen/${testId}")
-
                     },
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(start = 48.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = buttonBackgroundColor
+                        containerColor = if (isCritical) Color(0xFFE53E3E) else buttonBackgroundColor
                     )
                 ) {
-                    Text("Review Assessment")
+                    Text(
+                        text = if (isCritical) "Review Critical Assessment" else "Review Assessment",
+                        color = Color.White
+                    )
                 }
             }
         }
@@ -435,29 +533,63 @@ fun TUGVideoItem(
 }
 
 @Composable
-fun VideoWatchStatus(watchStatus: String) {
-    Card(
-        modifier = Modifier
-            .height(24.dp)
-            .width(80.dp),
-        shape = RoundedCornerShape(5.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (watchStatus == "Reviewed") Color(0xFFC6F6D5) else Color(0xFFFEEBC8),
-        )
+fun VideoWatchStatus(watchStatus: String, isCritical: Boolean) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalAlignment = Alignment.End
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = watchStatus,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = if (watchStatus == "Reviewed") Color(0xFF2F855A) else Color(0xFFDD6B20),
-                textAlign = TextAlign.Center
+        Card(
+            modifier = Modifier
+                .height(24.dp)
+                .width(80.dp),
+            shape = RoundedCornerShape(5.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = if (watchStatus == "Reviewed") Color(0xFFC6F6D5) else Color(
+                    0xFFFEEBC8
+                ),
             )
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = watchStatus,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (watchStatus == "Reviewed") Color(0xFF2F855A) else Color(0xFFDD6B20),
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+        if (isCritical) {
+            Card(
+                modifier = Modifier
+                    .height(24.dp)
+                    .width(80.dp),
+                shape = RoundedCornerShape(5.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFFE53E3E),
+                )
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "CRITICAL",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
         }
     }
+}
+
+fun isCriticalReview(watchStatus: Boolean, flagStatus: Boolean): Boolean {
+    return !watchStatus && flagStatus // if not watched/reviewed but isFlagged ( got 1 second diff)
 }
 
 @Composable
@@ -465,6 +597,7 @@ fun ClinicianHeader(
     clinicianName: String,
     patient: Patient,
     pendingReviews: Int,
+    criticalReviews: Int,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -472,14 +605,12 @@ fun ClinicianHeader(
             .fillMaxWidth()
             .background(Color.White),
         horizontalAlignment = Alignment.CenterHorizontally
-    )
-    {
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(20.dp)
         ) {
-            // Welcome message
             Text(
                 text = "Welcome back,",
                 fontSize = 16.sp,
@@ -494,14 +625,12 @@ fun ClinicianHeader(
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            // Divider
             HorizontalDivider(
                 thickness = 1.dp,
                 color = Color(0xFFE2E8F0),
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            // Current patient section
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -536,34 +665,94 @@ fun ClinicianHeader(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-            Card(
+
+            // Alert boxes row
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (pendingReviews > 0) Color(0xFFFFF5F5) else Color(0xFFF0FFF4)
-                ),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(
-                    modifier = Modifier.padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                // Critical Reviews Box
+                if (criticalReviews > 0) {
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFFFF5F5)
+                        ),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = "Critical reviews",
+                                tint = Color(0xFFE53E3E),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Column {
+                                Text(
+                                    text = "$criticalReviews Critical",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFE53E3E)
+                                )
+                                Text(
+                                    text = "Urgent review",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFFC53030)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Pending Reviews Box
+                Card(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (pendingReviews > 0) Color(0xFFFEF5E7) else Color(
+                            0xFFF0FFF4
+                        )
+                    ),
                 ) {
-                    // Box to display pending reviews and a message accordingly
-                    Icon(
-                        imageVector = Icons.Default.Notifications,
-                        contentDescription = "Pending reviews",
-                        tint = if (pendingReviews > 0) Color(0xFFE53E3E) else Color(0xFF38A169),
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = if (pendingReviews > 0)
-                            "$pendingReviews video assessment${if (pendingReviews != 1) "s" else ""} pending review"
-                        else
-                            "No pending videos assessment to review",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = if (pendingReviews > 0) Color(0xFFE53E3E) else Color(0xFF38A169)
-                    )
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = "Pending reviews",
+                            tint = if (pendingReviews > 0) Color(0xFFDD6B20) else Color(0xFF38A169),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Column {
+                            Text(
+                                text = if (pendingReviews > 0)
+                                    "$pendingReviews Pending"
+                                else
+                                    "All Clear",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (pendingReviews > 0) Color(0xFFDD6B20) else Color(
+                                    0xFF38A169
+                                )
+                            )
+                            Text(
+                                text = if (pendingReviews > 0)
+                                    "video${if (pendingReviews != 1) "s" else ""} to review"
+                                else
+                                    "No pending videos",
+                                fontSize = 11.sp,
+                                color = if (pendingReviews > 0) Color(0xFFB7791F) else Color(
+                                    0xFF2F855A
+                                )
+                            )
+                        }
+                    }
                 }
             }
         }

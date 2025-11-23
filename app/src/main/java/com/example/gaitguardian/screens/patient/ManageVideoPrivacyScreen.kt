@@ -35,15 +35,15 @@ import com.example.gaitguardian.viewmodels.PatientViewModel
 import kotlinx.coroutines.delay
 
 @Composable
-fun ManageVideoPrivacyScreen(navController: NavController, patientViewModel: PatientViewModel, assessmentTitle: String) {
+fun ManageVideoPrivacyScreen(navController: NavController, patientViewModel: PatientViewModel) {
     var selectedPreference by remember { mutableStateOf<Boolean?>(null) }
     var showConfirmation by remember { mutableStateOf(false) }
 
     LaunchedEffect(showConfirmation) {
         if (showConfirmation) {
             delay(2000)
-            navController.navigate("camera_screen/${assessmentTitle}") {
-                popUpTo("video_privacy_screen/${assessmentTitle}") { inclusive = true }
+            navController.navigate("new_cam_screen") {
+                popUpTo("video_privacy_screen") { inclusive = true }
             }
         }
     }
@@ -55,7 +55,7 @@ fun ManageVideoPrivacyScreen(navController: NavController, patientViewModel: Pat
             fontWeight = FontWeight.Medium, color = Color.Black)
         Spacer(modifier = Modifier.padding(8.dp))
 
-        Text("Would you like your videos to be saved in your device after each assessment?",
+        Text("Would you like to view your videos in your device after each assessment?",
             fontWeight = FontWeight.Medium, color = Color.Black)
 
         Spacer(modifier = Modifier.padding(16.dp))
@@ -76,7 +76,7 @@ fun ManageVideoPrivacyScreen(navController: NavController, patientViewModel: Pat
                 ),
                 modifier = Modifier.weight(1f)
             ) {
-                Text("Enable Video Saving")
+                Text("Enable Video Hiding")
             }
 
             // Disable videos button
@@ -87,7 +87,7 @@ fun ManageVideoPrivacyScreen(navController: NavController, patientViewModel: Pat
                 ),
                 modifier = Modifier.weight(1f)
             ) {
-                Text("Disable Video Saving")
+                Text("Disable Video Hiding")
             }
         }
 
@@ -106,7 +106,7 @@ fun ManageVideoPrivacyScreen(navController: NavController, patientViewModel: Pat
                             withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
                                 append(if (selectedPreference == true) "ENABLE" else "DISABLE")
                             }
-                            append(" video saving.")
+                            append(" video hiding.")
                         },
                         color = Color.White,
                         fontWeight = FontWeight.Normal

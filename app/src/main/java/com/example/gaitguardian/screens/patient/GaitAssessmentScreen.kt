@@ -8,16 +8,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.ui.theme.ButtonActive
+import com.example.gaitguardian.ui.theme.Heading1
 import com.example.gaitguardian.ui.theme.screenPadding
 import com.example.gaitguardian.ui.theme.spacerLarge
 
 @Composable
 fun GaitAssessmentScreen(navController: NavController, modifier: Modifier = Modifier) {
+
+    var showTutorial by remember { mutableStateOf(false) }
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -50,7 +55,9 @@ fun GaitAssessmentScreen(navController: NavController, modifier: Modifier = Modi
             Button(
                 onClick = {
                     val encoded = Uri.encode("Timed Up and Go")
-                    navController.navigate("assessment_instruction_screen/$encoded")
+//                    navController.navigate("assessment_info_screen/$encoded")
+                    navController.navigate("assessment_info_screen")
+
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
                 shape = RoundedCornerShape(16.dp),
@@ -62,20 +69,20 @@ fun GaitAssessmentScreen(navController: NavController, modifier: Modifier = Modi
                 Text("Stand-Walk Test", fontSize = 20.sp, color = Color.Black)
             }
 
-            Button(
-                onClick = {
-                    val encoded = Uri.encode("Sit-to-Stand x5")
-                    navController.navigate("assessment_instruction_screen/$encoded")
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(80.dp)
-                    .padding(vertical = 16.dp)
-            ) {
-                Text("Five Times Sit to Stand", fontSize = 20.sp, color = Color.Black)
-            }
+//            Button(
+//                onClick = {
+//                    val encoded = Uri.encode("Sit-to-Stand x5")
+//                    navController.navigate("assessment_info_screen/$encoded")
+//                },
+//                colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
+//                shape = RoundedCornerShape(16.dp),
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .height(80.dp)
+//                    .padding(vertical = 16.dp)
+//            ) {
+//                Text("Five Times Sit to Stand", fontSize = 20.sp, color = Color.Black)
+//            }
 
             // Third Button (Go Back) with same height & padding as above
             Button(
@@ -89,6 +96,31 @@ fun GaitAssessmentScreen(navController: NavController, modifier: Modifier = Modi
             ) {
                 Text("Go Back", fontSize = 20.sp, color = Color.Black)
             }
+            // --- Need help button ---
+            Button(
+                onClick = { showTutorial = true },
+                colors = ButtonDefaults.buttonColors(containerColor = ButtonActive),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(80.dp)
+                    .padding(vertical = 12.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = "How to use",
+                    color = Color.Black,
+                    fontSize = Heading1,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+// --- Full-screen tutorial overlay using Dialog ---
+    if (showTutorial) {
+        Dialog(onDismissRequest = { showTutorial = false }) {
+            GaitAssessmentTutorial(
+                onClose = { showTutorial = false }
+            )
         }
     }
 }

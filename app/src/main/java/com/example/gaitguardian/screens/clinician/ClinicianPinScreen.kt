@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,16 +35,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.gaitguardian.ui.theme.bgColor
+import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
 @Composable
 fun PinEntryScreen(
+    modifier: Modifier = Modifier,
     pinLength: Int = 4,
     onPinComplete: (String) -> Unit,
     onPinChange: (String) -> Unit = {},
-    modifier: Modifier = Modifier
+    errorMessage: String = "",
 ) {
     var pin by remember { mutableStateOf("") }
     val focusRequesters = remember {
@@ -113,6 +115,16 @@ fun PinEntryScreen(
             }
         }
 
+        // Show error message if any
+        if (errorMessage.isNotEmpty()) {
+            Text(
+                text = errorMessage,
+                color = Color.Red,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 16.dp),
+                textAlign = TextAlign.Center
+            )
+        }
 
         if (pin.isNotEmpty()) {
             TextButton(
@@ -204,7 +216,7 @@ fun PinDigitBox(
         } else {
             // Inactive boxes just show the digit or placeholder
             Text(
-                text = if (digit.isNotEmpty()) digit else "-",
+                text = digit.ifEmpty { "-" },
                 color = if (digit.isNotEmpty()) {
                     Color.Black
                 } else {
@@ -216,11 +228,14 @@ fun PinDigitBox(
 }
 
 @Composable
-fun PinEntryExample(navController: NavController) { // for testing now
+fun PinEntryExample(navController: NavController,
+                    clinicianViewModel: ClinicianViewModel)
+{ // for testing now
     var showSuccess by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     val coroutineScope = rememberCoroutineScope()
-
+    val clinicianInfo by clinicianViewModel.clinician.collectAsState()
+    val clinicianPin = clinicianInfo?.pin
     if (showSuccess) {
         Column(
             modifier = Modifier
@@ -240,16 +255,23 @@ fun PinEntryExample(navController: NavController) { // for testing now
         Column {
             PinEntryScreen(
                 pinLength = 4,
+                errorMessage = errorMessage,
                 onPinComplete = { pin ->
                     // Validate PIN here, for now just 1234
-                    if (pin == "1234") {
+//                    if (pin == "1234") { // validation
+                    if (pin == clinicianPin) {
+                        clinicianViewModel.saveCurrentUserView("clinician")
                         showSuccess = true
-                        errorMessage = ""
-                        coroutineScope.launch{
+                        coroutineScope.launch {
                             delay(1500)
-                            navController.navigate("clinician_home_screen")
+                            // Navigate to home
+                            navController.navigate("clinician_graph") {
+                                popUpTo("clinician_pin_verification_screen") { inclusive = true }
+                                launchSingleTop = true
+                            }
                         }
-                    } else {
+                    }
+                    else {
                         errorMessage = "Incorrect PIN. Try again."
                     }
                 },
@@ -260,19 +282,6 @@ fun PinEntryExample(navController: NavController) { // for testing now
                     }
                 }
             )
-
-            // Show error message if any
-            if (errorMessage.isNotEmpty()) {
-                Text(
-                    text = errorMessage,
-                    color = Color.Black,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 8.dp),
-                    textAlign = TextAlign.Center
-                )
-            }
         }
     }
 }

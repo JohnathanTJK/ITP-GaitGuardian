@@ -1,0 +1,332 @@
+# 🏥 GaitGuardian - TUG Assessment System Architecture
+
+## 🔄 System Flow Summary
+```
+📱 Patient records video → 🔄 Auto-processing → 📊 Detailed results
+```
+
+**Key Innovation:** No manual analysis - everything happens automatically after video recording.
+
+---
+
+## 🏗️ Application Architecture
+
+### **Navigation Flow**
+```
+TugAssessmentScreen → LoadingScreen → ResultScreen
+```
+
+1. **TugAssessmentScreen.kt**: Video recording + medication selection
+2. **LoadingScreen.kt**: Automatic processing with progress feedback  
+3. **ResultScreen.kt**: Comprehensive TUG analysis display
+
+---
+
+## 🤖 Core Processing Pipeline (3 Stages)
+
+### **Stage 1: 📹 Pose Extraction**
+**File**: `PoseExtraction.kt`
+
+**What it does:**
+- Takes MP4 video file as input
+- Uses MediaPipe to detect 33 body landmarks per frame
+- Outputs normalized (x,y) coordinates for each landmark
+
+**Key landmarks detected:**
+- Hips, knees, ankles (lower body)
+- Shoulders, elbows, wrists (upper body)  
+- Heels, toes (foot placement)
+- Nose (head orientation)
+
+**Technical details:**
+- Processes each video frame individually
+- Handles missing poses gracefully
+- Extracts at original video frame rate (typically 30 FPS)
+
+---
+
+### **Stage 2: 🧠 Feature Extraction**
+**File**: `FeatureExtraction.kt`
+
+**What it does:**
+- Takes pose landmarks from all frames
+- Calculates 111 biomechanical features **per frame**
+- Returns frame-by-frame feature vectors (not aggregated)
+
+**Critical architectural decision:**
+This is a **direct Python port** - every calculation matches the original Python research code line-by-line to ensure ML model compatibility.
+
+**111 Features per frame include:**
+
+1. **Clinical Gait Parameters (10 features):**
+   - Hip height, velocities, accelerations
+   - Center of mass trajectory and dynamics
+
+2. **Joint Kinematics (18 features):**
+   - Knee, hip, ankle angles (both legs)
+   - Torso angle and angular velocity
+   - Joint coordination patterns
+
+3. **Phase-Specific Features (5 features):**
+   - Vertical momentum, sit-to-stand power
+   - Trunk flexion, forward progression
+
+4. **Gait Analysis (14 features):**
+   - Step detection, asymmetry measures
+   - Base of support, heel/toe dynamics
+   - Cadence and timing variability
+
+5. **Turning Kinematics (12 features):**
+   - Shoulder/hip rotation and velocities
+   - Axial dissociation, head movement
+   - Turn preparation scoring
+
+6. **Balance & Stability (8 features):**
+   - Mediolateral/anteroposterior sway
+   - Weight shift, postural control
+
+7. **Energy & Power (7 features):**
+   - Kinetic, potential, rotational energy
+   - Concentric/eccentric power
+
+8. **Temporal Context (6 features):**
+   - Task progression through TUG phases
+   - Phase likelihood estimation
+
+9. **Temporal Smoothing (24 features):**
+   - Rolling windows (5, 10, 15, 30 frames)
+   - Multi-scale movement patterns
+
+10. **Derived Features (7 features):**
+    - Acceleration, jerk, sustained movement flags
+
+**Key algorithm pattern:**
+```python
+# Python equivalent (frame-by-frame processing)
+for i in range(len(df)):
+    current_frame = df.iloc[i]
+    previous_frame = df.iloc[i-1] if i > 0 else current_frame
+    
+    # Calculate 111 features for this frame
+    features[i] = extract_frame_features(current_frame, previous_frame, fps)
+```
+
+---
+
+### **Stage 3: 🔮 TUG Prediction**
+**File**: `TugPrediction.kt`
+
+**What it does:**
+- Takes frame-by-frame feature vectors
+- Uses ONNX XGBoost model to predict TUG phase for each frame
+- Applies post-processing for smooth, logical results
+
+**Sub-processes:**
+1. **Feature Conversion**: Convert feature maps to ordered 111-element arrays
+2. **ONNX Inference**: XGBoost model predicts phase per frame
+3. **Temporal Smoothing**: Majority voting over 5-frame windows
+4. **Sequence Correction**: Enforce logical TUG phase progression
+5. **Duration Analysis**: Calculate time spent in each phase
+
+**6 TUG Phases Detected:**
+1. **Sit-to-Stand**: Rising from chair
+2. **Walk-From-Chair**: Walking away from chair
+3. **Turn-First**: Turning around at marker
+4. **Walk-To-Chair**: Walking back to chair
+5. **Turn-Second**: Turning to face chair
+6. **Stand-to-Sit**: Sitting back down
+
+---
+
+## 🎛️ System Orchestration
+
+### **GaitAnalysisClient.kt** - Master Controller
+**Role**: Orchestrates the entire 3-stage pipeline
+
+**Process flow:**
+1. Convert video URI to processable file
+2. Extract video metadata (FPS, duration)
+3. Initialize MediaPipe and ONNX models
+4. Run sequential processing through all 3 stages
+5. Return comprehensive TUG analysis
+
+**Key methods:**
+- `analyzeVideo(videoUri)` - Main entry point
+- `analyzeVideoFile(videoFile)` - Core processing
+- `analyzeVideoWithCorrectFPS(videoFile)` - Pipeline orchestration
+
+---
+
+## 📊 Results & Data Structures
+
+### **TugMetrics Data Structure:**
+```kotlin
+data class TugMetrics(
+    val totalTime: Double,
+    val sitToStandTime: Double,
+    val walkFromChairTime: Double, 
+    val turnFirstTime: Double,
+    val walkToChairTime: Double,
+    val turnSecondTime: Double,
+    val standToSitTime: Double
+)
+```
+
+### **Clinical Assessment Features:**
+- **Severity Classification**: Based on total TUG duration
+- **Risk Assessment**: Fall risk evaluation
+- **Progress Tracking**: Comparison with previous assessments
+- **Medication Impact**: Analysis of medication effects on performance
+
+---
+
+## 🔧 Technical Implementation Details
+
+### **Key Design Patterns:**
+
+1. **Pipeline Architecture**: 
+   - Clean separation: Pose → Features → Prediction → Results
+   - Each stage is independent and testable
+
+2. **Kotlin Coroutines**: 
+   - Background video processing
+   - Non-blocking UI during analysis
+
+3. **MVVM Pattern**: 
+   - `TugDataViewModel` manages assessment data
+   - Reactive UI updates with `StateFlow`
+
+4. **Direct Python Port**: 
+   - Line-by-line translation of Python algorithms
+   - Ensures compatibility with existing ML models
+
+### **Performance Optimizations:**
+- **MediaPipe**: Hardware-accelerated pose detection
+- **ONNX Runtime**: Optimized model inference
+- **Streaming Processing**: Frame-by-frame analysis reduces memory usage
+- **Async Processing**: UI remains responsive during analysis
+
+### **Data Flow:**
+```
+Video File (MP4)
+↓
+639 frames × 33 landmarks (MediaPipe)
+↓
+639 frames × 111 features (Feature Extraction)
+↓
+639 phase predictions (ONNX Model)
+↓
+6 phase durations + total time (Post-processing)
+↓
+Clinical Results (UI Display)
+```
+
+---
+
+## 🎯 Clinical Workflow
+
+### **Patient Experience:**
+1. **Setup**: Select medication status (ON/OFF)
+2. **Recording**: Record 30-60 second TUG test video
+3. **Processing**: Automatic analysis (1-2 minutes)
+4. **Results**: View detailed breakdown and recommendations
+5. **Follow-up**: Update medication status based on results
+
+### **Clinical Value:**
+- **Objective Measurement**: Replaces subjective manual timing
+- **Detailed Analysis**: 6-phase breakdown vs simple total time
+- **Progress Tracking**: Longitudinal assessment comparison
+- **Medication Correlation**: Track medication impact on mobility
+- **Risk Assessment**: Fall risk evaluation based on movement patterns
+
+---
+
+## 📱 User Interface Components
+
+### **TugAssessmentScreen.kt**
+- **Purpose**: Patient video recording interface
+- **Features**: 
+  - Camera integration for video recording
+  - Medication status selection
+  - **Streamlined UX**: Immediate navigation to loading (no manual analysis button)
+
+### **LoadingScreen.kt**
+- **Purpose**: Auto-processing with user feedback
+- **Features**:
+  - Motivational quotes during processing
+  - Automatic analysis start with `LaunchedEffect`
+  - Error handling with graceful fallbacks
+  - Auto-navigation to results when complete
+
+### **ResultScreen.kt**
+- **Purpose**: Comprehensive TUG analysis display
+- **Key Sections**:
+  - Assessment Summary (type, date, severity)
+  - **TUG Phase Breakdown**: 6-phase timing analysis
+  - Progress Comparison (current vs previous)
+  - Medication Status update option
+
+---
+
+## 🔍 Key Implementation Notes
+
+### **Critical Architectural Decisions:**
+
+1. **Frame-by-Frame Processing**: 
+   - Unlike many systems that aggregate features, this processes each frame individually
+   - Enables temporal analysis and phase detection
+   - Matches research-grade Python implementation
+
+2. **Direct Python Port**:
+   - `FeatureExtraction.kt` replicates Python calculations exactly
+   - Ensures ML model compatibility
+   - Maintains research validation
+
+3. **Automatic Pipeline**:
+   - No manual intervention required after video recording
+   - Seamless user experience from recording to results
+
+4. **ONNX Integration**:
+   - Uses trained XGBoost models for phase classification
+   - Enables offline processing without server dependencies
+
+---
+
+## 📚 File Structure Summary
+
+```
+Core Processing:
+├── PoseExtraction.kt - MediaPipe pose landmark detection
+├── FeatureExtraction.kt - 111 biomechanical features per frame
+├── TugPrediction.kt - ONNX model inference + post-processing
+└── GaitAnalysisClient.kt - Pipeline orchestration
+
+User Interface:
+├── TugAssessmentScreen.kt - Video recording interface
+├── LoadingScreen.kt - Auto-processing with feedback
+└── ResultScreen.kt - Results display with phase breakdown
+
+Data Models:
+├── TugMetrics.kt - Phase timing data structure
+└── Various API response models
+
+Data From Python:
+└── newest_compvision - Python version + data
+```
+
+---
+
+**To understand this system:**
+1. Start with `GaitAnalysisClient.kt` to see the overall flow
+2. Follow the 3-stage pipeline: Pose → Features → Prediction
+3. Note that feature extraction is frame-by-frame, not aggregated
+4. The Python port ensures research compatibility
+5. UI flow is streamlined: Record → Auto-process → Results
+
+**Key debugging points:**
+- Frame counts should match through all stages
+- Feature vectors should be 111 elements each
+- Phase predictions should follow logical TUG sequence
+- Timing calculations depend on accurate FPS from MediaPipe
+
+---

@@ -1,0 +1,220 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 6,
+    "identityHash": "73c9f143e6fb483fc0579a68055540a9",
+    "entities": [
+      {
+        "tableName": "patients_table",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `age` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "age",
+            "columnName": "age",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "tug_assessment_table",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`testId` TEXT NOT NULL, `dateTime` INTEGER NOT NULL, `videoDuration` REAL NOT NULL, `videoTitle` TEXT, `onMedication` INTEGER NOT NULL, `updateMedication` INTEGER NOT NULL, `patientComments` TEXT NOT NULL, `clinicianId` INTEGER, `watchStatus` INTEGER NOT NULL, `notes` TEXT, PRIMARY KEY(`testId`))",
+        "fields": [
+          {
+            "fieldPath": "testId",
+            "columnName": "testId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dateTime",
+            "columnName": "dateTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "videoDuration",
+            "columnName": "videoDuration",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "videoTitle",
+            "columnName": "videoTitle",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "onMedication",
+            "columnName": "onMedication",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updateMedication",
+            "columnName": "updateMedication",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "patientComments",
+            "columnName": "patientComments",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clinicianId",
+            "columnName": "clinicianId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "watchStatus",
+            "columnName": "watchStatus",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "testId"
+          ]
+        }
+      },
+      {
+        "tableName": "clinician_table",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `pin` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pin",
+            "columnName": "pin",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "tug_analysis_table",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`testId` TEXT NOT NULL, `severity` TEXT NOT NULL, `timeTaken` REAL NOT NULL, `stepCount` INTEGER NOT NULL, `sitToStand` REAL NOT NULL, `walkFromChair` REAL NOT NULL, `turnFirst` REAL NOT NULL, `walkToChair` REAL NOT NULL, `turnSecond` REAL NOT NULL, `standToSit` REAL NOT NULL, `isFlagged` INTEGER NOT NULL, PRIMARY KEY(`testId`))",
+        "fields": [
+          {
+            "fieldPath": "testId",
+            "columnName": "testId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "severity",
+            "columnName": "severity",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timeTaken",
+            "columnName": "timeTaken",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stepCount",
+            "columnName": "stepCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sitToStand",
+            "columnName": "sitToStand",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "walkFromChair",
+            "columnName": "walkFromChair",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "turnFirst",
+            "columnName": "turnFirst",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "walkToChair",
+            "columnName": "walkToChair",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "turnSecond",
+            "columnName": "turnSecond",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "standToSit",
+            "columnName": "standToSit",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isFlagged",
+            "columnName": "isFlagged",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "testId"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '73c9f143e6fb483fc0579a68055540a9')"
+    ]
+  }
+}

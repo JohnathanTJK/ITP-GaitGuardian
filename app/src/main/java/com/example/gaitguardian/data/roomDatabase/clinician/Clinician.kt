@@ -10,4 +10,6 @@ data class Clinician(
     val id: Int = 0,
     @ColumnInfo(name = "name")
     val name: String,
+    @ColumnInfo(name = "pin")
+    val pin: String,
 )

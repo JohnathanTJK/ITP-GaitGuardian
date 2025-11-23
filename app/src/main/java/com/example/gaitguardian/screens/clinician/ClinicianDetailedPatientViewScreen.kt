@@ -3,6 +3,7 @@ package com.example.gaitguardian.screens.clinician
 import android.content.Context
 import android.content.Intent
 import android.os.Environment
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,10 +49,12 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.navigation.NavController
 import com.example.gaitguardian.data.roomDatabase.patient.Patient
+import com.example.gaitguardian.data.roomDatabase.tug.TUGAnalysis
 import com.example.gaitguardian.data.roomDatabase.tug.subtaskDuration
 import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.ui.theme.buttonBackgroundColor
 import com.example.gaitguardian.viewmodels.ClinicianViewModel
+import com.example.gaitguardian.viewmodels.PatientViewModel
 import com.example.gaitguardian.viewmodels.TugDataViewModel
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
@@ -71,26 +74,34 @@ import com.patrykandpatrick.vico.core.common.component.TextComponent
 import com.patrykandpatrick.vico.core.common.shape.CorneredShape
 import kotlinx.coroutines.launch
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun ClinicianDetailedPatientViewScreen(
     navController: NavController,
-    clinicianViewModel: ClinicianViewModel,
+    patientViewModel: PatientViewModel,
     tugViewModel: TugDataViewModel,
-    testId: Int,
+    testId: String,
     modifier: Modifier = Modifier
 ) {
 
+    var displayId by remember {mutableStateOf("")}
     LaunchedEffect(testId) { // pre-load with the testId from backStackEntry
         tugViewModel.loadAssessmentById(testId)
         tugViewModel.getSubtaskById(testId)
+        displayId = tugViewModel.getDisplayNumberForId(testId).toString()
     }
 
 
+    val patientInfo by patientViewModel.patient.collectAsState()
+
+    val allSubtasks by tugViewModel.allTUGAnalysis.collectAsState()
     val assessment by tugViewModel.selectedTUGAssessment.collectAsState()
     val subtaskDuration by tugViewModel.subtaskDuration.collectAsState()
-
-    val patient = Patient(2, "Benny", 18)
+    Log.d("ClinicianDetailedPatientViewScreen", "asssemntinfo: $assessment")
+//    val patient = Patient(2, "Benny", 18)
 
     var tugDateTime by remember { mutableStateOf("") }
     var tugVideo by remember { mutableStateOf("") }
@@ -110,7 +121,11 @@ fun ClinicianDetailedPatientViewScreen(
 
     LaunchedEffect(assessment?.testId) {
         assessment?.let {
-            tugDateTime = it.dateTime
+
+            tugDateTime = SimpleDateFormat(
+                "dd MMM yyyy, hh:mm a",
+                Locale.getDefault()
+            ).format(Date(it.dateTime))
             tugVideo = it.videoTitle.orEmpty()
             tugDuration = it.videoDuration
             onMedication = it.onMedication
@@ -143,14 +158,16 @@ fun ClinicianDetailedPatientViewScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                patientInfo?.name?.let {
+                    Text(
+                        text = it,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF2D3748)
+                    )
+                }
                 Text(
-                    text = patient.name,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF2D3748)
-                )
-                Text(
-                    text = "• Age ${patient.age}",
+                    text = "• Age ${patientInfo?.age}",
                     fontSize = 14.sp,
                     color = Color(0xFF718096)
                 )
@@ -168,12 +185,11 @@ fun ClinicianDetailedPatientViewScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    "TUG TEST #${testId}",
+                    "TUG TEST #$displayId",
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center,
                     color = Color.Black
                 )
-                VideoWatchStatus((if (isReviewed) "Reviewed" else "Pending"))
             }
             Row(
                 modifier = Modifier
@@ -256,7 +272,7 @@ fun ClinicianDetailedPatientViewScreen(
                 )
             }
             // Assessment Recording Button
-            VideoButton(tugVideo, tugDuration)
+            VideoButton(tugVideo, tugDuration, navController)
 
         }
         Card(
@@ -276,7 +292,10 @@ fun ClinicianDetailedPatientViewScreen(
                 )
             }
 
-            JetpackComposeBasicLineChart()
+            if (allSubtasks.isNotEmpty())
+            {
+                JetpackComposeBasicLineChart(subtasks=allSubtasks)
+            }
             Box(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
@@ -512,15 +531,20 @@ fun TUGsubTasksList(
 
 
 @Composable
-fun JetpackComposeBasicLineChart(modifier: Modifier = Modifier) {
+fun JetpackComposeBasicLineChart(subtasks: List<TUGAnalysis>, modifier: Modifier = Modifier) {
     val modelProducer = remember { CartesianChartModelProducer() }
-
     LaunchedEffect(Unit) {
+        // Extract X and Y values
+        val xValues = (1..subtasks.size).toList()                 // [1, 2, 3, ...]
+        val yValues = subtasks.map { it.timeTaken.toFloat() }     // [timeTaken values]
+
         modelProducer.runTransaction {
             lineSeries {
                 series(
-                    listOf(1, 2, 3, 4, 5, 6),  // TUG Tests # / X values
-                    listOf(13, 8, 7, 12, 0, 1)       // Time Taken / Y Values
+                    xValues,
+                    yValues
+//                    listOf(1, 2, 3, 4, 5, 6),  // TUG Tests # / X values
+//                    listOf(13, 8, 7, 12, 0, 1)       // Time Taken / Y Values
                 )
             }
         }
@@ -530,12 +554,22 @@ fun JetpackComposeBasicLineChart(modifier: Modifier = Modifier) {
 
 
 @Composable
-fun VideoButton(videoTitle: String, videoDuration: Float) {
-    val context = LocalContext.current
-    val videoFolder = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
-    val videoFile = videoFolder?.listFiles()?.find { it.name == videoTitle }
-    if (videoFile != null && videoFile.exists()) {
-        VideoListItem(context, videoFile, videoDuration)
+fun VideoButton(videoTitle: String, videoDuration: Float, navController: NavController) {
+    val videoFile = File(videoTitle)
+    if (videoFile.exists()) {
+        Button(
+            onClick = {
+                navController.navigate("video_screen")
+            },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(10.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFFFC9E4F),
+                contentColor = Color.Black
+            )
+        ) {
+            Text("Watch Assessment Recording [${videoDuration}s]", fontWeight = FontWeight.Bold)
+        }
     } else {
         Box(
             modifier = Modifier
@@ -551,38 +585,5 @@ fun VideoButton(videoTitle: String, videoDuration: Float) {
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
-    }
-}
-
-@Composable
-fun VideoListItem(context: Context, file: File, videoDuration: Float) {
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(20.dp)
-    ) {
-        Button(
-            onClick = {
-                val uri = FileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.provider",
-                    file
-                )
-                val intent = Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(uri, "video/mp4")
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }
-                context.startActivity(intent)
-            },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFFFC9E4F),
-                contentColor = Color.Black
-            )
-        ) {
-            Text("Watch Assessment Recording [${videoDuration}s]", fontWeight = FontWeight.Bold)
-        }
     }
 }

@@ -1,5 +1,6 @@
 package com.example.gaitguardian.api
 
+import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -8,20 +9,20 @@ import kotlinx.coroutines.launch
 object TestApiConnection {
     private const val TAG = "TestApiConnection"
     
-    fun testConnection() {
-        val client = GaitAnalysisClient()
+    fun testConnection(context: Context) {
+        val client = GaitAnalysisClient(context)
         
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                Log.d(TAG, "Testing API connection...")
+                Log.d(TAG, "Testing local analysis components...")
                 val result = client.checkServerHealth()
                 
                 result.fold(
                     onSuccess = { isHealthy ->
-                        Log.d(TAG, "✅ API Connection successful! Server healthy: $isHealthy")
+                        Log.d(TAG, "✅ Local analysis components ready! Status: $isHealthy")
                     },
                     onFailure = { exception ->
-                        Log.e(TAG, "❌ API Connection failed: ${exception.message}")
+                        Log.e(TAG, "❌ Local analysis initialization failed: ${exception.message}")
                     }
                 )
             } catch (e: Exception) {
