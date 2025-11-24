@@ -18,29 +18,22 @@ GaitGuardian is a mobile application designed to make tracking the progression o
 ---
 ## 🛠️ How to Run GaitGuardian
 Please ensure that you have Android Studio installed.
-
-### Install Requirements and Run Flask Server
-
-```bash
-cd computervision_test
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-python app.py
-```
-### Change the IP Address in GaitGuardianAnalysis.kt (line 19)
-```bash
-// REPLACE THIS IP WITH YOUR COMPUTER'S IP ADDRESS
-private const val BASE_URL = "http://<<YOUR IP HERE>>:5001/"  // Change this IP!
-```
-
-Make sure to rebuild the GaitGuardian app using Android Studio after updating the IP address so the changes take effect.
-
+Sync Gradle Files if required
+Build the application and run it on the emulator.
 
 ## 🗂️ Project Structure
 ### File Structure of Pose Detection and Machine Learning Backend
 ```
-computervision_test
+itp2compvision+phaseclassification
+├── model/
+│   ├── xgb_features.json               ← Pose Feature columns for XGBoost model input
+│   ├── xgb_label_encoder.pkl           ← LabelEncoder for TUG subtask labels
+│   └── xgb_model.pkl                   ← XGBoost model
+│
+├── app.py/                             ← Flask API for gait analysis: pose extraction, subtask classification, gait metrics, and severity scoring
+├── requirements.txt                    ← Required Modules for the backend
+
+itp2mlp
 ├── model/
 │   ├── xgb_features.json               ← Pose Feature columns for XGBoost model input
 │   ├── xgb_label_encoder.pkl           ← LabelEncoder for TUG subtask labels
@@ -49,17 +42,18 @@ computervision_test
 ├── app.py/                             ← Flask API for gait analysis: pose extraction, subtask classification, gait metrics, and severity scoring
 ├── requirements.txt                    ← Required Modules for the backend
 ```
-###### Please refer to the [`integration`](https://github.com/JohnathanTJK/ITP-GaitGuardian/tree/integration) branch for ML/Pose Estimation Testing codes.
 ### File Structure of GaitGuardian Android App
 ```
 app/src/main/java/com/example/gaitguardian
 ├── api/                                      
-│   ├── GaitAnalysisAPI.kt              ← Retrofit API interface
+│   ├── GaitAnalysisAPI.kt              ← Retrofit API interface (remove? since its unused?)
 │   ├── GaitAnalysisClient.kt           ← API client management (Retrofit builder, etc.)
 │   ├── GaitAnalysisModels.kt           ← Data models for gait analysis API
 │   └── TestApiConnection.kt            ← API connection testing utility
 │
 ├── data/                               ← Data Layer
+│   ├── models/                         
+│   │   ├── TugResult                   ← Generate a data class to store video analysis result
 │   ├── roomDatabase/                  
 │   │   ├── clinician/                  ← Clinician entity, Clinician DAO, and repository
 │   │   ├── patient/                    ← Patient entity, Patient DAO, and repository
@@ -69,22 +63,28 @@ app/src/main/java/com/example/gaitguardian
 │       └── AppPreferencesRepository.kt ← SharedPreferences handler
 │
 ├── screens/                            ← View Layer
-│   ├── camera/                         ← Camera capture and preview screens
+│   ├── camera/                         ← Camera capture and UI Overlay
 │   ├── clinician/                      ← Home, PIN entry, assessment details, performance graphs, video playback
-│   ├── patient/                        ← Home, recording, loading, results
-│   ├── SettingsScreen.kt                   ← Screen to manage app settings
-│   ├── SplashScreen.kt                     ← Initial loading/splash screen
-│   └── StartScreen.kt                      ← Welcome screen for new users
+│   ├── patient/                        ← Home, recording, loading, results, how-to-use guides
+│   ├── SettingsScreen.kt               ← Screen to manage app settings
+│   ├── SplashScreen.kt                 ← Initial loading/splash screen
+│   └── StartScreen.kt                  ← Welcome screen for new users
 │
 ├── viewmodels/                         ← ViewModel Layer
 │   ├── ClinicianViewModel.kt           ← Manages clinician-related UI state
 │   ├── PatientViewModel.kt             ← Manages patient-related UI state
 │   └── TugDataViewModel.kt             ← Manages TUG assessment data
-│   └── CameraViewModel.kt             ← Manages Camera-related UI state
+│   └── CameraViewModel.kt              ← Manages Camera-related UI state
 │
+└── FeatureExtraction.kt                ← Extract Features (angle rotation, movement complexity)
 ├── GaitGuardian.kt                     ← Application class
 ├── MainActivity.kt                     ← Entry point activity with navigation host
-└── NavGraph.kt                         ← Centralized navigation graph
+└── NotificationService.kt              ← Notification broadcast setup
+└── PoseExtraction.kt                   ← Process body landmarks
+└── SeverityClassification.kt           ← Classify severity 
+└── SeverityPrediction.kt               ← Predict severity
+└── TugPrediction.kt                    ← Predict TUG 
+
 ```
 
 ---
