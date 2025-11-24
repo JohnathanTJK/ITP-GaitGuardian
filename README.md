@@ -46,7 +46,6 @@ itp2mlp
 ```
 app/src/main/java/com/example/gaitguardian
 ├── api/                                      
-│   ├── GaitAnalysisAPI.kt              ← Retrofit API interface (remove? since its unused?)
 │   ├── GaitAnalysisClient.kt           ← API client management (Retrofit builder, etc.)
 │   ├── GaitAnalysisModels.kt           ← Data models for gait analysis API
 │   └── TestApiConnection.kt            ← API connection testing utility
