@@ -42,11 +42,8 @@ itp2compvision+phaseclassification
 
 itp2mlp
 ├── android_models/                     ← MLP Model ONNX model file & metadata files
-│
 ├── severity_models/                    ← MLP Model file & metadata files
-│
 ├── severity_models_enhanced/           ← Ensemble Model ONNX model file & metadata files
-│
 ├── convert_mlp_to_onnx.py              ← Convert Ensemble model to ONNX format
 ├── dataset_labelling.xlsx              ← Labelled dataset for MLP training
 ├── train_mlp_severity                  ← Ensemble Model Training
