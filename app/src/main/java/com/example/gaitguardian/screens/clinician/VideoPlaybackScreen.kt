@@ -47,7 +47,13 @@ import androidx.navigation.NavHostController
 import com.example.gaitguardian.ui.theme.bgColor
 import com.example.gaitguardian.ui.theme.buttonBackgroundColor
 import java.io.File
-
+/**
+ * Clinician Video Playback Screen -
+ * Review the video playback of the TUG assessment
+ * Interactive UI which highlights the subtask being performed
+ * Clickable Buttons to Jump to Specific Subtask
+ * Can do portrait and landscape orientation
+ */
 @Composable
 fun VideoPlaybackScreen(
     tugViewModel: TugDataViewModel,

@@ -32,6 +32,11 @@ import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.core.common.component.TextComponent
 import com.patrykandpatrick.vico.core.common.shape.CorneredShape
 
+/**
+ * Clinician Performance Screen - Graphs of TUG Assessments (Comparison of durations across assessments)
+ * Populated based on the number of completed assessments
+ * Filter to individual sub-task comparison
+ */
 @Composable
 fun PerformanceScreen(
     tugViewModel: TugDataViewModel,

@@ -39,7 +39,11 @@ import com.example.gaitguardian.viewmodels.ClinicianViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-
+/**
+ * Clinician Pin Screen
+ * To Validate the PIN by checking the PIN stored in the RoomDB (Retrieved by ClinicianViewModel)
+ * Error Handling to deny access if wrong pin used
+ */
 @Composable
 fun PinEntryScreen(
     modifier: Modifier = Modifier,

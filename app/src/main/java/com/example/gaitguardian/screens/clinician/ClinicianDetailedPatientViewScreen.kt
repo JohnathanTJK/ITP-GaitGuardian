@@ -77,7 +77,14 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
+/**
+ * Clinician Detailed Patient View Screen - Information of Selected Assessment
+ * Shows the specific assessment details (mapped to the assessment ID)
+ * Medication Status included (also checks if patient updated medication status post-assessment)
+ * Includes graph of the assessment
+ * Subtask details included
+ * Clinicians can include comments and mark assessment as reviewed.
+ */
 @Composable
 fun ClinicianDetailedPatientViewScreen(
     navController: NavController,

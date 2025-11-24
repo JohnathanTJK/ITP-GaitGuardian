@@ -57,6 +57,13 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/**
+ * Clinician Home Screen - Landing Page after validating PIN
+ * Allows Clinician to see a list of completed assessments by the patient
+ * Split into 'Reviewed', 'Pending' , 'Critical' (Labelled as critical when isFlagged is True)
+ * Can access specific assessment details by clicking on the 'Review Assessment' button
+ * Multi-Select Mark as Reviewed
+ */
 @Composable
 fun ClinicianHomeScreen(
     navController: NavController,

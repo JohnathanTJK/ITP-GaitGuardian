@@ -66,16 +66,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -98,6 +91,16 @@ import java.util.UUID
 import kotlin.collections.isNotEmpty
 
 
+/**
+ * Camera Screen - Video Recording of TUG Assessment
+ * ML Kit Pose Detection
+ * Three-Phase Sequential Validation Process
+ * 1. Check for Device Orientation - Ensure it is always in Landscape
+ * 2. Check for 3 metres space  - Ensure the user is in a 3 metre space , Boundary Box included to indicate if user detected
+ * 3. Check Environment Lighting - Ensure the environment is well-lit
+ * Stores recorded Video into local storage
+ * Insert database entry storing the patient's pre-assessment information + absolute path of video
+ */
 enum class devOrientation {
     PORTRAIT, LANDSCAPE_LEFT, LANDSCAPE_RIGHT, PORTRAIT_UPSIDE_DOWN
 }
