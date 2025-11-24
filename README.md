@@ -25,13 +25,20 @@ Build the application and run it on the emulator.
 ### File Structure of Pose Detection and Machine Learning Backend
 ```
 itp2compvision+phaseclassification
-├── model/
-│   ├── xgb_features.json               ← Pose Feature columns for XGBoost model input
-│   ├── xgb_label_encoder.pkl           ← LabelEncoder for TUG subtask labels
-│   └── xgb_model.pkl                   ← XGBoost model
-│
-├── app.py/                             ← Flask API for gait analysis: pose extraction, subtask classification, gait metrics, and severity scoring
-├── requirements.txt                    ← Required Modules for the backend
+├── convert_xgboost_onnx.py             ← Convert XGBoost model to ONNX format
+├── featureextraction.py                ← Extract pose features from raw landmarks
+├── poseextraction.py                   ← Extract pose landmarks from videos
+├── predict_subtasks.py                 ← Predict TUG subtasks from features
+├── requirements.txt                    ← Python dependencies for the backend
+├── test_xgboost.py                     ← Test XGBoost model predictions
+├── train_xgboost.py                    ← Train XGBoost model
+├── onnx_models/
+│   ├── onnx_metadata.json              ← Metadata for ONNX model inputs/outputs
+│   └── xgboost_tug_model.onnx          ← Exported ONNX model for TUG prediction
+├── raw_landmarks_all/                  ← CSV files of pose landmarks for all videos
+├── test_features_csv/                  ← CSV files of extracted features for test data
+├── training_features_csv/              ← CSV files of extracted features for training data
+├── xgb_models/                         ← Directory for trained XGBoost models
 
 itp2mlp
 ├── model/
@@ -75,7 +82,7 @@ app/src/main/java/com/example/gaitguardian
 │   └── TugDataViewModel.kt             ← Manages TUG assessment data
 │   └── CameraViewModel.kt              ← Manages Camera-related UI state
 │
-└── FeatureExtraction.kt                ← Extract Features (angle rotation, movement complexity)
+└── FeatureExtraction.kt                ← Extract Features
 ├── GaitGuardian.kt                     ← Application class
 ├── MainActivity.kt                     ← Entry point activity with navigation host
 └── NotificationService.kt              ← Notification broadcast setup
