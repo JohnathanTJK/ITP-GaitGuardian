@@ -41,13 +41,15 @@ itp2compvision+phaseclassification
 ├── xgb_models/                         ← Directory for trained XGBoost models
 
 itp2mlp
-├── model/
-│   ├── xgb_features.json               ← Pose Feature columns for XGBoost model input
-│   ├── xgb_label_encoder.pkl           ← LabelEncoder for TUG subtask labels
-│   └── xgb_model.pkl                   ← XGBoost model
+├── android_models/                     ← MLP Model ONNX model file & metadata files
 │
-├── app.py/                             ← Flask API for gait analysis: pose extraction, subtask classification, gait metrics, and severity scoring
-├── requirements.txt                    ← Required Modules for the backend
+├── severity_models/                    ← MLP Model file & metadata files
+│
+├── severity_models_enhanced/           ← Ensemble Model ONNX model file & metadata files
+│
+├── convert_mlp_to_onnx.py              ← Convert Ensemble model to ONNX format
+├── dataset_labelling.xlsx              ← Labelled dataset for MLP training
+├── train_mlp_severity                  ← Ensemble Model Training
 ```
 ### File Structure of GaitGuardian Android App
 ```
